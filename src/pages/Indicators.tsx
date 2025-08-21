@@ -1,69 +1,55 @@
-import { useState } from "react";
-import { economicIndicators } from "@/data/indicators";
-import IndicatorCard from "@/components/IndicatorCard";
-import CategoryFilter from "@/components/CategoryFilter";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { sampleIndicators, categories, categoryConfig } from "@/data/sampleIndicators";
+import IndicatorGridCard from "@/components/IndicatorGridCard";
+import { Activity } from "lucide-react";
 
 const Indicators = () => {
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
 
-  const filteredIndicators = economicIndicators.filter(indicator => {
-    const matchesCategory = selectedCategory === "All" || indicator.category === selectedCategory;
-    const matchesSearch = indicator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         indicator.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentCategoryIndex(prevIndex => (prevIndex + 1) % categories.length);
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const getIndicatorsByCategory = (category: string) => {
+    return sampleIndicators.filter(indicator => indicator.category === category);
+  };
+
+  const currentCategory = categories[currentCategoryIndex];
+  const indicators = getIndicatorsByCategory(currentCategory);
+  const config = categoryConfig[currentCategory as keyof typeof categoryConfig];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">All Economic Indicators</h1>
-        <p className="text-muted-foreground">
-          Comprehensive view of Indian macroeconomic indicators with search and filtering capabilities.
-        </p>
-      </div>
-
-      {/* Search */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search indicators..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 max-w-md"
-        />
-      </div>
-
-      {/* Category Filter */}
-      <CategoryFilter 
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-      />
-
-      {/* Results */}
-      <div className="mb-4">
-        <p className="text-sm text-muted-foreground">
-          Showing {filteredIndicators.length} of {economicIndicators.length} indicators
-        </p>
-      </div>
-
-      {/* Indicators Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredIndicators.map((indicator) => (
-          <IndicatorCard key={indicator.id} indicator={indicator} />
-        ))}
-      </div>
-
-      {filteredIndicators.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No indicators found matching your criteria.</p>
+    <div className="min-h-screen">
+      <div className="max-w-[1600px] mx-auto px-8 py-8">
+        <div key={currentCategory} className="category-fade-in space-y-6">
+          {/* Category Header */}
+          <div className="flex items-center justify-center text-center gap-3 mb-6">
+            <div className={`p-3 rounded-lg ${config?.bgColor || 'bg-muted'}`}>
+              <Activity className={`h-6 w-6 text-${config?.color || 'muted-foreground'}`} />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-foreground">{currentCategory}</h2>
+              <p className="text-sm text-muted-foreground">
+                {indicators.length} indicators
+              </p>
+            </div>
+          </div>
+          
+          {/* Indicators Grid - 5 columns, multiple rows as needed */}
+          <div className="grid grid-cols-5 gap-6">
+            {indicators.map((indicator) => (
+              <IndicatorGridCard key={indicator.id} indicator={indicator} />
+            ))}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
+
 
 export default Indicators;

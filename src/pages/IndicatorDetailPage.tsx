@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, Calendar, BarChart3, Info } from 'lucide-react';
-import { sampleIndicators, economicEvents, categoryConfig } from '@/data/sampleIndicators';
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, Calendar, BarChart3, Info, X } from 'lucide-react';
+import { sampleIndicators, dashboardIndicators, economicEvents, categoryConfig } from '@/data/sampleIndicators';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 const IndicatorDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [indicator, setIndicator] = useState<any>(null);
+  const [isCompareModalOpen, setCompareModalOpen] = useState(false);
+  const [comparisonIndicator, setComparisonIndicator] = useState<any>(null);
 
   useEffect(() => {
-    const foundIndicator = sampleIndicators.find(ind => ind.id === id);
+        const allIndicators = [...sampleIndicators, ...dashboardIndicators];
+    const foundIndicator = allIndicators.find(ind => ind.id === id);
     if (foundIndicator) {
       setIndicator(foundIndicator);
     }
@@ -31,7 +36,8 @@ const IndicatorDetailPage = () => {
   }
 
   // Generate historical data (last 2 years)
-  const generateHistoricalData = () => {
+  const generateHistoricalData = (ind: any) => {
+    if (!ind) return [];
     const data = [];
     const currentDate = new Date();
     
@@ -40,21 +46,27 @@ const IndicatorDetailPage = () => {
       date.setMonth(date.getMonth() - i);
       
       // Simulate realistic data variations
-      const baseValue = parseFloat(indicator.value.replace(/[^0-9.-]/g, ''));
+      const baseValue = parseFloat(ind.value.replace(/[^0-9.-]/g, ''));
       const variation = (Math.random() - 0.5) * 0.3 * baseValue;
       const value = Math.max(0, baseValue + variation);
       
       data.push({
         date: date.toISOString().substr(0, 7), // YYYY-MM format
         value: Math.round(value * 100) / 100,
-        fullDate: date
       });
     }
     
     return data;
   };
 
-  const historicalData = generateHistoricalData();
+  const primaryHistoricalData = generateHistoricalData(indicator);
+  const comparisonHistoricalData = comparisonIndicator ? generateHistoricalData(comparisonIndicator) : [];
+
+  const combinedChartData = primaryHistoricalData.map((item, index) => ({
+    date: item.date,
+    [indicator.id]: item.value,
+    ...(comparisonIndicator && { [comparisonIndicator.id]: comparisonHistoricalData[index]?.value }),
+  }));
   const categoryStyle = categoryConfig[indicator.category as keyof typeof categoryConfig];
 
   const getTrendIcon = () => {
@@ -104,6 +116,42 @@ const IndicatorDetailPage = () => {
           >
             {indicator.category}
           </Badge>
+
+          <Dialog open={isCompareModalOpen} onOpenChange={setCompareModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="ml-auto flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Compare
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Select an indicator to compare</DialogTitle>
+              </DialogHeader>
+              <Command>
+                <CommandInput placeholder="Search indicators..." />
+                <CommandList>
+                  <CommandEmpty>No results found.</CommandEmpty>
+                  <CommandGroup>
+                    {sampleIndicators
+                      .filter(ind => ind.id !== indicator.id)
+                      .map(ind => ({ ...ind, id: ind.id || 'default-id' }))
+                      .map(ind => (
+                        <CommandItem
+                          key={ind.id}
+                          onSelect={() => {
+                            setComparisonIndicator(ind);
+                            setCompareModalOpen(false);
+                          }}
+                        >
+                          {ind.name}
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Indicator Overview */}
@@ -202,9 +250,17 @@ const IndicatorDetailPage = () => {
         {/* Historical Chart */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Historical Performance (24 Months)
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                {comparisonIndicator ? `Comparing: ${indicator.name} vs. ${comparisonIndicator.name}` : 'Historical Performance (24 Months)'}
+              </div>
+              {comparisonIndicator && (
+                <Button variant="ghost" size="sm" onClick={() => setComparisonIndicator(null)}>
+                  <X className="h-4 w-4 mr-2" />
+                  Clear Comparison
+                </Button>
+              )}
             </CardTitle>
             <CardDescription>
               Chart shows historical trends with key economic events marked
@@ -213,7 +269,7 @@ const IndicatorDetailPage = () => {
           <CardContent>
             <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={historicalData}>
+                <LineChart data={combinedChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="date" 
@@ -243,14 +299,28 @@ const IndicatorDetailPage = () => {
                     />
                   ))}
                   
+                  <Legend />
                   <Line 
                     type="monotone" 
-                    dataKey="value" 
+                    dataKey={indicator.id}
+                    name={indicator.name}
                     stroke="hsl(var(--primary))" 
                     strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
+                    dot={false}
+                    activeDot={{ r: 6 }}
                   />
+                  {comparisonIndicator && (
+                    <Line 
+                      type="monotone" 
+                      dataKey={comparisonIndicator.id}
+                      name={comparisonIndicator.name}
+                      stroke="hsl(var(--secondary-foreground))" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={false}
+                      activeDot={{ r: 6 }}
+                    />
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
