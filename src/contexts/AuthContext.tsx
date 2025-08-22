@@ -92,6 +92,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('Auth state:', { user: user?.email, isAdmin, loading });
+  }, [user, isAdmin, loading]);
+
   const value = {
     user,
     session,

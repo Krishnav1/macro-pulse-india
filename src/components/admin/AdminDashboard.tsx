@@ -1,14 +1,61 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User, Database, Calendar, Lightbulb, BarChart3 } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
+import DataManagement from './DataManagement';
+import EventsManagement from './EventsManagement';
+import InsightsManagement from './InsightsManagement';
+import ComparisonsManagement from './ComparisonsManagement';
 
 export const AdminDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState('data');
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  // Mock data and handlers for the components
+  const mockSeriesData = [];
+  const mockEvents = [];
+  const mockInsights = [];
+  const mockComparisons = [];
+
+  const handleAddEntry = (entry: any) => {
+    console.log('Adding entry:', entry);
+  };
+
+  const handleDeleteEntry = (index: number) => {
+    console.log('Deleting entry at index:', index);
+  };
+
+  const handleCsvUpload = (file: File) => {
+    console.log('Uploading CSV:', file.name);
+  };
+
+  const handleAddEvent = (event: any) => {
+    console.log('Adding event:', event);
+  };
+
+  const handleDeleteEvent = (index: number) => {
+    console.log('Deleting event at index:', index);
+  };
+
+  const handleAddInsight = (insight: any) => {
+    console.log('Adding insight:', insight);
+  };
+
+  const handleDeleteInsight = (index: number) => {
+    console.log('Deleting insight at index:', index);
+  };
+
+  const handleAddComparison = (comparison: any) => {
+    console.log('Adding comparison:', comparison);
+  };
+
+  const handleDeleteComparison = (index: number) => {
+    console.log('Deleting comparison at index:', index);
   };
 
   return (
@@ -32,75 +79,69 @@ export const AdminDashboard: React.FC = () => {
         </CardHeader>
       </Card>
 
-      {/* Management Sections */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Data Management
-            </CardTitle>
-            <CardDescription>
-              Manage indicator data and series
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Upload, edit, and manage economic indicator data.
-            </p>
-          </CardContent>
-        </Card>
+      {/* Navigation Tabs */}
+      <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+        <Button
+          variant={activeTab === 'data' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('data')}
+          className="flex-1"
+        >
+          Data Management
+        </Button>
+        <Button
+          variant={activeTab === 'events' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('events')}
+          className="flex-1"
+        >
+          Events
+        </Button>
+        <Button
+          variant={activeTab === 'insights' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('insights')}
+          className="flex-1"
+        >
+          Insights
+        </Button>
+        <Button
+          variant={activeTab === 'comparisons' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('comparisons')}
+          className="flex-1"
+        >
+          Comparisons
+        </Button>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Events Management
-            </CardTitle>
-            <CardDescription>
-              Manage economic events and announcements
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Add and manage events that impact economic indicators.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5" />
-              Insights Management
-            </CardTitle>
-            <CardDescription>
-              Manage insights and analysis
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Create and manage insights for economic indicators.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Comparisons Management
-            </CardTitle>
-            <CardDescription>
-              Manage indicator comparisons
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Set up and manage comparisons between indicators.
-            </p>
-          </CardContent>
-        </Card>
+      {/* Content */}
+      <div>
+        {activeTab === 'data' && (
+          <DataManagement
+            seriesData={mockSeriesData}
+            onAddEntry={handleAddEntry}
+            onDeleteEntry={handleDeleteEntry}
+            onCsvUpload={handleCsvUpload}
+          />
+        )}
+        {activeTab === 'events' && (
+          <EventsManagement
+            events={mockEvents}
+            onAddEvent={handleAddEvent}
+            onDeleteEvent={handleDeleteEvent}
+          />
+        )}
+        {activeTab === 'insights' && (
+          <InsightsManagement
+            insights={mockInsights}
+            onAddInsight={handleAddInsight}
+            onDeleteInsight={handleDeleteInsight}
+          />
+        )}
+        {activeTab === 'comparisons' && (
+          <ComparisonsManagement
+            comparisons={mockComparisons}
+            onAddComparison={handleAddComparison}
+            onDeleteComparison={handleDeleteComparison}
+          />
+        )}
       </div>
     </div>
   );
