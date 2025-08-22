@@ -9,6 +9,7 @@ import { AlertTriangle } from 'lucide-react';
 export default function Admin() {
   const { user, isAdmin, loading } = useAuth();
   const { slug } = useParams();
+  const normalizedSlug = slug ? slug.replace(/_/g, '-') : undefined;
 
   if (loading) {
     return (
@@ -49,5 +50,5 @@ export default function Admin() {
   // }
 
   // Logged in and is admin - show dashboard
-  return <AdminDashboard initialIndicatorSlug={slug} />;
+  return <AdminDashboard initialIndicatorSlug={normalizedSlug} />;
 }

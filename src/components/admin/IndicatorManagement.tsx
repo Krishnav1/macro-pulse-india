@@ -55,11 +55,15 @@ export const IndicatorManagement: React.FC<IndicatorManagementProps> = ({ initia
 
   const fetchIndicatorBySlug = async (slug: string) => {
     try {
+      // Try both hyphen and underscore variants
+      const underscore = slug.replace(/-/g, '_');
+      const hyphen = slug.replace(/_/g, '-');
       const { data, error } = await supabase
         .from('indicators')
         .select('slug, name, description, category, unit, frequency')
-        .eq('slug', slug)
-        .single();
+        .or(`slug.eq.${slug},slug.eq.${underscore},slug.eq.${hyphen}`)
+        .limit(1)
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching indicator:', error);

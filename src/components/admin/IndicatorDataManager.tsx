@@ -232,7 +232,8 @@ export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
   }
 
   // Use specialized CPI admin page for CPI Inflation indicator
-  if (indicator.slug === 'cpi-inflation') {
+  const normalizedSlug = (indicator.slug || '').replace(/_/g, '-');
+  if (normalizedSlug === 'cpi-inflation') {
     return (
       <CPIInflationAdmin
         indicator={indicator}
