@@ -47,9 +47,10 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
     };
   }, [timeframe]);
 
-  // Get selected comparison series
+  // Get selected comparison series (avoid referencing variables declared later)
   const selectedComparisons = useMemo(() => {
-    return ['headline', ...visibleComparisons.map(c => c.id)];
+    const slice = comparisonIndicators.slice(comparisonScrollIndex, comparisonScrollIndex + 4);
+    return ['headline', ...slice.map(c => c.id)];
   }, [comparisonScrollIndex]);
 
   // Fetch CPI data from Supabase

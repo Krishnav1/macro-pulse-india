@@ -21,11 +21,18 @@ interface CPIEvent {
 export const CPIEventsManager = () => {
   const [events, setEvents] = useState<CPIEvent[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [newEvent, setNewEvent] = useState({
+  type NewEvent = {
+    date: string;
+    title: string;
+    description: string;
+    impact: 'low' | 'medium' | 'high';
+    tag: string;
+  };
+  const [newEvent, setNewEvent] = useState<NewEvent>({
     date: '',
     title: '',
     description: '',
-    impact: 'medium' as const,
+    impact: 'medium',
     tag: ''
   });
   const [loading, setLoading] = useState(true);
@@ -43,7 +50,8 @@ export const CPIEventsManager = () => {
         .order('date', { ascending: false });
 
       if (error) throw error;
-      setEvents(data || []);
+      // Cast via unknown to satisfy TS when Supabase types aren't generated
+      setEvents(((data ?? []) as unknown) as CPIEvent[]);
     } catch (error) {
       console.error('Error fetching events:', error);
     } finally {
