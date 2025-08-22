@@ -82,7 +82,15 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "indicator_series_indicator_slug_fkey"
+            columns: ["indicator_slug"]
+            isOneToOne: false
+            referencedRelation: "indicators"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       indicator_events: {
         Row: {
@@ -91,8 +99,8 @@ export type Database = {
           date: string
           description: string
           impact: 'low' | 'medium' | 'high'
-          created_at: string
-          updated_at: string
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: number
@@ -100,8 +108,8 @@ export type Database = {
           date: string
           description: string
           impact?: 'low' | 'medium' | 'high'
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: number
@@ -109,37 +117,53 @@ export type Database = {
           date?: string
           description?: string
           impact?: 'low' | 'medium' | 'high'
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "indicator_events_indicator_slug_fkey"
+            columns: ["indicator_slug"]
+            isOneToOne: false
+            referencedRelation: "indicators"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       indicator_insights: {
         Row: {
           id: number
           indicator_slug: string
           content: string
-          order_index: number
-          created_at: string
-          updated_at: string
+          order_index: number | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: number
           indicator_slug: string
           content: string
-          order_index?: number
-          created_at?: string
-          updated_at?: string
+          order_index?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: number
           indicator_slug?: string
           content?: string
-          order_index?: number
-          created_at?: string
-          updated_at?: string
+          order_index?: number | null
+          created_at?: string | null
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "indicator_insights_indicator_slug_fkey"
+            columns: ["indicator_slug"]
+            isOneToOne: false
+            referencedRelation: "indicators"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       indicator_comparisons: {
         Row: {
@@ -147,26 +171,41 @@ export type Database = {
           indicator_slug: string
           compare_indicator_slug: string
           display_name: string
-          created_at: string
-          updated_at: string
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: number
           indicator_slug: string
           compare_indicator_slug: string
           display_name: string
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: number
           indicator_slug?: string
           compare_indicator_slug?: string
           display_name?: string
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "indicator_comparisons_compare_indicator_slug_fkey"
+            columns: ["compare_indicator_slug"]
+            isOneToOne: false
+            referencedRelation: "indicators"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "indicator_comparisons_indicator_slug_fkey"
+            columns: ["indicator_slug"]
+            isOneToOne: false
+            referencedRelation: "indicators"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       sources: {
         Row: {
@@ -299,7 +338,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_uuid?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
