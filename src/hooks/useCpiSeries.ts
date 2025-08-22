@@ -17,6 +17,7 @@ interface UseCpiSeriesParams {
   seriesCodes?: string[];
   startDate?: string;
   endDate?: string;
+  enabled?: boolean;
 }
 
 // Lightweight in-memory cache per session to avoid duplicate network calls
@@ -28,18 +29,23 @@ export const useCpiSeries = (params: UseCpiSeriesParams = {}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { geography = 'combined', seriesCodes = ['headline'], startDate, endDate } = params;
+  const { geography = 'combined', seriesCodes = ['headline'], startDate, endDate, enabled = true } = params;
 
   useEffect(() => {
+    // Short-circuit entirely if disabled
+    if (!enabled) {
+      if (loading) setLoading(false);
+      return;
+    }
+
     // Build a stable cache key
     const sortedCodes = [...seriesCodes].sort();
     const cacheKey = `${geography}|${sortedCodes.join(',')}|${startDate || ''}|${endDate || ''}`;
 
     // If no series codes were requested, short-circuit to avoid invalid/empty IN() queries
     if (!sortedCodes.length) {
-      setData([]);
       setError(null);
-      setLoading(false);
+      if (loading) setLoading(false);
       return;
     }
 
@@ -81,7 +87,7 @@ export const useCpiSeries = (params: UseCpiSeriesParams = {}) => {
           const { data: seriesData, error } = await query;
           if (!error) {
             if (isStale) return; // Ignore outdated result
-            const clean = (seriesData as CpiSeriesData[]) || [];
+            const clean = (seriesData as unknown as CpiSeriesData[]) || [];
             cpiCache.set(cacheKey, clean);
             setData(clean);
             setError(null);
@@ -110,7 +116,7 @@ export const useCpiSeries = (params: UseCpiSeriesParams = {}) => {
     return () => {
       isStale = true;
     };
-  }, [geography, seriesCodes, startDate, endDate]);
+  }, [geography, seriesCodes, startDate, endDate, enabled]);
 
   return { data, loading, error };
 };

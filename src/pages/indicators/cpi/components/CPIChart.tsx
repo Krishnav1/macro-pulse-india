@@ -20,12 +20,12 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
   const [showComparisonError, setShowComparisonError] = useState(false);
 
   const comparisonIndicators = [
-    { id: 'wpi', name: 'WPI Inflation' },
     { id: 'core', name: 'Core CPI' },
     { id: 'food', name: 'Food CPI' },
     { id: 'fuel', name: 'Fuel CPI' },
     { id: 'housing', name: 'Housing CPI' },
-    { id: 'transport', name: 'Transport CPI' }
+    { id: 'transport', name: 'Transport CPI' },
+    { id: 'clothing', name: 'Clothing CPI' }
   ];
 
   // Calculate date range based on timeframe
@@ -62,15 +62,18 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
     endDate: dateRange.endDate
   }));
 
-  const { data: ruralData, loading: ruralLoading } = useCpiSeries(
-    geography.includes('rural') ? fetchQueries.find(q => q.geography === 'rural') : { geography: 'rural', seriesCodes: [], startDate: '', endDate: '' }
-  );
-  const { data: urbanData, loading: urbanLoading } = useCpiSeries(
-    geography.includes('urban') ? fetchQueries.find(q => q.geography === 'urban') : { geography: 'urban', seriesCodes: [], startDate: '', endDate: '' }
-  );
-  const { data: combinedData, loading: combinedLoading } = useCpiSeries(
-    geography.includes('combined') ? fetchQueries.find(q => q.geography === 'combined') : { geography: 'combined', seriesCodes: [], startDate: '', endDate: '' }
-  );
+  const { data: ruralData, loading: ruralLoading } = useCpiSeries({
+    ...(fetchQueries.find(q => q.geography === 'rural') || { geography: 'rural', seriesCodes: [], startDate: '', endDate: '' }),
+    enabled: geography.includes('rural')
+  });
+  const { data: urbanData, loading: urbanLoading } = useCpiSeries({
+    ...(fetchQueries.find(q => q.geography === 'urban') || { geography: 'urban', seriesCodes: [], startDate: '', endDate: '' }),
+    enabled: geography.includes('urban')
+  });
+  const { data: combinedData, loading: combinedLoading } = useCpiSeries({
+    ...(fetchQueries.find(q => q.geography === 'combined') || { geography: 'combined', seriesCodes: [], startDate: '', endDate: '' }),
+    enabled: geography.includes('combined')
+  });
 
   const loading = ruralLoading || urbanLoading || combinedLoading;
   const cpiData = [...(ruralData || []), ...(urbanData || []), ...(combinedData || [])];
@@ -100,6 +103,32 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
     
     return Array.from(dataByDate.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [cpiData, dataType]);
+
+  // Calculate Y-axis domain for better scaling
+  const yAxisDomain = useMemo(() => {
+    if (!chartData.length) return ['auto', 'auto'];
+    
+    const allValues = chartData.flatMap(item => 
+      Object.keys(item)
+        .filter(key => key !== 'date')
+        .map(key => item[key])
+        .filter(val => typeof val === 'number' && !isNaN(val))
+    );
+    
+    if (!allValues.length) return ['auto', 'auto'];
+    
+    const min = Math.min(...allValues);
+    const max = Math.max(...allValues);
+    const range = max - min;
+    const padding = range * 0.1; // 10% padding
+    
+    // For 1-year timeframe, use tighter scaling for better trend visibility
+    if (timeframe === '1y' && range > 0) {
+      return [Math.max(0, min - padding), max + padding];
+    }
+    
+    return ['auto', 'auto'];
+  }, [chartData, timeframe]);
 
   // Custom tick formatter to show years only
   const formatXAxisTick = (tickItem: string, index: number) => {
@@ -278,6 +307,7 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                   unit={dataType === 'index' ? '' : '%'}
+                  domain={yAxisDomain}
                 />
                 <Tooltip 
                   contentStyle={{
@@ -294,6 +324,11 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
               </LineChart>
             </ResponsiveContainer>
           )}
+        </div>
+        
+        {/* Base Year Note */}
+        <div className="mt-2 text-xs text-muted-foreground text-center">
+          Data is based on Base: 2012 = 100
         </div>
         
         {/* Geography and Compare Options */}

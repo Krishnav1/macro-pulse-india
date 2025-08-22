@@ -40,33 +40,27 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Admin Tabs */}
       <Tabs defaultValue="indicators" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1">
           <TabsTrigger value="indicators" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            Indicators
-          </TabsTrigger>
-          <TabsTrigger value="cpi-events" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            CPI Events
-          </TabsTrigger>
-          <TabsTrigger value="cpi-insights" className="flex items-center gap-2">
-            <Lightbulb className="h-4 w-4" />
-            CPI Insights
+            Data Management
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="indicators">
-          <IndicatorManagement />
-          {/* CPI Uploads within Indicators tab (no separate tab) */}
-          <div className="mt-6 space-y-6">
+          <div className="space-y-6">
+            {/* Indicator Management */}
+            <IndicatorManagement />
+            
+            {/* CPI Data Management */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Upload className="h-5 w-5" />
-                  CPI Data Uploads
+                  CPI Data Management
                 </CardTitle>
                 <CardDescription>
-                  Upload headline and components, or Core CPI, directly from here.
+                  Upload and manage CPI data for the platform.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -75,14 +69,6 @@ export const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="cpi-events">
-          <CPIEventsManager />
-        </TabsContent>
-
-        <TabsContent value="cpi-insights">
-          <CPIInsightsManager />
         </TabsContent>
       </Tabs>
     </div>
