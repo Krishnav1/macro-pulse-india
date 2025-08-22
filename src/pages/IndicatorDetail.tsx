@@ -1,26 +1,29 @@
 import { useParams, Navigate } from "react-router-dom";
 import { useState } from "react";
 import { economicIndicators } from "@/data/indicators";
+import { useSupabaseIndicator } from "@/hooks/useSupabaseIndicator";
 import { 
   LineChart, 
   Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
+  Tooltip as RechartsTooltip, 
   ResponsiveContainer,
   ReferenceLine
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, TrendingUp, TrendingDown, Calendar, ExternalLink, AlertCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ArrowLeft, TrendingUp, TrendingDown, Calendar, ExternalLink, AlertCircle, Info } from "lucide-react";
 
 const IndicatorDetail = () => {
   const { id } = useParams();
   const [selectedTimeframe, setSelectedTimeframe] = useState("all");
   
   const indicator = economicIndicators.find(ind => ind.id === id);
+  const { indicator: supabaseIndicator, loading: supabaseLoading } = useSupabaseIndicator(id || '');
   
   if (!indicator) {
     return <Navigate to="/404" replace />;
@@ -85,28 +88,41 @@ const IndicatorDetail = () => {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Navigation */}
-      <Button 
-        variant="ghost" 
-        className="mb-6"
-        onClick={() => window.history.back()}
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Dashboard
-      </Button>
+    <TooltipProvider>
+      <div className="container mx-auto px-4 py-8">
+        {/* Navigation */}
+        <Button 
+          variant="ghost" 
+          className="mb-6"
+          onClick={() => window.history.back()}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
+        </Button>
 
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">{indicator.name}</h1>
-            <p className="text-muted-foreground text-lg">{indicator.description}</p>
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <h1 className="text-3xl md:text-4xl font-bold">{indicator.name}</h1>
+                {supabaseIndicator?.definition && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-5 w-5 text-muted-foreground hover:text-primary cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-sm">
+                      <p className="text-sm">{supabaseIndicator.definition}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+              <p className="text-muted-foreground text-lg">{indicator.description}</p>
+            </div>
+            <Badge variant="outline" className="text-sm">
+              {indicator.category}
+            </Badge>
           </div>
-          <Badge variant="outline" className="text-sm">
-            {indicator.category}
-          </Badge>
-        </div>
 
         {/* Current Value Card */}
         <Card className="mb-6">
@@ -174,7 +190,7 @@ const IndicatorDetail = () => {
                       stroke="hsl(var(--muted-foreground))"
                       tick={{ fill: "hsl(var(--muted-foreground))" }}
                     />
-                    <Tooltip 
+                    <RechartsTooltip 
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
@@ -275,7 +291,7 @@ const IndicatorDetail = () => {
           </Card>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 

@@ -41,13 +41,14 @@ export type Database = {
           slug?: string
           name?: string
           description?: string | null
+          definition?: string | null
           category?: string | null
           unit?: string | null
-          frequency?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'irregular' | null
-          decimals?: number
-          chart_config?: any
-          created_at?: string
-          updated_at?: string
+          frequency?: "daily" | "weekly" | "monthly" | "quarterly" | "yearly" | "irregular" | null
+          decimals?: number | null
+          chart_config?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -56,31 +57,31 @@ export type Database = {
           id: number
           indicator_slug: string
           period_date: string
-          value: number
           period_label: string | null
+          value: number
           source_id: number | null
-          created_at: string
-          updated_at: string
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: number
           indicator_slug: string
           period_date: string
-          value: number
           period_label?: string | null
+          value: number
           source_id?: number | null
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: number
           indicator_slug?: string
           period_date?: string
-          value?: number
           period_label?: string | null
+          value?: number
           source_id?: number | null
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -98,7 +99,7 @@ export type Database = {
           indicator_slug: string
           date: string
           description: string
-          impact: 'low' | 'medium' | 'high'
+          impact: string | null
           created_at: string | null
           updated_at: string | null
         }
@@ -107,7 +108,7 @@ export type Database = {
           indicator_slug: string
           date: string
           description: string
-          impact?: 'low' | 'medium' | 'high'
+          impact?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -116,7 +117,7 @@ export type Database = {
           indicator_slug?: string
           date?: string
           description?: string
-          impact?: 'low' | 'medium' | 'high'
+          impact?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -212,22 +213,22 @@ export type Database = {
           id: number
           name: string
           url: string | null
-          created_at: string
-          updated_at: string
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: number
           name: string
           url?: string | null
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: number
           name?: string
           url?: string | null
-          created_at?: string
-          updated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
