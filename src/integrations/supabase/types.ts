@@ -7,14 +7,293 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
-      [_ in never]: never
+      indicators: {
+        Row: {
+          slug: string
+          name: string
+          description: string | null
+          category: string | null
+          unit: string | null
+          frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'irregular' | null
+          decimals: number
+          chart_config: any
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          slug: string
+          name: string
+          description?: string | null
+          category?: string | null
+          unit?: string | null
+          frequency?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'irregular' | null
+          decimals?: number
+          chart_config?: any
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          slug?: string
+          name?: string
+          description?: string | null
+          category?: string | null
+          unit?: string | null
+          frequency?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'irregular' | null
+          decimals?: number
+          chart_config?: any
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      indicator_series: {
+        Row: {
+          id: number
+          indicator_slug: string
+          period_date: string
+          value: number
+          period_label: string | null
+          source_id: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          indicator_slug: string
+          period_date: string
+          value: number
+          period_label?: string | null
+          source_id?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          indicator_slug?: string
+          period_date?: string
+          value?: number
+          period_label?: string | null
+          source_id?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      indicator_events: {
+        Row: {
+          id: number
+          indicator_slug: string
+          date: string
+          description: string
+          impact: 'low' | 'medium' | 'high'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          indicator_slug: string
+          date: string
+          description: string
+          impact?: 'low' | 'medium' | 'high'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          indicator_slug?: string
+          date?: string
+          description?: string
+          impact?: 'low' | 'medium' | 'high'
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      indicator_insights: {
+        Row: {
+          id: number
+          indicator_slug: string
+          content: string
+          order_index: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          indicator_slug: string
+          content: string
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          indicator_slug?: string
+          content?: string
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      indicator_comparisons: {
+        Row: {
+          id: number
+          indicator_slug: string
+          compare_indicator_slug: string
+          display_name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          indicator_slug: string
+          compare_indicator_slug: string
+          display_name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          indicator_slug?: string
+          compare_indicator_slug?: string
+          display_name?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sources: {
+        Row: {
+          id: number
+          name: string
+          url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          name: string
+          url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          name?: string
+          url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      repo_rate_data: {
+        Row: {
+          id: number
+          date: string
+          rate: number
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          date: string
+          rate: number
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          date?: string
+          rate?: number
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      repo_rate_events: {
+        Row: {
+          id: number
+          date: string
+          description: string
+          impact: 'low' | 'medium' | 'high'
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          date: string
+          description: string
+          impact?: 'low' | 'medium' | 'high'
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          date?: string
+          description?: string
+          impact?: 'low' | 'medium' | 'high'
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      repo_rate_insights: {
+        Row: {
+          id: number
+          content: string
+          order_index: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          content: string
+          order_index?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          content?: string
+          order_index?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      repo_rate_comparisons: {
+        Row: {
+          id: number
+          indicator_id: string
+          name: string
+          category: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          indicator_id: string
+          name: string
+          category: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          indicator_id?: string
+          name?: string
+          category?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
