@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, BarChart3, Upload, Calendar, Lightbulb } from 'lucide-react';
 import { IndicatorManagement } from './IndicatorManagement';
+import { CPIDataUpload } from './CPIDataUpload';
+import { CPIEventsForm } from './CPIEventsForm';
+import { CPIInsightsForm } from './CPIInsightsForm';
 
 export const AdminDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -33,8 +37,43 @@ export const AdminDashboard: React.FC = () => {
         </CardHeader>
       </Card>
 
-      {/* Indicator Management */}
-      <IndicatorManagement />
+      {/* Admin Tabs */}
+      <Tabs defaultValue="indicators" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="indicators" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Indicators
+          </TabsTrigger>
+          <TabsTrigger value="cpi-data" className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            CPI Data
+          </TabsTrigger>
+          <TabsTrigger value="cpi-events" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            CPI Events
+          </TabsTrigger>
+          <TabsTrigger value="cpi-insights" className="flex items-center gap-2">
+            <Lightbulb className="h-4 w-4" />
+            CPI Insights
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="indicators">
+          <IndicatorManagement />
+        </TabsContent>
+
+        <TabsContent value="cpi-data">
+          <CPIDataUpload />
+        </TabsContent>
+
+        <TabsContent value="cpi-events">
+          <CPIEventsForm />
+        </TabsContent>
+
+        <TabsContent value="cpi-insights">
+          <CPIInsightsForm />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
