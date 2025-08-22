@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User, BarChart3, Upload, Calendar, Lightbulb } from 'lucide-react';
+import { LogOut, User, BarChart3 } from 'lucide-react';
 import { IndicatorManagement } from './IndicatorManagement';
-import { CPIDataManager } from './CPIDataManager';
-import { CoreCPIUpload } from './CoreCPIUpload';
-import { CPIEventsManager } from './CPIEventsManager';
-import { CPIInsightsManager } from './CPIInsightsManager';
 
-export const AdminDashboard: React.FC = () => {
+interface AdminDashboardProps {
+  initialIndicatorSlug?: string;
+}
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialIndicatorSlug }) => {
   const { user, signOut } = useAuth();
 
   const handleSignOut = async () => {
@@ -48,27 +48,7 @@ export const AdminDashboard: React.FC = () => {
         </TabsList>
 
         <TabsContent value="indicators">
-          <div className="space-y-6">
-            {/* Indicator Management */}
-            <IndicatorManagement />
-            
-            {/* CPI Data Management */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
-                  CPI Data Management
-                </CardTitle>
-                <CardDescription>
-                  Upload and manage CPI data for the platform.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <CPIDataManager />
-                <CoreCPIUpload />
-              </CardContent>
-            </Card>
-          </div>
+          <IndicatorManagement initialIndicatorSlug={initialIndicatorSlug} />
         </TabsContent>
       </Tabs>
     </div>

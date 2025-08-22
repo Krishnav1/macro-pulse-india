@@ -1,4 +1,5 @@
 import React from 'react';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminAuthForm } from '@/components/admin/AdminAuthForm';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
@@ -7,6 +8,7 @@ import { AlertTriangle } from 'lucide-react';
 
 export default function Admin() {
   const { user, isAdmin, loading } = useAuth();
+  const { slug } = useParams();
 
   if (loading) {
     return (
@@ -47,5 +49,5 @@ export default function Admin() {
   // }
 
   // Logged in and is admin - show dashboard
-  return <AdminDashboard />;
+  return <AdminDashboard initialIndicatorSlug={slug} />;
 }

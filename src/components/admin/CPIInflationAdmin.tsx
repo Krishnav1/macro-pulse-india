@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { ArrowLeft, Edit, Upload, Download, Plus } from 'lucide-react';
+import { ArrowLeft, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import DataManagement from './DataManagement';
-import CPIDataManagement from './CPIDataManagement';
-import CPIInflationAdmin from './CPIInflationAdmin';
+import { CPIDataManager } from './CPIDataManager';
+import { CoreCPIUpload } from './CoreCPIUpload';
 import EventsManagement from './EventsManagement';
 import InsightsManagement from './InsightsManagement';
 import ComparisonsManagement from './ComparisonsManagement';
@@ -23,13 +21,13 @@ interface Indicator {
   frequency: string | null;
 }
 
-interface IndicatorDataManagerProps {
+interface CPIInflationAdminProps {
   indicator: Indicator;
   onBack: () => void;
   onEditIndicator: () => void;
 }
 
-export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
+export const CPIInflationAdmin: React.FC<CPIInflationAdminProps> = ({
   indicator,
   onBack,
   onEditIndicator
@@ -47,12 +45,13 @@ export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
   const fetchIndicatorData = async () => {
     setLoading(true);
     try {
-      // Fetch series data
-      const { data: seriesData } = await supabase
+      // Fetch CPI series data from indicator_series for CPI
+      const { data: cpiSeriesData } = await supabase
         .from('indicator_series')
         .select('*')
         .eq('indicator_slug', indicator.slug)
-        .order('period_date', { ascending: false });
+        .order('period_date', { ascending: false })
+        .limit(50);
 
       // Fetch events
       const { data: eventsData } = await supabase
@@ -74,55 +73,16 @@ export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
         .select('*')
         .eq('indicator_slug', indicator.slug);
 
-      setSeriesData(seriesData || []);
+      setSeriesData(cpiSeriesData || []);
       setEvents(eventsData || []);
       setInsights(insightsData || []);
       setComparisons(comparisonsData || []);
     } catch (error) {
-      console.error('Error fetching indicator data:', error);
-      toast.error('Failed to load indicator data');
+      console.error('Error fetching CPI data:', error);
+      toast.error('Failed to load CPI data');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAddEntry = async (entry: any) => {
-    try {
-      const { error } = await supabase
-        .from('indicator_series')
-        .insert([{ ...entry, indicator_slug: indicator.slug }]);
-
-      if (error) throw error;
-      toast.success('Data entry added successfully');
-      fetchIndicatorData();
-    } catch (error) {
-      console.error('Error adding entry:', error);
-      toast.error('Failed to add data entry');
-    }
-  };
-
-  const handleDeleteEntry = async (index: number) => {
-    try {
-      const entryToDelete = seriesData[index];
-      if (!entryToDelete) return;
-
-      const { error } = await supabase
-        .from('indicator_series')
-        .delete()
-        .eq('id', (entryToDelete as any).id);
-
-      if (error) throw error;
-      toast.success('Data entry deleted successfully');
-      fetchIndicatorData();
-    } catch (error) {
-      console.error('Error deleting entry:', error);
-      toast.error('Failed to delete data entry');
-    }
-  };
-
-  const handleCsvUpload = async (file: File) => {
-    // CSV upload logic will be implemented here
-    toast.info('CSV upload functionality will be implemented');
   };
 
   const handleAddEvent = async (event: any) => {
@@ -228,18 +188,7 @@ export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading indicator data...</div>;
-  }
-
-  // Use specialized CPI admin page for CPI Inflation indicator
-  if (indicator.slug === 'cpi-inflation') {
-    return (
-      <CPIInflationAdmin
-        indicator={indicator}
-        onBack={onBack}
-        onEditIndicator={onEditIndicator}
-      />
-    );
+    return <div className="text-center py-8">Loading CPI data...</div>;
   }
 
   return (
@@ -275,7 +224,7 @@ export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
         </CardHeader>
       </Card>
 
-      {/* Data Management Tabs */}
+      {/* CPI Management Tabs */}
       <Tabs defaultValue="data" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="data">Data ({seriesData.length})</TabsTrigger>
@@ -285,12 +234,59 @@ export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
         </TabsList>
 
         <TabsContent value="data" className="space-y-4">
-          <DataManagement
-            seriesData={seriesData}
-            onAddEntry={handleAddEntry}
-            onDeleteEntry={handleDeleteEntry}
-            onCsvUpload={handleCsvUpload}
-          />
+          {/* CPI Data Upload Options */}
+          <Card>
+            <CardHeader>
+              <CardTitle>CPI Data Management</CardTitle>
+              <CardDescription>
+                Upload and manage CPI data using Excel files for comprehensive inflation analysis
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="cpi-data" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="cpi-data">CPI Data Upload</TabsTrigger>
+                  <TabsTrigger value="core-cpi">Core CPI Upload</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="cpi-data" className="mt-6">
+                  <CPIDataManager onUploadComplete={fetchIndicatorData} />
+                </TabsContent>
+
+                <TabsContent value="core-cpi" className="mt-6">
+                  <CoreCPIUpload />
+                </TabsContent>
+              </Tabs>
+
+              {/* Current Data Display */}
+              <div className="mt-6 space-y-2">
+                <h4 className="text-sm font-medium">Current Data ({Math.min(seriesData.length, 10)} of {seriesData.length} entries shown)</h4>
+                <div className="max-h-60 overflow-y-auto border rounded-lg">
+                  {seriesData.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      No CPI data entries yet. Upload data using the tabs above.
+                    </div>
+                  ) : (
+                    <div className="space-y-1 p-2">
+                      {seriesData.slice(0, 10).map((entry: any, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded">
+                          <div className="flex items-center space-x-4">
+                            <span className="text-xs text-muted-foreground">{entry.period_date}</span>
+                            <span className="font-semibold">{entry.value}</span>
+                            {entry.period_label && (
+                              <span className="text-xs bg-secondary/10 text-secondary-foreground px-2 py-1 rounded">
+                                {entry.period_label}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="events" className="space-y-4">
@@ -320,3 +316,5 @@ export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
     </div>
   );
 };
+
+export default CPIInflationAdmin;

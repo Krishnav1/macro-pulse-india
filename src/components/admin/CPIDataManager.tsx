@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
 interface ExcelRow {
@@ -28,7 +29,7 @@ interface ValidationError {
   message: string;
 }
 
-export const CPIDataManager = () => {
+export const CPIDataManager = ({ onUploadComplete }: { onUploadComplete?: () => void }) => {
   const [file, setFile] = useState<File | null>(null);
   const [data, setData] = useState<ExcelRow[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
@@ -222,9 +223,18 @@ export const CPIDataManager = () => {
 
       setUploadProgress(100);
       setUploadStatus('success');
+      toast.success(`Successfully uploaded ${data.length} rows of CPI data!`);
+      
+      // Notify parent to refresh any dependent views (e.g., current data preview)
+      if (onUploadComplete) {
+        try {
+          onUploadComplete();
+        } catch {}
+      }
     } catch (error) {
       console.error('Upload error:', error);
       setUploadStatus('error');
+      toast.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setUploading(false);
     }
