@@ -10,7 +10,12 @@ const IndicatorGridCard = ({ indicator }: IndicatorGridCardProps) => {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
-    navigate(`/indicator/${indicator.id}`);
+    // Route CPI inflation to dedicated CPI page
+    if (indicator.id === 'cpi_inflation') {
+      navigate('/indicators/cpi');
+    } else {
+      navigate(`/indicator/${indicator.id}`);
+    }
   };
 
   const getTrendIcon = () => {

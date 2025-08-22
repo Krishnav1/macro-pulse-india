@@ -13,7 +13,7 @@ const Indicators = lazy(() => import("./pages/Indicators"));
 const Events = lazy(() => import("./pages/Events"));
 const About = lazy(() => import("./pages/About"));
 const Admin = lazy(() => import("./pages/Admin"));
-const CPIPage = lazy(() => import("./pages/CPIPage"));
+const CPIPage = lazy(() => import("./pages/indicators/cpi"));
 const CPIFullInsight = lazy(() => import("./pages/CPIFullInsight"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 

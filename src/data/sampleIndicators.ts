@@ -100,16 +100,6 @@ export const dashboardIndicators: IndicatorData[] = [
     source: 'MOSPI'
   },
   {
-    id: 'cpi_food_inflation',
-    name: '🍎 CPI Food Inflation',
-    value: '-1.76%',
-    change: -3.2,
-    category: 'Inflation',
-    sparklineData: generateSparklineData(-1.76, 0.2),
-    unit: 'YoY',
-    source: 'MOSPI'
-  },
-  {
     id: 'core_inflation',
     name: '🎯 Core Inflation',
     value: '2.30%',
