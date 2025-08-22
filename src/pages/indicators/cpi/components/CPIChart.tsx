@@ -1,28 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-
-// Mock data for CPI
-const mockCpiData = [
-  { date: '2024-01', inflation: 5.1 },
-  { date: '2023-12', inflation: 5.7 },
-  { date: '2023-11', inflation: 5.5 },
-  { date: '2023-10', inflation: 4.9 },
-  { date: '2023-09', inflation: 5.0 },
-  { date: '2023-08', inflation: 6.8 },
-  { date: '2023-07', inflation: 7.4 },
-  { date: '2023-06', inflation: 4.8 },
-  { date: '2023-05', inflation: 4.3 },
-  { date: '2023-04', inflation: 4.7 },
-];
-
-const mockEvents = [
-  { date: '2023-12', description: 'Food price surge due to supply disruptions', impact: 'high' },
-  { date: '2023-08', description: 'Monsoon impact on vegetable prices', impact: 'medium' },
-  { date: '2023-06', description: 'Base effect normalization', impact: 'low' },
-];
+import { useCpiSeries } from '@/hooks/useCpiSeries';
+import { format } from 'date-fns';
 
 interface CPIChartProps {
   timeframe: string;
@@ -37,16 +19,17 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
 
   const comparisonIndicators = [
     { id: 'wpi', name: 'WPI Inflation' },
-    { id: 'core_cpi', name: 'Core CPI' },
-    { id: 'food_cpi', name: 'Food CPI' },
-    { id: 'fuel_cpi', name: 'Fuel CPI' },
-    { id: 'housing_cpi', name: 'Housing CPI' },
-    { id: 'transport_cpi', name: 'Transport CPI' }
+    { id: 'core', name: 'Core CPI' },
+    { id: 'food', name: 'Food CPI' },
+    { id: 'fuel', name: 'Fuel CPI' },
+    { id: 'housing', name: 'Housing CPI' },
+    { id: 'transport', name: 'Transport CPI' }
   ];
 
-  const getFilteredData = () => {
+  // Calculate date range based on timeframe
+  const dateRange = useMemo(() => {
     const now = new Date();
-    let startDate = new Date(0);
+    let startDate = new Date(2000, 0, 1); // Default to all data
     switch (timeframe) {
       case '1y':
         startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
@@ -57,10 +40,78 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
       case '10y':
         startDate = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
         break;
-      default:
-        break;
     }
-    return mockCpiData.filter(d => new Date(d.date) >= startDate);
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: now.toISOString().split('T')[0]
+    };
+  }, [timeframe]);
+
+  // Get selected comparison series
+  const selectedComparisons = useMemo(() => {
+    return ['headline', ...visibleComparisons.map(c => c.id)];
+  }, [comparisonScrollIndex]);
+
+  // Fetch CPI data from Supabase
+  const { data: cpiData, loading } = useCpiSeries({
+    geography,
+    seriesCodes: selectedComparisons,
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate
+  });
+
+  // Transform data for chart
+  const chartData = useMemo(() => {
+    if (!cpiData.length) return [];
+    
+    // Group data by date
+    const dataByDate = new Map();
+    
+    cpiData.forEach(item => {
+      const dateKey = item.date;
+      if (!dataByDate.has(dateKey)) {
+        dataByDate.set(dateKey, { date: dateKey });
+      }
+      
+      const entry = dataByDate.get(dateKey);
+      const value = dataType === 'index' ? item.index_value : (item.inflation_yoy || item.inflation_mom || 0);
+      
+      if (item.series_code === 'headline') {
+        entry.value = value;
+      } else {
+        entry[item.series_code] = value;
+      }
+    });
+    
+    return Array.from(dataByDate.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [cpiData, dataType]);
+
+  // Custom tick formatter to show years only
+  const formatXAxisTick = (tickItem: string, index: number) => {
+    const date = new Date(tickItem);
+    const year = date.getFullYear();
+    
+    // Show year only if it's January or first occurrence of the year
+    if (index === 0 || date.getMonth() === 0) {
+      return year.toString();
+    }
+    
+    return '';
+  };
+
+  // Custom tooltip formatter
+  const formatTooltip = (value: any, name: string, props: any) => {
+    const date = new Date(props.payload.date);
+    const monthYear = format(date, 'MMM yyyy');
+    const unit = dataType === 'index' ? '' : '%';
+    const formattedValue = typeof value === 'number' ? value.toFixed(2) : value;
+    
+    return [`${formattedValue}${unit}`, name === 'value' ? 'CPI' : name];
+  };
+
+  const customTooltipLabel = (label: string) => {
+    const date = new Date(label);
+    return format(date, 'MMM yyyy');
   };
 
   const scrollComparisons = (direction: 'left' | 'right') => {
@@ -72,7 +123,6 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
     }
   };
 
-  const chartData = getFilteredData();
   const visibleComparisons = comparisonIndicators.slice(comparisonScrollIndex, comparisonScrollIndex + 4);
 
   return (
@@ -114,49 +164,63 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
       </CardHeader>
       <CardContent>
         <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="date" 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-              />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                unit="%"
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
-                }}
-                formatter={(value) => [`${value}%`, 'CPI Inflation']}
-              />
-              
-              {/* Event markers */}
-              {mockEvents.map((event, index) => (
-                <ReferenceLine 
-                  key={index}
-                  x={event.date} 
-                  stroke="hsl(var(--destructive))"
-                  strokeDasharray="2 2"
-                  label={{ value: event.description.substring(0, 15) + "...", position: 'top' }}
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-muted-foreground">Loading CPI data...</div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  tickFormatter={formatXAxisTick}
+                  interval="preserveStartEnd"
                 />
-              ))}
-              
-              <Line 
-                type="monotone" 
-                dataKey="inflation"
-                stroke="hsl(var(--primary))" 
-                strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  unit={dataType === 'index' ? '' : '%'}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                  formatter={formatTooltip}
+                  labelFormatter={customTooltipLabel}
+                />
+                
+                {/* Main CPI Line */}
+                <Line 
+                  type="monotone" 
+                  dataKey="value"
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 6 }}
+                  name="CPI"
+                />
+                
+                {/* Comparison Lines */}
+                {visibleComparisons.slice(1).map((comparison, index) => (
+                  <Line 
+                    key={comparison.id}
+                    type="monotone" 
+                    dataKey={comparison.id}
+                    stroke={`hsl(${200 + index * 40}, 70%, 50%)`}
+                    strokeWidth={2}
+                    dot={false}
+                    strokeDasharray="3 3"
+                    name={comparison.name}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
         
         {/* Geography and Compare Options */}

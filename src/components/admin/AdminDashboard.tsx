@@ -5,9 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, User, BarChart3, Upload, Calendar, Lightbulb } from 'lucide-react';
 import { IndicatorManagement } from './IndicatorManagement';
-import { CPIDataUpload } from './CPIDataUpload';
-import { CPIEventsForm } from './CPIEventsForm';
-import { CPIInsightsForm } from './CPIInsightsForm';
+import { CPIDataManager } from './CPIDataManager';
+import { CoreCPIUpload } from './CoreCPIUpload';
+import { CPIEventsManager } from './CPIEventsManager';
+import { CPIInsightsManager } from './CPIInsightsManager';
 
 export const AdminDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -63,15 +64,18 @@ export const AdminDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="cpi-data">
-          <CPIDataUpload />
+          <div className="space-y-6">
+            <CPIDataManager />
+            <CoreCPIUpload />
+          </div>
         </TabsContent>
 
         <TabsContent value="cpi-events">
-          <CPIEventsForm />
+          <CPIEventsManager />
         </TabsContent>
 
         <TabsContent value="cpi-insights">
-          <CPIInsightsForm />
+          <CPIInsightsManager />
         </TabsContent>
       </Tabs>
     </div>

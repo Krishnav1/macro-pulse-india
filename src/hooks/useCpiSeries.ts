@@ -5,6 +5,7 @@ export interface CpiSeriesData {
   id: string;
   date: string;
   geography: 'rural' | 'urban' | 'combined';
+  series_code: string;
   index_value: number;
   inflation_yoy: number | null;
   inflation_mom: number | null;
@@ -13,6 +14,7 @@ export interface CpiSeriesData {
 
 interface UseCpiSeriesParams {
   geography?: 'rural' | 'urban' | 'combined';
+  seriesCodes?: string[];
   startDate?: string;
   endDate?: string;
 }
@@ -22,16 +24,17 @@ export const useCpiSeries = (params: UseCpiSeriesParams = {}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { geography = 'combined', startDate, endDate } = params;
+  const { geography = 'combined', seriesCodes = ['headline'], startDate, endDate } = params;
 
   useEffect(() => {
     const fetchCpiSeries = async () => {
       try {
         setLoading(true);
         let query = supabase
-          .from('cpi_series')
+          .from('cpi_series' as any)
           .select('*')
           .eq('geography', geography)
+          .in('series_code', seriesCodes)
           .order('date', { ascending: true });
 
         if (startDate) {
@@ -47,7 +50,7 @@ export const useCpiSeries = (params: UseCpiSeriesParams = {}) => {
           console.error('Error fetching CPI series:', error);
           setError(error.message);
         } else {
-          setData(seriesData || []);
+          setData(seriesData as CpiSeriesData[] || []);
         }
       } catch (err) {
         console.error('Error fetching CPI series:', err);
@@ -58,7 +61,7 @@ export const useCpiSeries = (params: UseCpiSeriesParams = {}) => {
     };
 
     fetchCpiSeries();
-  }, [geography, startDate, endDate]);
+  }, [geography, seriesCodes, startDate, endDate]);
 
   return { data, loading, error };
 };
