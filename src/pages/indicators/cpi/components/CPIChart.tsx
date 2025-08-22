@@ -9,13 +9,15 @@ import { format } from 'date-fns';
 interface CPIChartProps {
   timeframe: string;
   setTimeframe: (timeframe: string) => void;
-  geography: 'rural' | 'urban' | 'combined';
-  setGeography: (geography: 'rural' | 'urban' | 'combined') => void;
+  geography: ('rural' | 'urban' | 'combined')[];
+  setGeography: (geography: ('rural' | 'urban' | 'combined')[]) => void;
 }
 
 export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: CPIChartProps) => {
   const [comparisonScrollIndex, setComparisonScrollIndex] = useState(0);
   const [dataType, setDataType] = useState<'index' | 'inflation'>('inflation');
+  const [selectedComparisons, setSelectedComparisons] = useState<string[]>([]);
+  const [showComparisonError, setShowComparisonError] = useState(false);
 
   const comparisonIndicators = [
     { id: 'wpi', name: 'WPI Inflation' },
@@ -47,21 +49,33 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
     };
   }, [timeframe]);
 
-  // Get selected comparison series (avoid referencing variables declared later)
-  const selectedComparisons = useMemo(() => {
-    const slice = comparisonIndicators.slice(comparisonScrollIndex, comparisonScrollIndex + 4);
-    return ['headline', ...slice.map(c => c.id)];
-  }, [comparisonScrollIndex]);
+  // Get all series codes for multi-geography fetch
+  const allSeriesCodes = useMemo(() => {
+    return ['headline', ...selectedComparisons];
+  }, [selectedComparisons]);
 
-  // Fetch CPI data from Supabase
-  const { data: cpiData, loading } = useCpiSeries({
-    geography,
-    seriesCodes: selectedComparisons,
+  // Fetch CPI data for all selected geographies
+  const fetchQueries = geography.map(geo => ({
+    geography: geo,
+    seriesCodes: allSeriesCodes,
     startDate: dateRange.startDate,
     endDate: dateRange.endDate
-  });
+  }));
 
-  // Transform data for chart
+  const { data: ruralData, loading: ruralLoading } = useCpiSeries(
+    geography.includes('rural') ? fetchQueries.find(q => q.geography === 'rural') : { geography: 'rural', seriesCodes: [], startDate: '', endDate: '' }
+  );
+  const { data: urbanData, loading: urbanLoading } = useCpiSeries(
+    geography.includes('urban') ? fetchQueries.find(q => q.geography === 'urban') : { geography: 'urban', seriesCodes: [], startDate: '', endDate: '' }
+  );
+  const { data: combinedData, loading: combinedLoading } = useCpiSeries(
+    geography.includes('combined') ? fetchQueries.find(q => q.geography === 'combined') : { geography: 'combined', seriesCodes: [], startDate: '', endDate: '' }
+  );
+
+  const loading = ruralLoading || urbanLoading || combinedLoading;
+  const cpiData = [...(ruralData || []), ...(urbanData || []), ...(combinedData || [])];
+
+  // Transform data for chart with geography separation
   const chartData = useMemo(() => {
     if (!cpiData.length) return [];
     
@@ -77,11 +91,11 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
       const entry = dataByDate.get(dateKey);
       const value = dataType === 'index' ? item.index_value : (item.inflation_yoy || item.inflation_mom || 0);
       
-      if (item.series_code === 'headline') {
-        entry.value = value;
-      } else {
-        entry[item.series_code] = value;
-      }
+      // Create keys with geography suffix for multi-geography display
+      const keyPrefix = item.series_code === 'headline' ? 'cpi' : item.series_code;
+      const geoKey = `${keyPrefix}_${item.geography}`;
+      
+      entry[geoKey] = value;
     });
     
     return Array.from(dataByDate.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -92,8 +106,8 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
     const date = new Date(tickItem);
     const year = date.getFullYear();
     
-    // Show year only if it's January or first occurrence of the year
-    if (index === 0 || date.getMonth() === 0) {
+    // Show year for January dates and every few ticks
+    if (date.getMonth() === 0 || index % 12 === 0) {
       return year.toString();
     }
     
@@ -125,6 +139,86 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
   };
 
   const visibleComparisons = comparisonIndicators.slice(comparisonScrollIndex, comparisonScrollIndex + 4);
+
+  // Toggle comparison selection
+  const toggleComparison = (comparisonId: string) => {
+    if (geography.length > 1 && selectedComparisons.length === 0) {
+      setShowComparisonError(true);
+      setTimeout(() => setShowComparisonError(false), 3000);
+      return;
+    }
+    
+    setSelectedComparisons(prev => 
+      prev.includes(comparisonId) 
+        ? prev.filter(id => id !== comparisonId)
+        : [...prev, comparisonId]
+    );
+  };
+
+  // Toggle geography selection
+  const toggleGeography = (geo: 'rural' | 'urban' | 'combined') => {
+    if (selectedComparisons.length > 0 && geography.length === 1 && geography[0] !== geo) {
+      setShowComparisonError(true);
+      setTimeout(() => setShowComparisonError(false), 3000);
+      return;
+    }
+    
+    const newGeography = geography.includes(geo) 
+      ? geography.filter(g => g !== geo)
+      : [...geography, geo];
+    setGeography(newGeography);
+  };
+
+  // Geography colors
+  const geoColors = {
+    rural: '#22c55e',    // Green
+    urban: '#3b82f6',    // Blue  
+    combined: '#f59e0b'  // Orange
+  };
+
+  // Render lines for each geography and series combination
+  const renderLines = () => {
+    const lines = [];
+    
+    // Main CPI lines for each geography
+    geography.forEach((geo, geoIndex) => {
+      lines.push(
+        <Line 
+          key={`cpi_${geo}`}
+          type="monotone" 
+          dataKey={`cpi_${geo}`}
+          stroke={geoColors[geo]}
+          strokeWidth={3}
+          dot={false}
+          activeDot={{ r: 6 }}
+          name={`CPI ${geo.charAt(0).toUpperCase() + geo.slice(1)}`}
+        />
+      );
+    });
+    
+    // Comparison lines for each selected comparison and geography
+    selectedComparisons.forEach((comparison, compIndex) => {
+      geography.forEach((geo, geoIndex) => {
+        const color = geoColors[geo];
+        const opacity = 0.7;
+        lines.push(
+          <Line 
+            key={`${comparison}_${geo}`}
+            type="monotone" 
+            dataKey={`${comparison}_${geo}`}
+            stroke={color}
+            strokeWidth={2}
+            dot={false}
+            strokeDasharray="5 5"
+            strokeOpacity={opacity}
+            name={`${comparisonIndicators.find(c => c.id === comparison)?.name} ${geo.charAt(0).toUpperCase() + geo.slice(1)}`}
+          />
+        );
+      });
+    });
+    
+    return lines;
+  };
 
   return (
     <Card>
@@ -195,30 +289,8 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
                   labelFormatter={customTooltipLabel}
                 />
                 
-                {/* Main CPI Line */}
-                <Line 
-                  type="monotone" 
-                  dataKey="value"
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{ r: 6 }}
-                  name="CPI"
-                />
-                
-                {/* Comparison Lines */}
-                {visibleComparisons.slice(1).map((comparison, index) => (
-                  <Line 
-                    key={comparison.id}
-                    type="monotone" 
-                    dataKey={comparison.id}
-                    stroke={`hsl(${200 + index * 40}, 70%, 50%)`}
-                    strokeWidth={2}
-                    dot={false}
-                    strokeDasharray="3 3"
-                    name={comparison.name}
-                  />
-                ))}
+                {/* Dynamic Lines for Geography and Comparisons */}
+                {renderLines()}
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -227,28 +299,31 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
         {/* Geography and Compare Options */}
         <div className="mt-4 pt-4 border-t">
           <div className="flex items-center justify-between mb-4">
-            {/* Geography Toggle */}
+            {/* Geography Toggle - Multi-select */}
             <div className="flex items-center gap-3">
               <h4 className="text-sm font-medium text-muted-foreground">Geography:</h4>
               <div className="flex gap-2">
                 <Button
-                  variant={geography === 'rural' ? 'default' : 'outline'}
+                  variant={geography.includes('rural') ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setGeography('rural')}
+                  onClick={() => toggleGeography('rural')}
+                  style={geography.includes('rural') ? { backgroundColor: geoColors.rural, borderColor: geoColors.rural } : {}}
                 >
                   Rural
                 </Button>
                 <Button
-                  variant={geography === 'urban' ? 'default' : 'outline'}
+                  variant={geography.includes('urban') ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setGeography('urban')}
+                  onClick={() => toggleGeography('urban')}
+                  style={geography.includes('urban') ? { backgroundColor: geoColors.urban, borderColor: geoColors.urban } : {}}
                 >
                   Urban
                 </Button>
                 <Button
-                  variant={geography === 'combined' ? 'default' : 'outline'}
+                  variant={geography.includes('combined') ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setGeography('combined')}
+                  onClick={() => toggleGeography('combined')}
+                  style={geography.includes('combined') ? { backgroundColor: geoColors.combined, borderColor: geoColors.combined } : {}}
                 >
                   Combined
                 </Button>
@@ -281,19 +356,27 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
             </div>
           </div>
           
-          {/* Comparison Indicators */}
-          <div className="flex gap-2 justify-end">
+          {/* Comparison Indicators - Clickable */}
+          <div className="flex gap-2 justify-end flex-wrap">
             {visibleComparisons.map((comparison) => (
               <Button
                 key={comparison.id}
-                variant="outline"
+                variant={selectedComparisons.includes(comparison.id) ? 'default' : 'outline'}
                 size="sm"
                 className="text-xs h-8"
+                onClick={() => toggleComparison(comparison.id)}
               >
                 {comparison.name}
               </Button>
             ))}
           </div>
+          
+          {/* Error Message */}
+          {showComparisonError && (
+            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+              Cannot select multiple geographies when comparing different CPI categories. Please select only one geography for comparisons.
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

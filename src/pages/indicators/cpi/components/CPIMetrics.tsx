@@ -1,30 +1,30 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react';
-
-// Mock data for CPI metrics
-const mockLatestData = {
-  date: '2024-01',
-  inflation: 5.1,
-  index: 158.5,
-  momInflation: 0.8
-};
-
-const mockPreviousData = {
-  date: '2023-12',
-  inflation: 5.7,
-  index: 157.2,
-  momInflation: 0.5
-};
+import { useCpiSeries } from '@/hooks/useCpiSeries';
+import { format } from 'date-fns';
 
 interface CPIMetricsProps {
   geography: 'rural' | 'urban' | 'combined';
 }
 
 export const CPIMetrics = ({ geography }: CPIMetricsProps) => {
-  const latestData = mockLatestData;
-  const previousData = mockPreviousData;
-  const lastChange = latestData.inflation - previousData.inflation;
+  // Fetch latest CPI data for the selected geography
+  const { data: cpiData, loading } = useCpiSeries({
+    geography,
+    seriesCodes: ['headline'],
+    startDate: '2020-01-01',
+    endDate: new Date().toISOString().split('T')[0]
+  });
+
+  // Get latest and previous data points
+  const sortedData = cpiData?.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) || [];
+  const latestData = sortedData[0];
+  const previousData = sortedData[1];
+  
+  const lastChange = latestData && previousData ? 
+    (latestData.inflation_yoy || 0) - (previousData.inflation_yoy || 0) : 0;
 
   const getTrendIcon = () => {
     if (lastChange > 0) {
@@ -42,7 +42,7 @@ export const CPIMetrics = ({ geography }: CPIMetricsProps) => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-2xl flex items-center gap-2">
-              CPI Inflation
+              CPI {geography.charAt(0).toUpperCase() + geography.slice(1)}
               {getTrendIcon()}
             </CardTitle>
             <Badge variant="secondary" className="bg-orange-500/10 border-orange-500/20 border">
@@ -50,47 +50,59 @@ export const CPIMetrics = ({ geography }: CPIMetricsProps) => {
             </Badge>
           </div>
           <CardDescription>
-            Source: MOSPI | Last Updated: {new Date(latestData.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+            Source: MOSPI | Last Updated: {latestData ? format(new Date(latestData.date), 'dd MMMM yyyy') : 'Loading...'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="text-center p-3 bg-muted/30 rounded-lg">
-              <div className="text-2xl font-bold">
-                {latestData.inflation.toFixed(2)}%
+          {loading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-muted-foreground">Loading metrics...</div>
+            </div>
+          ) : latestData ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold">
+                  {(latestData.inflation_yoy || 0).toFixed(2)}%
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  YoY Inflation
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                YoY Inflation
+              
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className={`text-lg font-bold ${
+                  lastChange > 0 ? 'text-red-500' : lastChange < 0 ? 'text-green-500' : 'text-muted-foreground'
+                }`}>
+                  {lastChange > 0 ? '+' : ''}{lastChange.toFixed(2)}%
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Last Change
+                </div>
+              </div>
+              
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className="text-lg font-bold text-foreground">
+                  {(latestData.index_value || 0).toFixed(1)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  CPI Index
+                </div>
+              </div>
+              
+              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                <div className="text-lg font-bold text-foreground">
+                  {(latestData.inflation_mom || 0).toFixed(2)}%
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  MoM Inflation
+                </div>
               </div>
             </div>
-            
-            <div className="text-center p-3 bg-muted/30 rounded-lg">
-              <div className="text-lg font-bold text-muted-foreground">
-                {lastChange > 0 ? '+' : ''}{lastChange.toFixed(2)}%
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Last Change
-              </div>
+          ) : (
+            <div className="text-center p-8 text-muted-foreground">
+              No data available for {geography} geography
             </div>
-            
-            <div className="text-center p-3 bg-muted/30 rounded-lg">
-              <div className="text-lg font-bold text-foreground">
-                {latestData.index.toFixed(1)}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                CPI Index
-              </div>
-            </div>
-            
-            <div className="text-center p-3 bg-muted/30 rounded-lg">
-              <div className="text-lg font-bold text-foreground">
-                {latestData.momInflation.toFixed(2)}%
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                MoM Inflation
-              </div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 

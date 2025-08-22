@@ -8,7 +8,7 @@ import { CPIEvents } from './components/CPIEvents';
 const CPIPage = () => {
   const navigate = useNavigate();
   const [timeframe, setTimeframe] = useState('all');
-  const [geography, setGeography] = useState<'rural' | 'urban' | 'combined'>('combined');
+  const [geography, setGeography] = useState<('rural' | 'urban' | 'combined')[]>(['combined']);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
@@ -28,7 +28,7 @@ const CPIPage = () => {
 
           {/* Details Section */}
           <div className="space-y-4">
-            <CPIMetrics geography={geography} />
+            <CPIMetrics geography={geography[0] || 'combined'} />
             
             {/* View Full Insight Button */}
             <button 
@@ -43,7 +43,7 @@ const CPIPage = () => {
         {/* Economic Events & Insights */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CPIEvents timeframe={timeframe} />
-          <CPIInsights />
+          <CPIInsights geography={geography[0] || 'combined'} />
         </div>
       </div>
     </div>
