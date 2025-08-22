@@ -40,14 +40,10 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Admin Tabs */}
       <Tabs defaultValue="indicators" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="indicators" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Indicators
-          </TabsTrigger>
-          <TabsTrigger value="cpi-data" className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            CPI Data
           </TabsTrigger>
           <TabsTrigger value="cpi-events" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
@@ -61,12 +57,23 @@ export const AdminDashboard: React.FC = () => {
 
         <TabsContent value="indicators">
           <IndicatorManagement />
-        </TabsContent>
-
-        <TabsContent value="cpi-data">
-          <div className="space-y-6">
-            <CPIDataManager />
-            <CoreCPIUpload />
+          {/* CPI Uploads within Indicators tab (no separate tab) */}
+          <div className="mt-6 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5" />
+                  CPI Data Uploads
+                </CardTitle>
+                <CardDescription>
+                  Upload headline and components, or Core CPI, directly from here.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <CPIDataManager />
+                <CoreCPIUpload />
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
