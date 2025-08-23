@@ -20,12 +20,13 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
   const [showComparisonError, setShowComparisonError] = useState(false);
 
   const comparisonIndicators = [
-    { id: 'core', name: 'Core CPI' },
-    { id: 'food', name: 'Food CPI' },
-    { id: 'fuel', name: 'Fuel CPI' },
-    { id: 'housing', name: 'Housing CPI' },
-    { id: 'transport', name: 'Transport CPI' },
-    { id: 'clothing', name: 'Clothing CPI' }
+    { id: 'cfpi', name: 'Consumer Food Price Index' },
+    { id: 'A.1', name: 'Food and beverages' },
+    { id: 'A.2', name: 'Pan, tobacco and intoxicants' },
+    { id: 'A.3', name: 'Clothing and footwear' },
+    { id: 'A.4', name: 'Housing' },
+    { id: 'A.5', name: 'Fuel and light' },
+    { id: 'A.6', name: 'Miscellaneous' }
   ];
 
   // Calculate date range based on timeframe

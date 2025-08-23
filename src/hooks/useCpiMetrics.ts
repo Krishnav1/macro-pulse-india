@@ -30,12 +30,13 @@ export const useCpiMetrics = (geography: 'rural' | 'urban' | 'combined' = 'combi
     try {
       setMetrics(prev => ({ ...prev, loading: true, error: null }));
 
-      // Get latest CPI data for headline (General Index) from indicator_series
+      // Get latest CPI data for headline (General Index) from cpi_series
       const { data: latestData, error: latestError } = await supabase
-        .from('indicator_series')
+        .from('cpi_series' as any)
         .select('*')
-        .eq('indicator_slug', 'cpi-inflation')
-        .order('period_date', { ascending: false })
+        .eq('geography', geography)
+        .eq('series_code', 'headline')
+        .order('date', { ascending: false })
         .limit(2);
 
       if (latestError) throw latestError;
@@ -49,38 +50,39 @@ export const useCpiMetrics = (geography: 'rural' | 'urban' | 'combined' = 'combi
         return;
       }
 
-      const latest = latestData[0];
-      const previous = latestData[1];
+      const latest = latestData[0] as any;
+      const previous = latestData[1] as any;
 
       // Get data from 12 months ago for YoY calculation
-      const currentDate = new Date(latest.period_date);
+      const currentDate = new Date(latest.date);
       const yearAgoDate = new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1);
       const yearAgoDateStr = yearAgoDate.toISOString().split('T')[0];
 
       const { data: yearAgoData, error: yearAgoError } = await supabase
-        .from('indicator_series')
+        .from('cpi_series' as any)
         .select('*')
-        .eq('indicator_slug', 'cpi-inflation')
-        .eq('period_date', yearAgoDateStr)
+        .eq('geography', geography)
+        .eq('series_code', 'headline')
+        .eq('date', yearAgoDateStr)
         .single();
 
-      // Calculate metrics
-      const cpiIndex = latest.value;
-      const momInflation = previous ? 
-        ((latest.value - previous.value) / previous.value) * 100 : null;
+      // Calculate metrics using cpi_series structure
+      const cpiIndex = latest.index_value;
+      const momInflation = latest.inflation_mom || (previous ? 
+        ((latest.index_value - previous.index_value) / previous.index_value) * 100 : null);
       
-      const yoyInflation = yearAgoData && !yearAgoError ? 
-        ((latest.value - yearAgoData.value) / yearAgoData.value) * 100 : null;
+      const yoyInflation = latest.inflation_yoy || (yearAgoData && !yearAgoError ? 
+        ((latest.index_value - (yearAgoData as any).index_value) / (yearAgoData as any).index_value) * 100 : null);
 
       const lastChange = previous ? 
-        ((latest.value - previous.value) / previous.value) * 100 : null;
+        ((latest.index_value - previous.index_value) / previous.index_value) * 100 : null;
 
       setMetrics({
         yoyInflation: yoyInflation ? parseFloat(yoyInflation.toFixed(2)) : null,
         lastChange: lastChange ? parseFloat(lastChange.toFixed(2)) : null,
         cpiIndex: cpiIndex ? parseFloat(cpiIndex.toFixed(1)) : null,
         momInflation: momInflation ? parseFloat(momInflation.toFixed(2)) : null,
-        lastUpdated: latest.period_date,
+        lastUpdated: latest.date,
         loading: false,
         error: null
       });

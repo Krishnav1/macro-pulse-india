@@ -66,41 +66,70 @@ export const useCpiSeries = (params: UseCpiSeriesParams = {}) => {
     const fetchCpiSeries = async () => {
       try {
         setLoading(true);
-        let query = supabase
-          .from('cpi_series' as any)
-          .select('id,date,geography,series_code,index_value,inflation_yoy,inflation_mom,base_year')
-          .eq('geography', geography)
-          .in('series_code', sortedCodes)
-          .order('date', { ascending: true });
-
-        if (startDate) {
-          query = query.gte('date', startDate);
-        }
-        if (endDate) {
-          query = query.lte('date', endDate);
-        }
-
-        // Minimal retry/backoff for transient failures
-        let attempt = 0;
-        const maxAttempts = 3;
-        while (attempt < maxAttempts) {
-          const { data: seriesData, error } = await query;
-          if (!error) {
-            if (isStale) return; // Ignore outdated result
-            const clean = (seriesData as unknown as CpiSeriesData[]) || [];
-            cpiCache.set(cacheKey, clean);
-            setData(clean);
-            setError(null);
-            break;
+        
+        let allData: CpiSeriesData[] = [];
+        
+        // Fetch from cpi_series table for headline and cfpi
+        const seriesTableCodes = sortedCodes.filter(code => ['headline', 'cfpi'].includes(code));
+        if (seriesTableCodes.length > 0) {
+          let seriesQuery = supabase
+            .from('cpi_series' as any)
+            .select('id,date,geography,series_code,index_value,inflation_yoy,inflation_mom,base_year')
+            .eq('geography', geography)
+            .in('series_code', seriesTableCodes)
+            .order('date', { ascending: true });
+          
+          if (startDate) {
+            seriesQuery = seriesQuery.gte('date', startDate);
           }
-          attempt += 1;
-          if (attempt >= maxAttempts) {
-            console.error('Error fetching CPI series:', error);
-            setError(error.message);
-            break;
+          if (endDate) {
+            seriesQuery = seriesQuery.lte('date', endDate);
           }
-          // Exponential backoff: 250ms, 500ms
-          await sleep(250 * Math.pow(2, attempt - 1));
+
+          const { data: seriesData, error: seriesError } = await seriesQuery;
+          if (!seriesError && seriesData) {
+            allData = [...allData, ...(seriesData as unknown as CpiSeriesData[])];
+          }
+        }
+
+        // Fetch from cpi_components table for A.1, A.2, etc.
+        const componentCodes = sortedCodes.filter(code => code.startsWith('A.'));
+        if (componentCodes.length > 0) {
+          let componentQuery = supabase
+            .from('cpi_components' as any)
+            .select('id,date,geography,component_code,index_value,inflation_yoy')
+            .eq('geography', geography)
+            .in('component_code', componentCodes)
+            .order('date', { ascending: true });
+          
+          if (startDate) {
+            componentQuery = componentQuery.gte('date', startDate);
+          }
+          if (endDate) {
+            componentQuery = componentQuery.lte('date', endDate);
+          }
+
+          const { data: componentData, error: componentError } = await componentQuery;
+          if (!componentError && componentData) {
+            // Transform component data to match CpiSeriesData format
+            const transformedComponents = (componentData as any[]).map(item => ({
+              id: item.id,
+              date: item.date,
+              geography: item.geography,
+              series_code: item.component_code,
+              index_value: item.index_value,
+              inflation_yoy: item.inflation_yoy,
+              inflation_mom: null,
+              base_year: '2012=100'
+            }));
+            allData = [...allData, ...transformedComponents];
+          }
+        }
+
+        if (!isStale) {
+          cpiCache.set(cacheKey, allData);
+          setData(allData);
+          setError(null);
         }
       } catch (err) {
         console.error('Error fetching CPI series:', err);

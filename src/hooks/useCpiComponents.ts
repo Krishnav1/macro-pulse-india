@@ -24,27 +24,48 @@ export const useCpiComponents = (params: UseCpiComponentsParams = {}) => {
         setLoading(true);
         
         // Get latest data for main CPI components
-        const componentCodes = ['A.1', 'A.2', 'A.3', 'A.4', 'A.5', 'A.6', 'cfpi'];
+        const componentCodes = ['A.1', 'A.2', 'A.3', 'A.4', 'A.5', 'A.6'];
         const componentNames = {
           'A.1': 'Food and beverages',
           'A.2': 'Pan, tobacco and intoxicants',
           'A.3': 'Clothing and footwear', 
           'A.4': 'Housing',
           'A.5': 'Fuel and light',
-          'A.6': 'Miscellaneous',
-          'cfpi': 'Consumer Food Price Index'
+          'A.6': 'Miscellaneous'
         };
 
         const componentData: CpiComponentBreakdown[] = [];
 
+        // First, get CFPI data from cpi_series table
+        const { data: cfpiData, error: cfpiError } = await supabase
+          .from('cpi_series' as any)
+          .select('*')
+          .eq('geography', geography)
+          .eq('series_code', 'cfpi')
+          .order('date', { ascending: false })
+          .limit(2);
+
+        if (!cfpiError && cfpiData && cfpiData.length > 0) {
+          const latest = cfpiData[0] as any;
+          const previous = cfpiData[1] as any;
+          const yoyInflation = latest.inflation_yoy || (previous ? 
+            ((latest.index_value - previous.index_value) / previous.index_value) * 100 : null);
+
+          componentData.push({
+            component_name: 'Consumer Food Price Index',
+            latest_value: latest.index_value,
+            yoy_inflation: yoyInflation
+          });
+        }
+
+        // Then get component data from cpi_components table
         for (const code of componentCodes) {
-          // Get latest data for this component
           const { data: latestData, error } = await supabase
-            .from('indicator_series')
+            .from('cpi_components' as any)
             .select('*')
-            .eq('indicator_slug', 'cpi-inflation')
-            .eq('period_label', code)
-            .order('period_date', { ascending: false })
+            .eq('geography', geography)
+            .eq('component_code', code)
+            .order('date', { ascending: false })
             .limit(2);
 
           if (error) {
@@ -53,16 +74,15 @@ export const useCpiComponents = (params: UseCpiComponentsParams = {}) => {
           }
 
           if (latestData && latestData.length > 0) {
-            const latest = latestData[0];
-            const previous = latestData[1];
+            const latest = latestData[0] as any;
+            const previous = latestData[1] as any;
             
-            // Calculate YoY inflation if we have previous data
-            const yoyInflation = previous ? 
-              ((latest.value - previous.value) / previous.value) * 100 : null;
+            const yoyInflation = latest.inflation_yoy || (previous ? 
+              ((latest.index_value - previous.index_value) / previous.index_value) * 100 : null);
 
             componentData.push({
               component_name: componentNames[code as keyof typeof componentNames],
-              latest_value: latest.value,
+              latest_value: latest.index_value,
               yoy_inflation: yoyInflation
             });
           }
