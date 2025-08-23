@@ -123,21 +123,39 @@ export const CPIDataManager = ({ onUploadComplete }: { onUploadComplete?: () => 
   };
 
   const categorizeComponent = (description: string) => {
+    // Only process main categories, exclude subcategories like A.1.1, A.1.2, etc.
     if (description.includes('A) General Index')) {
-      return { type: 'series', code: 'headline' };
+      return { type: 'series', code: 'headline', name: 'General Index' };
     }
     if (description.includes('B) Consumer Food Price Index')) {
-      return { type: 'series', code: 'cfpi' };
+      return { type: 'series', code: 'cfpi', name: 'Consumer Food Price Index' };
     }
-    if (description.match(/^A\.\d+/)) {
-      const match = description.match(/^(A\.\d+(?:\.\d+)?)/);
-      return { 
-        type: 'component', 
-        code: match ? match[1] : description.substring(0, 10),
-        name: description
+    
+    // Only accept main A.X categories (A.1, A.2, etc.), not subcategories (A.1.1, A.1.2)
+    const mainCategoryMatch = description.match(/^(A\.\d+)\s/);
+    if (mainCategoryMatch && !description.match(/^A\.\d+\.\d+/)) {
+      const code = mainCategoryMatch[1];
+      
+      // Map to specific allowed categories
+      const allowedCategories = {
+        'A.1': 'Food and beverages',
+        'A.2': 'Pan, tobacco and intoxicants', 
+        'A.3': 'Clothing and footwear',
+        'A.4': 'Housing',
+        'A.5': 'Fuel and light',
+        'A.6': 'Miscellaneous'
       };
+      
+      if (allowedCategories[code as keyof typeof allowedCategories]) {
+        return { 
+          type: 'component', 
+          code: code,
+          name: allowedCategories[code as keyof typeof allowedCategories]
+        };
+      }
     }
-    return null;
+    
+    return null; // Skip all other categories including subcategories
   };
 
   const uploadToSupabase = async () => {

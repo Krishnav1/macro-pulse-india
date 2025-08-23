@@ -1,60 +1,74 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface CpiComponentData {
-  id: string;
-  date: string;
-  geography: 'rural' | 'urban' | 'combined';
-  component_code: string;
+export interface CpiComponentBreakdown {
   component_name: string;
-  index_value: number;
-  weight: number | null;
-  inflation_yoy: number | null;
-  contribution_to_inflation: number | null;
+  latest_value: number | null;
+  yoy_inflation: number | null;
 }
 
 interface UseCpiComponentsParams {
   geography?: 'rural' | 'urban' | 'combined';
-  startDate?: string;
-  endDate?: string;
-  componentCodes?: string[];
 }
 
 export const useCpiComponents = (params: UseCpiComponentsParams = {}) => {
-  const [data, setData] = useState<CpiComponentData[]>([]);
+  const [data, setData] = useState<CpiComponentBreakdown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { geography = 'combined', startDate, endDate, componentCodes } = params;
+  const { geography = 'combined' } = params;
 
   useEffect(() => {
     const fetchCpiComponents = async () => {
       try {
         setLoading(true);
-        let query = supabase
-          .from('cpi_components')
-          .select('*')
-          .eq('geography', geography)
-          .order('date', { ascending: true });
+        
+        // Get latest data for main CPI components
+        const componentCodes = ['A.1', 'A.2', 'A.3', 'A.4', 'A.5', 'A.6', 'cfpi'];
+        const componentNames = {
+          'A.1': 'Food and beverages',
+          'A.2': 'Pan, tobacco and intoxicants',
+          'A.3': 'Clothing and footwear', 
+          'A.4': 'Housing',
+          'A.5': 'Fuel and light',
+          'A.6': 'Miscellaneous',
+          'cfpi': 'Consumer Food Price Index'
+        };
 
-        if (startDate) {
-          query = query.gte('date', startDate);
-        }
-        if (endDate) {
-          query = query.lte('date', endDate);
-        }
-        if (componentCodes && componentCodes.length > 0) {
-          query = query.in('component_code', componentCodes);
+        const componentData: CpiComponentBreakdown[] = [];
+
+        for (const code of componentCodes) {
+          // Get latest data for this component
+          const { data: latestData, error } = await supabase
+            .from('indicator_series')
+            .select('*')
+            .eq('indicator_slug', 'cpi-inflation')
+            .eq('period_label', code)
+            .order('period_date', { ascending: false })
+            .limit(2);
+
+          if (error) {
+            console.error(`Error fetching component ${code}:`, error);
+            continue;
+          }
+
+          if (latestData && latestData.length > 0) {
+            const latest = latestData[0];
+            const previous = latestData[1];
+            
+            // Calculate YoY inflation if we have previous data
+            const yoyInflation = previous ? 
+              ((latest.value - previous.value) / previous.value) * 100 : null;
+
+            componentData.push({
+              component_name: componentNames[code as keyof typeof componentNames],
+              latest_value: latest.value,
+              yoy_inflation: yoyInflation
+            });
+          }
         }
 
-        const { data: componentsData, error } = await query;
-
-        if (error) {
-          console.error('Error fetching CPI components:', error);
-          setError(error.message);
-        } else {
-          setData(componentsData || []);
-        }
+        setData(componentData);
       } catch (err) {
         console.error('Error fetching CPI components:', err);
         setError('Failed to fetch CPI components data');
@@ -64,7 +78,7 @@ export const useCpiComponents = (params: UseCpiComponentsParams = {}) => {
     };
 
     fetchCpiComponents();
-  }, [geography, startDate, endDate, componentCodes?.join(',')]);
+  }, [geography]);
 
   return { data, loading, error };
 };
