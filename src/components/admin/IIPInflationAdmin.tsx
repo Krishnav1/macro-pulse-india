@@ -166,8 +166,17 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
       const generalIdx = Number(row[1]);
       const seriesEntry: any = { date };
       if (!isNaN(generalIdx)) {
-        if (kind === 'index') seriesEntry.index_value = generalIdx;
-        if (kind === 'growth') seriesEntry.growth_yoy = generalIdx;
+        if (kind === 'index') {
+          seriesEntry.index_value = generalIdx;
+          seriesEntry.growth_yoy = null; // Ensure growth_yoy is explicitly null for index uploads
+        }
+        if (kind === 'growth') {
+          seriesEntry.growth_yoy = generalIdx;
+          seriesEntry.index_value = 100; // Default base index value when uploading growth data
+        }
+      } else {
+        // Skip rows with invalid general index
+        continue;
       }
       seriesUpserts.push(seriesEntry);
 
@@ -186,8 +195,14 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
         };
         if (!isNaN(weight)) comp.weight = weight;
         if (!isNaN(val)) {
-          if (kind === 'index') comp.index_value = val;
-          if (kind === 'growth') comp.growth_yoy = val;
+          if (kind === 'index') {
+            comp.index_value = val;
+            comp.growth_yoy = null;
+          }
+          if (kind === 'growth') {
+            comp.growth_yoy = val;
+            comp.index_value = null; // Components can have null index_value
+          }
         }
         componentsUpserts.push(comp);
       }
@@ -334,70 +349,170 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="upload" className="w-full">
+      <Tabs defaultValue="data" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="upload">Data Upload</TabsTrigger>
+          <TabsTrigger value="data">Data Upload</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
           <TabsTrigger value="comparisons">Comparisons</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="upload" className="space-y-4">
+        <TabsContent value="data" className="space-y-4">
+        <div className="space-y-6">
+          {/* Upload Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Excel Upload Templates</CardTitle>
+              <CardTitle>Data Management</CardTitle>
               <CardDescription>
-                Download templates and upload your IIP data
+                Upload and manage IIP data files
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>IIP Growth Data</Label>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => window.open('/templates/iip_growth_template.csv', '_blank')}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Template
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Index Data Upload */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="index-upload" className="text-base font-medium">
+                      Index Data Upload
+                    </Label>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href="/templates/iip_index_template.csv" download>
+                        <Download className="h-4 w-4 mr-2" />
+                        Template
+                      </a>
                     </Button>
-                    <div className="relative">
-                      <Input
-                        type="file"
-                        accept=".xlsx,.xls,.csv"
-                        onChange={(e) => handleExcelUpload(e, 'growth')}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                      />
-                      <Button variant="outline" size="sm">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload Data
-                      </Button>
+                  </div>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <Input
+                      id="index-upload"
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      onChange={(e) => handleExcelUpload(e, 'index')}
+                      className="hidden"
+                      disabled={loading}
+                    />
+                    <Label htmlFor="index-upload" className="cursor-pointer">
+                      <div className="text-sm text-gray-600">
+                        Click to upload Index data or drag and drop
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        CSV, XLSX files supported
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    <strong>Recent data:</strong> {seriesData.length > 0 ? `${seriesData.length} records` : 'No data uploaded'}
+                  </div>
+                </div>
+
+                {/* Growth Data Upload */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="growth-upload" className="text-base font-medium">
+                      Growth Data Upload
+                    </Label>
+                    <Button variant="outline" size="sm" asChild>
+                      <a href="/templates/iip_growth_template.csv" download>
+                        <Download className="h-4 w-4 mr-2" />
+                        Template
+                      </a>
+                    </Button>
+                  </div>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <Input
+                      id="growth-upload"
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      onChange={(e) => handleExcelUpload(e, 'growth')}
+                      className="hidden"
+                      disabled={loading}
+                    />
+                    <Label htmlFor="growth-upload" className="cursor-pointer">
+                      <div className="text-sm text-gray-600">
+                        Click to upload Growth data or drag and drop
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        CSV, XLSX files supported
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    <strong>Recent data:</strong> {seriesData.length > 0 ? `${seriesData.length} records` : 'No data uploaded'}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Data Preview Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Data Preview</CardTitle>
+              <CardDescription>
+                Recent 10 entries from Supabase to verify uploads
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Series Data Preview */}
+                <div>
+                  <h4 className="font-medium mb-2">IIP Series Data</h4>
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-2 border-b">
+                      <div className="grid grid-cols-4 gap-4 text-sm font-medium">
+                        <div>Date</div>
+                        <div>Index Value</div>
+                        <div>Growth YoY</div>
+                        <div>Base Year</div>
+                      </div>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {seriesData.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-gray-500">
+                          No series data found. Upload data to see entries here.
+                        </div>
+                      ) : (
+                        seriesData.slice(0, 10).map((item: any, index) => (
+                          <div key={index} className="px-4 py-2 border-b last:border-b-0">
+                            <div className="grid grid-cols-4 gap-4 text-sm">
+                              <div>{item.date}</div>
+                              <div>{item.index_value || 'N/A'}</div>
+                              <div>{item.growth_yoy ? `${item.growth_yoy}%` : 'N/A'}</div>
+                              <div>{item.base_year || '2011-12=100'}</div>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label>IIP Index Data</Label>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => window.open('/templates/iip_index_template.csv', '_blank')}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Template
-                    </Button>
-                    <div className="relative">
-                      <Input
-                        type="file"
-                        accept=".xlsx,.xls,.csv"
-                        onChange={(e) => handleExcelUpload(e, 'index')}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                      />
-                      <Button variant="outline" size="sm">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Upload Data
-                      </Button>
+
+                {/* Components Data Preview */}
+                <div>
+                  <h4 className="font-medium mb-2">IIP Components Data (Sample)</h4>
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 px-4 py-2 border-b">
+                      <div className="grid grid-cols-5 gap-4 text-sm font-medium">
+                        <div>Date</div>
+                        <div>Component</div>
+                        <div>Classification</div>
+                        <div>Index Value</div>
+                        <div>Growth YoY</div>
+                      </div>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      <div className="px-4 py-8 text-center text-gray-500">
+                        Components data preview - {seriesData.length > 0 ? 'Data uploaded' : 'No data uploaded yet'}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
+        </div>
         </TabsContent>
 
         <TabsContent value="events">

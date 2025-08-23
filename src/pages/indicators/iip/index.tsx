@@ -6,7 +6,7 @@ import { IIPEvents } from './components/IIPEvents';
 
 const IIPPage = () => {
   const [timeframe, setTimeframe] = useState('all');
-  const [compareWith, setCompareWith] = useState<'none' | 'sectoral' | 'use_based'>('none');
+  const [compareWith, setCompareWith] = useState<'none' | 'sectoral' | 'use_based'>('sectoral');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">

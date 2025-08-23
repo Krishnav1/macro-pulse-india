@@ -227,7 +227,7 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
         
         {/* Classification and Compare Options - More space */}
         <div className="mt-6 pt-4 border-t space-y-4">
-          {/* Classification Toggle */}
+          {/* Classification Toggle - Default to Sectoral like CPI */}
           <div className="flex items-center justify-center gap-3">
             <h4 className="text-sm font-medium text-muted-foreground">Classification:</h4>
             <div className="flex gap-2">
