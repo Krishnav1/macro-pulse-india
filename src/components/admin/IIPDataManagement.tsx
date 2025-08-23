@@ -232,11 +232,11 @@ export const IIPDataManagement: React.FC<IIPDataManagementProps> = ({
     }
   };
 
-  const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'series' | 'components') => {
+  const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'growth' | 'index') => {
     const file = event.target.files?.[0];
     if (file) {
-      toast.info(`Excel upload for ${type} will be implemented`);
-      // TODO: Implement Excel parsing and upload
+      toast.info(`Excel upload for ${type} data will be implemented`);
+      // TODO: Implement Excel parsing and upload for growth/index data
     }
   };
 
@@ -282,50 +282,50 @@ export const IIPDataManagement: React.FC<IIPDataManagementProps> = ({
         <CardHeader>
           <CardTitle>Excel Upload Templates</CardTitle>
           <CardDescription>
-            Download templates and upload your IIP data
+            Download templates and upload your IIP data (Growth and Index files)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>IIP Series Data (Index & Growth)</Label>
+              <Label>IIP Growth Data (YoY Growth Rates)</Label>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => window.open('/templates/iip_growth_template.csv', '_blank')}>
                   <Download className="h-4 w-4 mr-2" />
-                  Download Template
+                  Download Growth Template
                 </Button>
                 <div className="relative">
                   <Input
                     type="file"
-                    accept=".xlsx,.xls"
-                    onChange={(e) => handleExcelUpload(e, 'series')}
+                    accept=".xlsx,.xls,.csv"
+                    onChange={(e) => handleExcelUpload(e, 'growth')}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                   <Button variant="outline" size="sm">
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload Data
+                    Upload Growth Data
                   </Button>
                 </div>
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label>IIP Components Data (Sectoral & Use-based)</Label>
+              <Label>IIP Index Data (Index Values)</Label>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => window.open('/templates/iip_index_template.csv', '_blank')}>
                   <Download className="h-4 w-4 mr-2" />
-                  Download Template
+                  Download Index Template
                 </Button>
                 <div className="relative">
                   <Input
                     type="file"
-                    accept=".xlsx,.xls"
-                    onChange={(e) => handleExcelUpload(e, 'components')}
+                    accept=".xlsx,.xls,.csv"
+                    onChange={(e) => handleExcelUpload(e, 'index')}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                   <Button variant="outline" size="sm">
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload Data
+                    Upload Index Data
                   </Button>
                 </div>
               </div>
