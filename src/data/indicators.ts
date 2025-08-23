@@ -180,6 +180,43 @@ export const economicIndicators: IndicatorData[] = [
     ]
   },
   {
+    id: 'industrial-production-growth',
+    name: 'Industrial Production Growth',
+    category: 'Growth',
+    value: 3.8,
+    unit: '%',
+    change: 0.6,
+    changePercent: 18.8,
+    lastUpdated: '2024-03-12',
+    description: 'Index of Industrial Production (IIP) growth rate measuring industrial sector performance',
+    source: 'Ministry of Statistics and Programme Implementation (MoSPI)',
+    sparklineData: [2.2, 2.8, 3.1, 3.4, 3.2, 3.8],
+    historicalData: [
+      { date: '2020-01', value: 2.1 },
+      { date: '2020-04', value: -57.3 },
+      { date: '2020-07', value: -10.4 },
+      { date: '2020-10', value: 3.6 },
+      { date: '2021-01', value: -0.9 },
+      { date: '2021-04', value: 134.4 },
+      { date: '2021-07', value: 11.5 },
+      { date: '2021-10', value: 1.4 },
+      { date: '2022-01', value: 1.3 },
+      { date: '2022-04', value: 7.1 },
+      { date: '2022-07', value: 2.4 },
+      { date: '2022-10', value: 4.2 },
+      { date: '2023-01', value: 5.2 },
+      { date: '2023-04', value: 4.2 },
+      { date: '2023-07', value: 5.7 },
+      { date: '2023-10', value: 2.4 },
+      { date: '2024-01', value: 3.8 }
+    ],
+    events: [
+      { date: '2020-03-25', event: 'COVID-19 Industrial Shutdown', impact: 'high' },
+      { date: '2021-04-01', event: 'Manufacturing Recovery Begins', impact: 'medium' },
+      { date: '2022-02-24', event: 'Supply Chain Disruptions', impact: 'medium' }
+    ]
+  },
+  {
     id: 'fii-flows',
     name: 'FII Net Flows',
     category: 'External',

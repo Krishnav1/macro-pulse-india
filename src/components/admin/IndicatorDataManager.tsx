@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import DataManagement from './DataManagement';
 import CPIDataManagement from './CPIDataManagement';
 import CPIInflationAdmin from './CPIInflationAdmin';
+import { IIPDataManagement } from './IIPDataManagement';
 import EventsManagement from './EventsManagement';
 import InsightsManagement from './InsightsManagement';
 import ComparisonsManagement from './ComparisonsManagement';
@@ -231,11 +232,21 @@ export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
     return <div className="text-center py-8">Loading indicator data...</div>;
   }
 
-  // Use specialized CPI admin page for CPI Inflation indicator
+  // Use specialized admin pages for specific indicators
   const normalizedSlug = (indicator.slug || '').replace(/_/g, '-');
   if (normalizedSlug === 'cpi-inflation') {
     return (
       <CPIInflationAdmin
+        indicator={indicator}
+        onBack={onBack}
+        onEditIndicator={onEditIndicator}
+      />
+    );
+  }
+
+  if (normalizedSlug === 'iip' || normalizedSlug === 'industrial-production-growth') {
+    return (
+      <IIPDataManagement
         indicator={indicator}
         onBack={onBack}
         onEditIndicator={onEditIndicator}

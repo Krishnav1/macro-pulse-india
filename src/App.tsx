@@ -15,6 +15,7 @@ const About = lazy(() => import("./pages/About"));
 const Admin = lazy(() => import("./pages/Admin"));
 const CPIPage = lazy(() => import("./pages/indicators/cpi"));
 const CPIFullInsight = lazy(() => import("./pages/CPIFullInsight"));
+const IIPIndicator = lazy(() => import("./pages/IIPIndicator"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/indicators" element={<Indicators />} />
               <Route path="/indicators/cpi" element={<CPIPage />} />
               <Route path="/indicators/cpi/insights" element={<CPIFullInsight />} />
+              <Route path="/indicators/iip" element={<IIPIndicator />} />
               <Route path="/indicator/:id" element={<IndicatorRouter />} />
               <Route path="/events" element={<Events />} />
               <Route path="/about" element={<About />} />

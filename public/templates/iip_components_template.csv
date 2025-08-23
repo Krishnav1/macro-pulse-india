@@ -1,0 +1,13 @@
+Month/Year,Classification Type,Component Code,Component Name,Index Value,Weight (%),Growth YoY (%),Growth MoM (%)
+2024-12,sectoral,S1,Mining,123.2,14.37,2.1,0.3
+2024-12,sectoral,S2,Manufacturing,152.3,77.63,4.2,0.6
+2024-12,sectoral,S3,Electricity,201.7,7.99,3.8,0.4
+2024-12,use_based,U1,Primary Goods,151.9,34.05,3.5,0.5
+2024-12,use_based,U2,Capital Goods,108.3,8.22,2.8,0.2
+2024-12,use_based,U3,Intermediate Goods,165.5,17.22,4.1,0.7
+2024-12,use_based,U4,Infrastructure/Construction Goods,192.3,12.34,3.9,0.4
+2024-12,use_based,U5,Consumer Durables,125.9,12.84,5.2,0.8
+2024-12,use_based,U6,Consumer Non-Durables,146.9,15.33,3.6,0.3
+2024-11,sectoral,S1,Mining,122.8,14.37,1.8,0.1
+2024-11,sectoral,S2,Manufacturing,151.4,77.63,3.8,0.4
+2024-11,sectoral,S3,Electricity,200.9,7.99,3.5,0.2
