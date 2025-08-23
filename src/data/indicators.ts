@@ -180,7 +180,7 @@ export const economicIndicators: IndicatorData[] = [
     ]
   },
   {
-    id: 'industrial-production-growth',
+    id: 'iip',
     name: 'Industrial Production Growth',
     category: 'Growth',
     value: 3.8,

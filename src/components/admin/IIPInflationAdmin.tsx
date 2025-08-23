@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import EventsManagement from './EventsManagement';
 import InsightsManagement from './InsightsManagement';
 import ComparisonsManagement from './ComparisonsManagement';
+import * as XLSX from 'xlsx';
 
 interface Indicator {
   slug: string;
@@ -52,18 +53,16 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
         .order('date', { ascending: false })
         .limit(50);
 
-      // Fetch events
+      // Fetch IIP events (global for IIP)
       const { data: eventsData } = await supabase
-        .from('indicator_events')
+        .from('iip_events' as any)
         .select('*')
-        .eq('indicator_slug', indicator.slug)
         .order('date', { ascending: false });
 
-      // Fetch insights
+      // Fetch IIP insights
       const { data: insightsData } = await supabase
-        .from('indicator_insights')
+        .from('iip_insights' as any)
         .select('*')
-        .eq('indicator_slug', indicator.slug)
         .order('order_index');
 
       // Fetch comparisons
@@ -84,11 +83,225 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
     }
   };
 
-  const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'growth' | 'index') => {
+  // Helpers
+  const headerMap: Record<string, { code: string; name: string; classification: 'sectoral' | 'use_based' } | null> = {
+    'General Index': null, // handled separately for series
+    '1.1 Mining': { code: 'mining', name: 'Mining', classification: 'sectoral' },
+    '1.2 Manufacturing': { code: 'manufacturing', name: 'Manufacturing', classification: 'sectoral' },
+    '1.3 Electricity': { code: 'electricity', name: 'Electricity', classification: 'sectoral' },
+    '2.1 Primary Goods': { code: 'primary_goods', name: 'Primary Goods', classification: 'use_based' },
+    '2.2 Capital Goods': { code: 'capital_goods', name: 'Capital Goods', classification: 'use_based' },
+    '2.3 Intermediate Goods': { code: 'intermediate_goods', name: 'Intermediate Goods', classification: 'use_based' },
+    '2.4 Infrastructure/Construction Goods': { code: 'infrastructure_construction', name: 'Infrastructure/Construction Goods', classification: 'use_based' },
+    '2.5 Consumer Durables': { code: 'consumer_durables', name: 'Consumer Durables', classification: 'use_based' },
+    '2.6 Consumer Non-Durables': { code: 'consumer_non_durables', name: 'Consumer Non-Durables', classification: 'use_based' },
+  };
+
+  const parseTemplateDate = (cell: string): string | null => {
+    // Expected like "2025/06(JUN)" or "2024/12(DEC)"
+    if (!cell) return null;
+    const parts = cell.split('/')
+    if (parts.length < 2) return null;
+    const year = parts[0].trim();
+    const monthPart = parts[1];
+    const monthNum = monthPart.split('(')[0].trim();
+    const m = monthNum.padStart(2, '0');
+    const y = year;
+    // Use first day of month
+    return `${y}-${m}-01`;
+  };
+
+  const readFileAsSheet = (file: File): Promise<XLSX.WorkSheet> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const wb = XLSX.read(data, { type: 'array' });
+          const sheetName = wb.SheetNames[0];
+          resolve(wb.Sheets[sheetName]);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const parseIipUpload = async (file: File, kind: 'growth' | 'index') => {
+    const sheet = await readFileAsSheet(file);
+    // Parse as rows (including blanks)
+    const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, blankrows: false });
+    if (!rows || rows.length < 3) throw new Error('Template must include header, weight row, and at least one data row');
+
+    const headerRow = rows[0] as string[];
+    const weightRow = rows[1] as (string | number)[];
+    // Build column indices map
+    const colIdx: Array<{ key: string; map: typeof headerMap[string] } | null> = headerRow.map((h) => {
+      const key = String(h || '').trim();
+      return { key, map: headerMap[key as keyof typeof headerMap] ?? null };
+    });
+
+    // Prepare upsert arrays
+    const seriesUpserts: Array<{ date: string; index_value?: number | null; growth_yoy?: number | null }> = [];
+    const componentsUpserts: Array<{ date: string; classification_type: 'sectoral' | 'use_based'; component_code: string; component_name: string; index_value?: number | null; growth_yoy?: number | null; weight?: number | null }> = [];
+
+    // Build weights per component from weightRow
+    const weightsByKey: Record<string, number> = {};
+    for (let i = 1; i < headerRow.length; i++) {
+      const key = String(headerRow[i] || '').trim();
+      const w = Number(weightRow[i]);
+      if (!isNaN(w)) weightsByKey[key] = w;
+    }
+
+    for (let r = 2; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.length === 0) continue;
+      const dateCell = String(row[0] || '').trim();
+      const date = parseTemplateDate(dateCell);
+      if (!date) continue;
+
+      // Series (General Index)
+      const generalIdx = Number(row[1]);
+      const seriesEntry: any = { date };
+      if (!isNaN(generalIdx)) {
+        if (kind === 'index') seriesEntry.index_value = generalIdx;
+        if (kind === 'growth') seriesEntry.growth_yoy = generalIdx;
+      }
+      seriesUpserts.push(seriesEntry);
+
+      // Components
+      for (let c = 2; c < headerRow.length; c++) {
+        const headerKey = String(headerRow[c] || '').trim();
+        const map = headerMap[headerKey as keyof typeof headerMap];
+        if (!map) continue;
+        const val = Number(row[c]);
+        const weight = weightsByKey[headerKey];
+        const comp: any = {
+          date,
+          classification_type: map.classification,
+          component_code: map.code,
+          component_name: map.name,
+        };
+        if (!isNaN(weight)) comp.weight = weight;
+        if (!isNaN(val)) {
+          if (kind === 'index') comp.index_value = val;
+          if (kind === 'growth') comp.growth_yoy = val;
+        }
+        componentsUpserts.push(comp);
+      }
+    }
+
+    // Upsert to Supabase
+    if (seriesUpserts.length) {
+      const { error } = await supabase
+        .from('iip_series' as any)
+        .upsert(seriesUpserts, { onConflict: 'date' });
+      if (error) throw error;
+    }
+
+    if (componentsUpserts.length) {
+      const { error } = await supabase
+        .from('iip_components' as any)
+        .upsert(componentsUpserts, { onConflict: 'date,classification_type,component_code' });
+      if (error) throw error;
+    }
+  };
+
+  const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'growth' | 'index') => {
     const file = event.target.files?.[0];
-    if (file) {
-      toast.info(`Excel upload for ${type} data will be implemented`);
-      // TODO: Implement Excel parsing and upload
+    if (!file) return;
+    try {
+      setLoading(true);
+      toast.info(`Processing ${type} data upload...`);
+      await parseIipUpload(file, type);
+      toast.success(`${type === 'index' ? 'Index' : 'Growth'} data uploaded successfully! Database updated.`);
+      await fetchIndicatorData();
+    } catch (err: any) {
+      console.error('IIP upload failed:', err);
+      toast.error(`Failed to upload ${type} data: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+      // reset input value so same file can be selected again
+      if (event.target) event.target.value = '';
+    }
+  };
+
+  // Events: UI props expect { date, description, impact } and delete by index
+  const handleAddEvent = async (event: { date: string; description: string; impact: 'low' | 'medium' | 'high' }) => {
+    try {
+      const { error } = await supabase
+        .from('iip_events' as any)
+        .insert([{ date: event.date, description: event.description, impact: event.impact, title: 'Event' }]);
+
+      if (error) throw error;
+      toast.success('Event added successfully! Database updated.');
+      fetchIndicatorData();
+    } catch (error) {
+      console.error('Error adding event:', error);
+      toast.error('Failed to add event');
+    }
+  };
+
+  const handleDeleteEvent = async (index: number) => {
+    try {
+      const id = (events as any[])[index]?.id;
+      if (!id) {
+        // fallback: remove locally if id missing
+        setEvents((prev) => prev.filter((_, i) => i !== index));
+        toast.success('Event removed locally.');
+        return;
+      }
+      const { error } = await supabase
+        .from('iip_events' as any)
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Event deleted successfully! Database updated.');
+      fetchIndicatorData();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event');
+    }
+  };
+
+  // Insights: UI expects { content, order_index } and delete by index
+  const handleAddInsight = async (insight: { content: string; order_index: number }) => {
+    try {
+      const { error } = await supabase
+        .from('iip_insights' as any)
+        .insert([{ section: 'overview', title: 'Insight', text: insight.content, order_index: insight.order_index }]);
+
+      if (error) throw error;
+      toast.success('Insight added successfully! Database updated.');
+      fetchIndicatorData();
+    } catch (error) {
+      console.error('Error adding insight:', error);
+      toast.error('Failed to add insight');
+    }
+  };
+
+  const handleDeleteInsight = async (index: number) => {
+    try {
+      const id = (insights as any[])[index]?.id;
+      if (!id) {
+        setInsights((prev) => prev.filter((_, i) => i !== index));
+        toast.success('Insight removed locally.');
+        return;
+      }
+      const { error } = await supabase
+        .from('iip_insights' as any)
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Insight deleted successfully! Database updated.');
+      fetchIndicatorData();
+    } catch (error) {
+      console.error('Error deleting insight:', error);
+      toast.error('Failed to delete insight');
     }
   };
 
@@ -189,25 +402,59 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
 
         <TabsContent value="events">
           <EventsManagement
-            indicatorSlug={indicator.slug}
-            events={events}
-            onEventsChange={fetchIndicatorData}
+            events={events as any}
+            onAddEvent={handleAddEvent}
+            onDeleteEvent={handleDeleteEvent}
+            isLoading={loading}
           />
         </TabsContent>
 
         <TabsContent value="insights">
           <InsightsManagement
-            indicatorSlug={indicator.slug}
-            insights={insights}
-            onInsightsChange={fetchIndicatorData}
+            insights={insights as any}
+            onAddInsight={handleAddInsight}
+            onDeleteInsight={handleDeleteInsight}
+            isLoading={loading}
           />
         </TabsContent>
 
         <TabsContent value="comparisons">
           <ComparisonsManagement
-            indicatorSlug={indicator.slug}
-            comparisons={comparisons}
-            onComparisonsChange={fetchIndicatorData}
+            comparisons={comparisons as any}
+            onAddComparison={async (c) => {
+              try {
+                const { error } = await supabase
+                  .from('indicator_comparisons' as any)
+                  .insert([{ indicator_slug: indicator.slug, compare_indicator_slug: c.compare_indicator_slug, display_name: c.display_name }]);
+                if (error) throw error;
+                toast.success('Comparison added');
+                fetchIndicatorData();
+              } catch (e) {
+                console.error(e);
+                toast.error('Failed to add comparison');
+              }
+            }}
+            onDeleteComparison={async (index) => {
+              try {
+                const id = (comparisons as any[])[index]?.id;
+                if (!id) {
+                  setComparisons((prev) => prev.filter((_, i) => i !== index));
+                  toast.success('Comparison removed locally');
+                  return;
+                }
+                const { error } = await supabase
+                  .from('indicator_comparisons' as any)
+                  .delete()
+                  .eq('id', id);
+                if (error) throw error;
+                toast.success('Comparison removed');
+                fetchIndicatorData();
+              } catch (e) {
+                console.error(e);
+                toast.error('Failed to remove comparison');
+              }
+            }}
+            isLoading={loading}
           />
         </TabsContent>
       </Tabs>

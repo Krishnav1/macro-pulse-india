@@ -150,9 +150,13 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
             <Button variant={timeframe === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('all')}>MAX</Button>
           </div>
         </CardTitle>
-        
-        {/* Data Type Toggle */}
-        <div className="flex gap-2 mt-2">
+        <CardDescription>
+          IIP growth trends with major economic events highlighted
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {/* Data Type Toggle - Placed directly below timeframe buttons */}
+        <div className="flex justify-center gap-2 mb-4">
           <Button
             variant={dataType === 'index' ? 'default' : 'outline'}
             size="sm"
@@ -168,11 +172,6 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
             Growth Rate
           </Button>
         </div>
-        <CardDescription>
-          IIP growth trends with major economic events highlighted
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
         <div className="h-80">
           {loading ? (
             <div className="flex items-center justify-center h-full">
@@ -219,70 +218,70 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
           )}
         </div>
         
+        
+
         {/* Base Year Note */}
         <div className="mt-2 text-xs text-muted-foreground text-center">
           Data is based on Base: 2011-12 = 100
         </div>
         
-        {/* Classification and Compare Options */}
-        <div className="mt-4 pt-4 border-t">
-          <div className="flex items-center justify-between mb-4">
-            {/* Classification Toggle */}
-            <div className="flex items-center gap-3">
-              <h4 className="text-sm font-medium text-muted-foreground">Classification:</h4>
-              <div className="flex gap-2">
-                <Button
-                  variant={compareWith === 'none' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCompareWith('none')}
-                >
-                  General Index
-                </Button>
-                <Button
-                  variant={compareWith === 'sectoral' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCompareWith('sectoral')}
-                >
-                  Sectoral
-                </Button>
-                <Button
-                  variant={compareWith === 'use_based' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCompareWith('use_based')}
-                >
-                  Use-based
-                </Button>
-              </div>
+        {/* Classification and Compare Options - More space */}
+        <div className="mt-6 pt-4 border-t space-y-4">
+          {/* Classification Toggle */}
+          <div className="flex items-center justify-center gap-3">
+            <h4 className="text-sm font-medium text-muted-foreground">Classification:</h4>
+            <div className="flex gap-2">
+              <Button
+                variant={compareWith === 'none' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCompareWith('none')}
+              >
+                General Index
+              </Button>
+              <Button
+                variant={compareWith === 'sectoral' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCompareWith('sectoral')}
+              >
+                Sectoral
+              </Button>
+              <Button
+                variant={compareWith === 'use_based' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCompareWith('use_based')}
+              >
+                Use-based
+              </Button>
             </div>
+          </div>
 
-            {/* Compare With Options */}
-            <div className="flex items-center gap-3">
-              <h4 className="text-sm font-medium text-muted-foreground">Compare with:</h4>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => scrollComparisons('left')}
-                  disabled={comparisonScrollIndex === 0}
-                  className="h-7 w-7 p-0"
-                >
-                  <ChevronLeft className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => scrollComparisons('right')}
-                  disabled={comparisonScrollIndex >= comparisonIndicators.length - 4}
-                  className="h-7 w-7 p-0"
-                >
-                  <ChevronRight className="h-3 w-3" />
-                </Button>
-              </div>
+          {/* Compare With Options */}
+          <div className="flex items-center justify-center gap-3">
+            <h4 className="text-sm font-medium text-muted-foreground">Compare with:</h4>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => scrollComparisons('left')}
+                disabled={comparisonScrollIndex === 0}
+                className="h-7 w-7 p-0"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => scrollComparisons('right')}
+                disabled={comparisonScrollIndex >= comparisonIndicators.length - 4}
+                className="h-7 w-7 p-0"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </Button>
             </div>
           </div>
           
           {/* Comparison Indicators - Clickable */}
-          <div className="flex gap-2 justify-end flex-wrap">
+          <div className="flex gap-2 justify-center flex-wrap">
             {visibleComparisons.map((comparison) => (
               <Button
                 key={comparison.id}
@@ -298,7 +297,7 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
           
           {/* Error Message */}
           {showComparisonError && (
-            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600 text-center">
               Cannot select multiple classifications when comparing different IIP categories. Please select only one classification for comparisons.
             </div>
           )}

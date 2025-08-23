@@ -25,7 +25,7 @@ const IIPPage = () => {
           </div>
 
           {/* Details Section */}
-          <div className="space-y-4">
+          <div className="xl:col-span-1 space-y-4">
             <IIPMetrics />
           </div>
         </div>
