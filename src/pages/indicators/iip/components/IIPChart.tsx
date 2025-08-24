@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useIipSeries } from '@/hooks/useIipSeries';
+import { useIipComponents } from '@/hooks/useIipComponents';
 import { format } from 'date-fns';
 
 interface IIPChartProps {
@@ -19,15 +20,24 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
   const [selectedComparisons, setSelectedComparisons] = useState<string[]>([]);
   const [showComparisonError, setShowComparisonError] = useState(false);
 
-  const comparisonIndicators = [
-    { id: 'mining', name: 'Mining' },
-    { id: 'manufacturing', name: 'Manufacturing' },
-    { id: 'electricity', name: 'Electricity' },
-    { id: 'primary', name: 'Primary Goods' },
-    { id: 'capital', name: 'Capital Goods' },
-    { id: 'intermediate', name: 'Intermediate Goods' },
-    { id: 'consumer_durables', name: 'Consumer Durables' }
+  // Define component mappings for each classification
+  const sectoralComponents = [
+    { id: 'mining', name: 'Mining', code: 'mining' },
+    { id: 'manufacturing', name: 'Manufacturing', code: 'manufacturing' },
+    { id: 'electricity', name: 'Electricity', code: 'electricity' }
   ];
+  
+  const useBasedComponents = [
+    { id: 'primary_goods', name: 'Primary Goods', code: 'primary_goods' },
+    { id: 'capital_goods', name: 'Capital Goods', code: 'capital_goods' },
+    { id: 'intermediate_goods', name: 'Intermediate Goods', code: 'intermediate_goods' },
+    { id: 'infrastructure_construction', name: 'Infrastructure/Construction', code: 'infrastructure_construction' },
+    { id: 'consumer_durables', name: 'Consumer Durables', code: 'consumer_durables' },
+    { id: 'consumer_non_durables', name: 'Consumer Non-Durables', code: 'consumer_non_durables' }
+  ];
+  
+  const comparisonIndicators = compareWith === 'sectoral' ? sectoralComponents : 
+                              compareWith === 'use_based' ? useBasedComponents : [];
 
   // Calculate date range based on timeframe
   const dateRange = useMemo(() => {
@@ -55,16 +65,59 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
     startDate: dateRange.startDate,
     limit: timeframe === 'all' ? 500 : 100
   });
+  
+  // Fetch component data for comparisons
+  const { data: componentData, loading: componentLoading } = useIipComponents({
+    classification: compareWith === 'none' ? undefined : compareWith,
+    startDate: dateRange.startDate
+  });
 
   // Transform data for chart
   const chartData = useMemo(() => {
     if (!iipData?.length) return [];
     
-    return iipData.map(item => ({
+    // Start with main IIP series data
+    const seriesData = iipData.map(item => ({
       date: item.date,
       iip: dataType === 'index' ? item.index_value : (item.growth_yoy || 0)
     })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [iipData, dataType]);
+    
+    // If no comparisons selected or compareWith is 'none', return series data only
+    if (compareWith === 'none' || selectedComparisons.length === 0) {
+      return seriesData;
+    }
+    
+    // Add component data for selected comparisons
+    if (componentData?.length) {
+      const componentsByDate = new Map();
+      
+      componentData.forEach(comp => {
+        if (!componentsByDate.has(comp.date)) {
+          componentsByDate.set(comp.date, {});
+        }
+        const value = dataType === 'index' ? comp.index_value : comp.growth_yoy;
+        if (value !== null) {
+          componentsByDate.get(comp.date)[comp.component_code] = value;
+        }
+      });
+      
+      return seriesData.map(item => {
+        const componentValues = componentsByDate.get(item.date) || {};
+        const result = { ...item };
+        
+        selectedComparisons.forEach(compId => {
+          const component = comparisonIndicators.find(c => c.id === compId);
+          if (component && componentValues[component.code] !== undefined) {
+            result[compId] = componentValues[component.code];
+          }
+        });
+        
+        return result;
+      });
+    }
+    
+    return seriesData;
+  }, [iipData, componentData, dataType, compareWith, selectedComparisons, comparisonIndicators]);
 
   // Calculate Y-axis domain for better scaling
   const yAxisDomain = useMemo(() => {
@@ -173,7 +226,7 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
           </Button>
         </div>
         <div className="h-80">
-          {loading ? (
+          {(loading || componentLoading) ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-muted-foreground">Loading IIP data...</div>
             </div>
@@ -211,8 +264,26 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
                   strokeWidth={3}
                   dot={false}
                   activeDot={{ r: 6 }}
-                  name="IIP"
+                  name="General Index"
                 />
+                
+                {/* Render lines for selected comparisons */}
+                {selectedComparisons.map((compId, index) => {
+                  const component = comparisonIndicators.find(c => c.id === compId);
+                  const colors = ['#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#84cc16'];
+                  return (
+                    <Line
+                      key={compId}
+                      type="monotone"
+                      dataKey={compId}
+                      stroke={colors[index % colors.length]}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                      name={component?.name || compId}
+                    />
+                  );
+                })}
               </LineChart>
             </ResponsiveContainer>
           )}

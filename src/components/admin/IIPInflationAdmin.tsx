@@ -116,17 +116,42 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
   };
 
   const parseTemplateDate = (cell: string): string | null => {
-    // Expected like "2025/06(JUN)" or "2024/12(DEC)"
     if (!cell) return null;
-    const parts = cell.split('/')
-    if (parts.length < 2) return null;
-    const year = parts[0].trim();
-    const monthPart = parts[1];
-    const monthNum = monthPart.split('(')[0].trim();
-    const m = monthNum.padStart(2, '0');
-    const y = year;
-    // Use first day of month
-    return `${y}-${m}-01`;
+    
+    // Handle Excel serial numbers (like 45809.00011574074)
+    const numericValue = Number(cell);
+    if (!isNaN(numericValue) && numericValue > 40000) {
+      // Excel serial date: days since 1900-01-01 (with leap year bug)
+      const excelEpoch = new Date(1900, 0, 1);
+      const date = new Date(excelEpoch.getTime() + (numericValue - 2) * 24 * 60 * 60 * 1000);
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      return `${year}-${month}-01`;
+    }
+    
+    // Handle "YYYY:MM (MON)" format
+    if (cell.includes(':')) {
+      const parts = cell.split(':');
+      if (parts.length >= 2) {
+        const year = parts[0].trim();
+        const monthPart = parts[1].split('(')[0].trim();
+        const m = monthPart.padStart(2, '0');
+        return `${year}-${m}-01`;
+      }
+    }
+    
+    // Handle "YYYY/MM(MON)" format (original)
+    if (cell.includes('/')) {
+      const parts = cell.split('/');
+      if (parts.length >= 2) {
+        const year = parts[0].trim();
+        const monthPart = parts[1].split('(')[0].trim();
+        const m = monthPart.padStart(2, '0');
+        return `${year}-${m}-01`;
+      }
+    }
+    
+    return null;
   };
 
   const readFileAsSheet = (file: File): Promise<XLSX.WorkSheet> => {
@@ -151,10 +176,15 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
     const sheet = await readFileAsSheet(file);
     // Parse as rows (including blanks)
     const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, blankrows: false });
+    console.log('Raw Excel rows:', rows.length, 'total rows');
+    console.log('First 3 rows:', rows.slice(0, 3));
+    
     if (!rows || rows.length < 3) throw new Error('Template must include header, weight row, and at least one data row');
 
     const headerRow = rows[0] as string[];
     const weightRow = rows[1] as (string | number)[];
+    console.log('Header row:', headerRow);
+    console.log('Weight row:', weightRow);
     // Build column indices map
     const colIdx: Array<{ key: string; map: typeof headerMap[string] } | null> = headerRow.map((h) => {
       const key = String(h || '').trim();
@@ -175,27 +205,40 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
 
     for (let r = 2; r < rows.length; r++) {
       const row = rows[r];
-      if (!row || row.length === 0) continue;
-      const dateCell = String(row[0] || '').trim();
-      const date = parseTemplateDate(dateCell);
-      if (!date) continue;
-
-      // Series (General Index)
-      const generalIdx = Number(row[1]);
-      const seriesEntry: any = { date };
-      if (!isNaN(generalIdx)) {
-        if (kind === 'index') {
-          seriesEntry.index_value = generalIdx;
-          seriesEntry.growth_yoy = null; // Ensure growth_yoy is explicitly null for index uploads
-        }
-        if (kind === 'growth') {
-          seriesEntry.growth_yoy = generalIdx;
-          seriesEntry.index_value = 100; // Default base index value when uploading growth data
-        }
-      } else {
-        // Skip rows with invalid general index
+      console.log(`Processing row ${r}:`, row);
+      if (!row || row.length === 0) {
+        console.log(`Skipping empty row ${r}`);
         continue;
       }
+      const dateCell = String(row[0] || '').trim();
+      console.log(`Date cell: "${dateCell}"`);
+      const date = parseTemplateDate(dateCell);
+      console.log(`Parsed date: ${date}`);
+      if (!date) {
+        console.log(`Skipping row ${r} - invalid date`);
+        continue;
+      }
+
+      // For Excel files with both index and growth data, we need to handle both columns
+      // Column 1 is General Index value, we need to determine if it's index or growth based on 'kind'
+      const generalValue = Number(row[1]);
+      console.log(`General value: ${generalValue}`);
+      const seriesEntry: any = { date };
+      if (!isNaN(generalValue)) {
+        if (kind === 'index') {
+          seriesEntry.index_value = generalValue;
+          seriesEntry.growth_yoy = null;
+        }
+        if (kind === 'growth') {
+          seriesEntry.growth_yoy = generalValue;
+          // For growth uploads, don't set index_value - it should come from index uploads
+          seriesEntry.index_value = null;
+        }
+      } else {
+        console.log(`Skipping row ${r} - invalid general value: ${row[1]}`);
+        continue;
+      }
+      console.log(`Adding series entry:`, seriesEntry);
       seriesUpserts.push(seriesEntry);
 
       // Components
@@ -219,40 +262,81 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
           }
           if (kind === 'growth') {
             comp.growth_yoy = val;
-            comp.index_value = 100; // Ensure NOT NULL for components during growth uploads
+            // For growth uploads, don't set index_value
+            comp.index_value = null;
           }
         }
         componentsUpserts.push(comp);
       }
     }
 
-    // Upsert to Supabase
+    // Use SQL-based approach to preserve existing data
     console.log('Attempting to upsert:', { seriesCount: seriesUpserts.length, componentsCount: componentsUpserts.length });
     
     if (seriesUpserts.length) {
       console.log('Series data sample:', seriesUpserts[0]);
-      const { data: seriesResult, error: seriesError } = await supabase
-        .from('iip_series' as any)
-        .upsert(seriesUpserts, { onConflict: 'date' });
       
-      if (seriesError) {
-        console.error('Series upsert error:', seriesError);
-        throw new Error(`Series insert failed: ${seriesError.message}`);
+      for (const entry of seriesUpserts) {
+        if (kind === 'index') {
+          // Insert or update only index_value, preserve growth_yoy
+          const { error } = await supabase.rpc('upsert_series_index', {
+            p_date: entry.date,
+            p_index_value: entry.index_value
+          });
+          if (error) {
+            console.error('Series index upsert error:', error);
+            throw new Error(`Series index insert failed: ${error.message}`);
+          }
+        } else {
+          // Insert or update only growth_yoy, preserve index_value
+          const { error } = await supabase.rpc('upsert_series_growth', {
+            p_date: entry.date,
+            p_growth_yoy: entry.growth_yoy
+          });
+          if (error) {
+            console.error('Series growth upsert error:', error);
+            throw new Error(`Series growth insert failed: ${error.message}`);
+          }
+        }
       }
-      console.log('Series upsert successful:', seriesResult);
+      console.log('Series upsert successful');
     }
 
     if (componentsUpserts.length) {
       console.log('Components data sample:', componentsUpserts[0]);
-      const { data: componentsResult, error: componentsError } = await supabase
-        .from('iip_components' as any)
-        .upsert(componentsUpserts, { onConflict: 'date,classification_type,component_code' });
       
-      if (componentsError) {
-        console.error('Components upsert error:', componentsError);
-        throw new Error(`Components insert failed: ${componentsError.message}`);
+      for (const entry of componentsUpserts) {
+        if (kind === 'index') {
+          // Insert or update only index_value, preserve growth_yoy
+          const { error } = await supabase.rpc('upsert_component_index', {
+            p_date: entry.date,
+            p_classification_type: entry.classification_type,
+            p_component_code: entry.component_code,
+            p_component_name: entry.component_name,
+            p_weight: entry.weight,
+            p_index_value: entry.index_value
+          });
+          if (error) {
+            console.error('Component index upsert error:', error);
+            throw new Error(`Component index insert failed: ${error.message}`);
+          }
+        } else {
+          // Insert or update only growth_yoy, preserve index_value and weight
+          const { error } = await supabase.rpc('upsert_component_growth', {
+            p_date: entry.date,
+            p_classification_type: entry.classification_type,
+            p_component_code: entry.component_code,
+            p_component_name: entry.component_name,
+            p_weight: entry.weight,
+            p_growth_yoy: entry.growth_yoy
+          });
+          if (error) {
+            console.error('Component growth upsert error:', error);
+            throw new Error(`Component growth insert failed: ${error.message}`);
+          }
+        }
       }
-      console.log('Components upsert successful:', componentsResult);
+      console.log('Components upsert successful');
     }
   };
 
