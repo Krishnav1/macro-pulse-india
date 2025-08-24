@@ -10,6 +10,7 @@ import DataManagement from './DataManagement';
 import CPIDataManagement from './CPIDataManagement';
 import { CPIInflationAdmin } from './CPIInflationAdmin';
 import { IIPInflationAdmin } from './IIPInflationAdmin';
+import { ForexReservesAdmin } from './ForexReservesAdmin';
 import EventsManagement from './EventsManagement';
 import InsightsManagement from './InsightsManagement';
 import ComparisonsManagement from './ComparisonsManagement';
@@ -247,6 +248,16 @@ export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
   if (normalizedSlug === 'iip' || normalizedSlug === 'industrial-production-growth') {
     return (
       <IIPInflationAdmin
+        indicator={indicator}
+        onBack={onBack}
+        onEditIndicator={onEditIndicator}
+      />
+    );
+  }
+
+  if (normalizedSlug === 'foreign-exchange-reserves' || normalizedSlug === 'forex-reserves') {
+    return (
+      <ForexReservesAdmin
         indicator={indicator}
         onBack={onBack}
         onEditIndicator={onEditIndicator}
