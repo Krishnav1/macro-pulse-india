@@ -34,6 +34,7 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
   onEditIndicator
 }) => {
   const [seriesData, setSeriesData] = useState([]);
+  const [componentsData, setComponentsData] = useState([]);
   const [events, setEvents] = useState([]);
   const [insights, setInsights] = useState([]);
   const [comparisons, setComparisons] = useState([]);
@@ -45,13 +46,29 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
 
   const fetchIndicatorData = async () => {
     setLoading(true);
+    console.log('Fetching IIP indicator data...');
     try {
       // Fetch IIP series data
-      const { data: iipSeriesData } = await supabase
+      const { data: iipSeriesData, error: seriesError } = await supabase
         .from('iip_series' as any)
         .select('*')
         .order('date', { ascending: false })
         .limit(50);
+
+      if (seriesError) {
+        console.error('Error fetching IIP series:', seriesError);
+      }
+
+      // Fetch IIP components data
+      const { data: iipComponentsData, error: componentsError } = await supabase
+        .from('iip_components' as any)
+        .select('*')
+        .order('date', { ascending: false })
+        .limit(50);
+
+      if (componentsError) {
+        console.error('Error fetching IIP components:', componentsError);
+      }
 
       // Fetch IIP events (global for IIP)
       const { data: eventsData } = await supabase
@@ -72,6 +89,7 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
         .eq('indicator_slug', indicator.slug);
 
       setSeriesData(iipSeriesData || []);
+      setComponentsData(iipComponentsData || []);
       setEvents(eventsData || []);
       setInsights(insightsData || []);
       setComparisons(comparisonsData || []);
@@ -209,29 +227,56 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
     }
 
     // Upsert to Supabase
+    console.log('Attempting to upsert:', { seriesCount: seriesUpserts.length, componentsCount: componentsUpserts.length });
+    
     if (seriesUpserts.length) {
-      const { error } = await supabase
+      console.log('Series data sample:', seriesUpserts[0]);
+      const { data: seriesResult, error: seriesError } = await supabase
         .from('iip_series' as any)
         .upsert(seriesUpserts, { onConflict: 'date' });
-      if (error) throw error;
+      
+      if (seriesError) {
+        console.error('Series upsert error:', seriesError);
+        throw new Error(`Series insert failed: ${seriesError.message}`);
+      }
+      console.log('Series upsert successful:', seriesResult);
     }
 
     if (componentsUpserts.length) {
-      const { error } = await supabase
+      console.log('Components data sample:', componentsUpserts[0]);
+      const { data: componentsResult, error: componentsError } = await supabase
         .from('iip_components' as any)
         .upsert(componentsUpserts, { onConflict: 'date,classification_type,component_code' });
-      if (error) throw error;
+      
+      if (componentsError) {
+        console.error('Components upsert error:', componentsError);
+        throw new Error(`Components insert failed: ${componentsError.message}`);
+      }
+      console.log('Components upsert successful:', componentsResult);
     }
   };
 
   const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'growth' | 'index') => {
     const file = event.target.files?.[0];
     if (!file) return;
+    
     try {
       setLoading(true);
+      console.log(`Starting ${type} upload for file:`, file.name);
       toast.info(`Processing ${type} data upload...`);
+      
+      // Check authentication status
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user:', user?.email || 'Not authenticated');
+      
+      if (!user) {
+        toast.error('You must be logged in to upload data. Please authenticate first.');
+        return;
+      }
+      
       await parseIipUpload(file, type);
       toast.success(`${type === 'index' ? 'Index' : 'Growth'} data uploaded successfully! Database updated.`);
+      console.log('Upload completed, refreshing data...');
       await fetchIndicatorData();
     } catch (err: any) {
       console.error('IIP upload failed:', err);
@@ -503,9 +548,23 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
                       </div>
                     </div>
                     <div className="max-h-48 overflow-y-auto">
-                      <div className="px-4 py-8 text-center text-gray-500">
-                        Components data preview - {seriesData.length > 0 ? 'Data uploaded' : 'No data uploaded yet'}
-                      </div>
+                      {componentsData.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-gray-500">
+                          No components data found. Upload data to see entries here.
+                        </div>
+                      ) : (
+                        componentsData.slice(0, 10).map((item: any, index) => (
+                          <div key={index} className="px-4 py-2 border-b last:border-b-0">
+                            <div className="grid grid-cols-5 gap-4 text-sm">
+                              <div>{item.date}</div>
+                              <div>{item.component_name}</div>
+                              <div>{item.classification_type}</div>
+                              <div>{item.index_value || 'N/A'}</div>
+                              <div>{item.growth_yoy ? `${item.growth_yoy}%` : 'N/A'}</div>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>

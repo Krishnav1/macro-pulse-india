@@ -38,6 +38,7 @@ export const useIipComponents = (params: UseIipComponentsParams = {}) => {
     const fetchIipComponents = async () => {
       try {
         setLoading(true);
+        console.log('useIipComponents: Fetching data with params:', { classification, startDate, endDate });
         
         let query = supabase
           .from('iip_components' as any)
@@ -57,9 +58,11 @@ export const useIipComponents = (params: UseIipComponentsParams = {}) => {
         const { data: componentsData, error } = await query;
 
         if (error) {
+          console.error('useIipComponents: Supabase error:', error);
           throw error;
         }
 
+        console.log('useIipComponents: Fetched data:', componentsData?.length || 0, 'records');
         setData(componentsData || []);
 
         // Create breakdown for latest data

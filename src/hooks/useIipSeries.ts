@@ -27,6 +27,7 @@ export const useIipSeries = (params: UseIipSeriesParams = {}) => {
     const fetchIipSeries = async () => {
       try {
         setLoading(true);
+        console.log('useIipSeries: Fetching data with params:', { startDate, endDate, limit });
         
         let query = supabase
           .from('iip_series' as any)
@@ -44,9 +45,11 @@ export const useIipSeries = (params: UseIipSeriesParams = {}) => {
         const { data: seriesData, error } = await query;
 
         if (error) {
+          console.error('useIipSeries: Supabase error:', error);
           throw error;
         }
 
+        console.log('useIipSeries: Fetched data:', seriesData?.length || 0, 'records');
         setData(seriesData || []);
       } catch (err) {
         console.error('Error fetching IIP series:', err);
