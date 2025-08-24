@@ -40,9 +40,6 @@ const Dashboard = () => {
               Indian Economic Dashboard
             </span>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Desktop-first control center of India's economy. Explore key indicators, replay history, and drill into details.
-          </p>
         </div>
 
 

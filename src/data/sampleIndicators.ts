@@ -31,7 +31,7 @@ const generateSparklineData = (base: number, volatility: number = 0.1): number[]
 export const dashboardIndicators: IndicatorData[] = [
   {
     id: 'real_gdp_growth',
-    name: '📈 Real GDP Growth',
+    name: 'Real GDP Growth',
     value: '7.38%',
     change: 0.5,
     category: 'Growth',
@@ -41,7 +41,7 @@ export const dashboardIndicators: IndicatorData[] = [
   },
   {
     id: 'debt_to_gdp',
-    name: '📊 Debt-to-GDP Ratio',
+    name: 'Debt to GDP Ratio',
     value: '54.90%',
     change: -0.3,
     category: 'Fiscal',
@@ -51,37 +51,37 @@ export const dashboardIndicators: IndicatorData[] = [
   },
   {
     id: 'repo_rate',
-    name: '🏦 Repo Rate',
-    value: '5.50%',
+    name: 'Repo Rate',
+    value: '6.50%',
     change: 0.0,
     category: 'Monetary',
-    sparklineData: generateSparklineData(5.5, 0.03),
+    sparklineData: generateSparklineData(6.5, 0.03),
     unit: 'Percentage',
     source: 'RBI'
   },
   {
     id: 'gsec_yield_10y',
-    name: '📈 10-Year G-Sec Yield',
-    value: '6.43%',
+    name: '10Y G-Sec Yield',
+    value: '7.10%',
     change: 0.2,
     category: 'Interest Rate',
-    sparklineData: generateSparklineData(6.43, 0.08),
+    sparklineData: generateSparklineData(7.10, 0.08),
     unit: 'Percentage',
     source: 'RBI'
   },
   {
     id: 'fiscal_deficit',
-    name: '🏛️ Central Govt Fiscal Deficit',
-    value: '4.74%',
+    name: 'Central Government Fiscal Deficit',
+    value: '5.63%',
     change: -0.1,
     category: 'Fiscal',
-    sparklineData: generateSparklineData(4.74, 0.06),
+    sparklineData: generateSparklineData(5.63, 0.06),
     unit: '% of GDP',
     source: 'CGA'
   },
   {
     id: 'forex_reserves',
-    name: '💵 Foreign Exchange Reserves',
+    name: 'Foreign Exchange Reserves',
     value: '$698.19B',
     change: 1.2,
     category: 'External',
@@ -91,37 +91,17 @@ export const dashboardIndicators: IndicatorData[] = [
   },
   {
     id: 'cpi_inflation',
-    name: '📊 CPI Inflation',
-    value: '1.55%',
+    name: 'Consumer Price Index (CPI) Inflation',
+    value: '3.54%',
     change: -2.1,
     category: 'Inflation',
-    sparklineData: generateSparklineData(1.55, 0.15),
+    sparklineData: generateSparklineData(3.54, 0.15),
     unit: 'YoY',
     source: 'MOSPI'
-  },
-  {
-    id: 'core_inflation',
-    name: '🎯 Core Inflation',
-    value: '2.30%',
-    change: -0.5,
-    category: 'Inflation',
-    sparklineData: generateSparklineData(2.3, 0.1),
-    unit: 'YoY',
-    source: 'MOSPI'
-  },
-  {
-    id: 'current_account_balance',
-    name: '⚖️ Current Account Balance',
-    value: '-0.6%',
-    change: 0.2,
-    category: 'External',
-    sparklineData: generateSparklineData(-0.6, 0.08),
-    unit: '% of GDP',
-    source: 'RBI'
   },
   {
     id: 'unemployment_rate',
-    name: '👥 Unemployment Rate',
+    name: 'Unemployment Rate',
     value: '6.1%',
     change: -0.3,
     category: 'Employment',
@@ -130,28 +110,8 @@ export const dashboardIndicators: IndicatorData[] = [
     source: 'CMIE'
   },
   {
-    id: 'iip_growth',
-    name: '🏭 Industrial Production Growth',
-    value: '3.9%',
-    change: 0.8,
-    category: 'Industrial',
-    sparklineData: generateSparklineData(3.9, 0.15),
-    unit: 'YoY',
-    source: 'MOSPI'
-  },
-  {
-    id: 'bank_credit_growth',
-    name: '🏦 Non-Food Bank Credit Growth',
-    value: '12.4%',
-    change: 1.1,
-    category: 'Financial',
-    sparklineData: generateSparklineData(12.4, 0.1),
-    unit: 'YoY',
-    source: 'RBI'
-  },
-  {
     id: 'merchandise_exports',
-    name: '📦 Merchandise Exports',
+    name: 'Merchandise Exports',
     value: '$41.6B',
     change: 2.3,
     category: 'Trade',
@@ -161,7 +121,7 @@ export const dashboardIndicators: IndicatorData[] = [
   },
   {
     id: 'merchandise_imports',
-    name: '📥 Merchandise Imports',
+    name: 'Merchandise Imports',
     value: '$45.2B',
     change: 1.8,
     category: 'Trade',

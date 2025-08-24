@@ -13,8 +13,12 @@ const IndicatorGridCard = ({ indicator }: IndicatorGridCardProps) => {
     // Route CPI inflation to dedicated CPI page
     if (indicator.id === 'cpi_inflation') {
       navigate('/indicators/cpi');
+    } else if (indicator.id === 'iip_growth') {
+      navigate('/indicators/iip');
+    } else if (indicator.id === 'repo_rate') {
+      navigate('/indicators/repo-rate');
     } else {
-      navigate(`/indicator/${indicator.id}`);
+      navigate(`/indicators/${indicator.id}`);
     }
   };
 
@@ -38,8 +42,8 @@ const IndicatorGridCard = ({ indicator }: IndicatorGridCardProps) => {
       className="dashboard-card cursor-pointer group h-[140px] flex flex-col"
       onClick={handleCardClick}
     >
-      {/* Header */}
-      <div>
+      {/* Header - Centered */}
+      <div className="text-center mb-2">
         <h3 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">
           {indicator.name}
         </h3>
