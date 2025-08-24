@@ -201,7 +201,7 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
           }
           if (kind === 'growth') {
             comp.growth_yoy = val;
-            comp.index_value = null; // Components can have null index_value
+            comp.index_value = 100; // Ensure NOT NULL for components during growth uploads
           }
         }
         componentsUpserts.push(comp);
