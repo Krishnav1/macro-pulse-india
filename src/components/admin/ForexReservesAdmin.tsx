@@ -95,11 +95,11 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
       if (match) {
         const [, day, monthStr, year] = match;
         const monthMap: { [key: string]: string } = {
-          'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
-          'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
-          'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+          'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+          'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+          'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
         };
-        const month = monthMap[monthStr];
+        const month = monthMap[monthStr.toLowerCase()];
         if (month) {
           return `${year}-${month}-${day}`;
         }
@@ -125,6 +125,18 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
     return null;
   };
 
+  // Parse numbers robustly from Excel values (handles commas, strings, numbers)
+  const parseNumber = (value: any): number => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/,/g, '').trim();
+      if (cleaned === '' || cleaned.toLowerCase() === 'na' || cleaned === '-') return NaN;
+      const num = Number(cleaned);
+      return num;
+    }
+    return Number(value);
+  };
+
   const validateRow = (row: any): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
     
@@ -140,7 +152,7 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
       errors.push('Invalid or missing date');
     }
     
-    // Validate required numeric fields
+    // Validate required numeric fields (ensure they can be parsed to numbers)
     const requiredFields = [
       'Total Reserves (INR Crore)',
       'Total Reserves (USD Million)',
@@ -158,8 +170,11 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
       const value = row[field];
       if (value === undefined || value === null || value === '') {
         errors.push(`Missing value for ${field}`);
-      } else if (isNaN(Number(value))) {
-        errors.push(`Invalid numeric value for ${field}: ${value}`);
+      } else {
+        const num = parseNumber(value);
+        if (isNaN(num)) {
+          errors.push(`Invalid numeric value for ${field}: ${value}`);
+        }
       }
     });
     
@@ -196,18 +211,19 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
         const parsedDate = parseExcelDate(row['Year / Week Ended']);
         if (!parsedDate) continue;
         
+        const toNullable = (n: number) => (isNaN(n) ? null : n);
         const forexRow: ForexReservesRow = {
           week_ended: parsedDate,
-          total_reserves_inr_crore: Number(row['Total Reserves (INR Crore)']),
-          total_reserves_usd_mn: Number(row['Total Reserves (USD Million)']),
-          foreign_currency_assets_inr_crore: Number(row['Foreign Currency Assets (INR Crore)']),
-          foreign_currency_assets_usd_mn: Number(row['Foreign Currency Assets (USD Million)']),
-          gold_inr_crore: Number(row['Gold (INR Crore)']),
-          gold_usd_mn: Number(row['Gold (USD Million)']),
-          sdrs_inr_crore: Number(row['SDRs (INR Crore)']),
-          sdrs_usd_mn: Number(row['SDRs (USD Million)']),
-          reserve_position_imf_inr_crore: Number(row['Reserve Position in the IMF (INR Crore)']),
-          reserve_position_imf_usd_mn: Number(row['Reserve Position in the IMF (USD Million)'])
+          total_reserves_inr_crore: toNullable(parseNumber(row['Total Reserves (INR Crore)'])) as any,
+          total_reserves_usd_mn: toNullable(parseNumber(row['Total Reserves (USD Million)'])) as any,
+          foreign_currency_assets_inr_crore: toNullable(parseNumber(row['Foreign Currency Assets (INR Crore)'])) as any,
+          foreign_currency_assets_usd_mn: toNullable(parseNumber(row['Foreign Currency Assets (USD Million)'])) as any,
+          gold_inr_crore: toNullable(parseNumber(row['Gold (INR Crore)'])) as any,
+          gold_usd_mn: toNullable(parseNumber(row['Gold (USD Million)'])) as any,
+          sdrs_inr_crore: toNullable(parseNumber(row['SDRs (INR Crore)'])) as any,
+          sdrs_usd_mn: toNullable(parseNumber(row['SDRs (USD Million)'])) as any,
+          reserve_position_imf_inr_crore: toNullable(parseNumber(row['Reserve Position in the IMF (INR Crore)'])) as any,
+          reserve_position_imf_usd_mn: toNullable(parseNumber(row['Reserve Position in the IMF (USD Million)'])) as any
         };
         
         validRows.push(forexRow);
@@ -222,7 +238,15 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
             ignoreDuplicates: false 
           });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase upsert error:', {
+            message: (error as any).message,
+            details: (error as any).details,
+            hint: (error as any).hint,
+            code: (error as any).code
+          });
+          throw error;
+        }
         
         toast.success(`Successfully uploaded ${validRows.length} records`);
         await fetchForexData();
@@ -235,11 +259,12 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
       });
       
     } catch (error) {
-      console.error('Error processing Excel file:', error);
-      toast.error('Failed to process Excel file');
+      const errObj = error as any;
+      console.error('Error processing Excel file:', errObj?.message || errObj, errObj);
+      toast.error(`Failed to process Excel file${errObj?.message ? `: ${errObj.message}` : ''}`);
       setUploadStatus(prev => ({
         ...prev!,
-        errors: [...(prev?.errors || []), `Processing error: ${error}`]
+        errors: [...(prev?.errors || []), `Processing error: ${errObj?.message || errObj}`]
       }));
     } finally {
       setUploading(false);
