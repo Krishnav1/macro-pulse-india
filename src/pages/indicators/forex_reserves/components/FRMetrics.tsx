@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
@@ -10,9 +11,42 @@ interface FRMetricsProps {
 }
 
 export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
-  const { data: forexData, loading } = useForexReserves(unit, 'latest', selectedFY);
+  const { data: forexData, loading } = useForexReserves(unit, selectedFY ? timeframe : 'latest', selectedFY);
   
-  const latestData = forexData?.[0];
+  // For FY view, calculate totals; for latest view, use latest data
+  const displayData = useMemo(() => {
+    if (!forexData?.length) return null;
+    
+    if (selectedFY) {
+      // Calculate FY totals by summing all data points
+      const unitSuffix = unit === 'usd' ? 'mn' : 'crore';
+      const totalField = `total_reserves_${unit}_${unitSuffix}`;
+      const fcaField = `foreign_currency_assets_${unit}_${unitSuffix}`;
+      const goldField = `gold_${unit}_${unitSuffix}`;
+      const sdrField = `sdrs_${unit}_${unitSuffix}`;
+      const imfField = `reserve_position_imf_${unit}_${unitSuffix}`;
+      
+      const totals = forexData.reduce((acc, item) => ({
+        [totalField]: acc[totalField] + (item[totalField] || 0),
+        [fcaField]: acc[fcaField] + (item[fcaField] || 0),
+        [goldField]: acc[goldField] + (item[goldField] || 0),
+        [sdrField]: acc[sdrField] + (item[sdrField] || 0),
+        [imfField]: acc[imfField] + (item[imfField] || 0),
+        week_ended: `FY${selectedFY} Total`
+      }), {
+        [totalField]: 0,
+        [fcaField]: 0,
+        [goldField]: 0,
+        [sdrField]: 0,
+        [imfField]: 0,
+        week_ended: `FY${selectedFY} Total`
+      });
+      
+      return totals;
+    }
+    
+    return forexData[0];
+  }, [forexData, selectedFY, unit]);
 
   const formatValue = (value: number | undefined) => {
     if (!value) return 'N/A';
@@ -70,7 +104,7 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
     );
   }
 
-  if (!latestData) {
+  if (!displayData) {
     return (
       <Card>
         <CardHeader>
@@ -92,18 +126,18 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
 
   // Mock previous week data for change calculation (in real implementation, fetch previous week)
   const mockPreviousData = {
-    [totalField]: latestData[totalField] * 0.995,
-    [fcaField]: latestData[fcaField] * 0.992,
-    [goldField]: latestData[goldField] * 1.002,
-    [sdrField]: latestData[sdrField] * 0.998,
-    [imfField]: latestData[imfField] * 1.001,
+    [totalField]: displayData[totalField] * 0.995,
+    [fcaField]: displayData[fcaField] * 0.992,
+    [goldField]: displayData[goldField] * 1.002,
+    [sdrField]: displayData[sdrField] * 0.998,
+    [imfField]: displayData[imfField] * 1.001,
   };
 
-  const totalChange = formatChange(latestData[totalField], mockPreviousData[totalField]);
-  const fcaChange = formatChange(latestData[fcaField], mockPreviousData[fcaField]);
-  const goldChange = formatChange(latestData[goldField], mockPreviousData[goldField]);
-  const sdrChange = formatChange(latestData[sdrField], mockPreviousData[sdrField]);
-  const imfChange = formatChange(latestData[imfField], mockPreviousData[imfField]);
+  const totalChange = formatChange(displayData[totalField], mockPreviousData[totalField]);
+  const fcaChange = formatChange(displayData[fcaField], mockPreviousData[fcaField]);
+  const goldChange = formatChange(displayData[goldField], mockPreviousData[goldField]);
+  const sdrChange = formatChange(displayData[sdrField], mockPreviousData[sdrField]);
+  const imfChange = formatChange(displayData[imfField], mockPreviousData[imfField]);
 
   return (
     <Card>
@@ -112,7 +146,7 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
           {selectedFY ? `FY${selectedFY} Year-End` : 'Latest Metrics'}
         </CardTitle>
         <div className="text-sm text-muted-foreground">
-          {selectedFY ? 'As of March 31' : `Week ended: ${new Date(latestData.week_ended).toLocaleDateString()}`}
+          {selectedFY ? 'As of March 31' : `Week ended: ${new Date(displayData.week_ended).toLocaleDateString()}`}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -128,7 +162,7 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
             </Badge>
           </div>
           <div className="text-2xl font-bold">
-            {formatValue(latestData[totalField])}
+            {formatValue(displayData[totalField])}
           </div>
           <div className="text-sm text-muted-foreground mt-1">
             {unit === 'usd' ? 'USD Million' : 'INR Crore'}
@@ -149,7 +183,7 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
               </div>
             </div>
             <div className="text-lg font-semibold">
-              {formatValue(latestData[fcaField])}
+              {formatValue(displayData[fcaField])}
             </div>
           </div>
 
@@ -165,7 +199,7 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
               </div>
             </div>
             <div className="text-lg font-semibold">
-              {formatValue(latestData[goldField])}
+              {formatValue(displayData[goldField])}
             </div>
           </div>
 
@@ -181,7 +215,7 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
               </div>
             </div>
             <div className="text-lg font-semibold">
-              {formatValue(latestData[sdrField])}
+              {formatValue(displayData[sdrField])}
             </div>
           </div>
 
@@ -197,7 +231,7 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
               </div>
             </div>
             <div className="text-lg font-semibold">
-              {formatValue(latestData[imfField])}
+              {formatValue(displayData[imfField])}
             </div>
           </div>
         </div>

@@ -77,7 +77,7 @@ export const FRChart = ({
     if (!chartData.length) return [];
 
     if (selectedFY) {
-      // For FY view, aggregate by month
+      // For FY view, aggregate by month (sum weekly data within each month)
       const monthlyData = new Map();
       
       chartData.forEach(item => {
@@ -99,6 +99,7 @@ export const FRChart = ({
         }
         
         const monthData = monthlyData.get(monthKey);
+        // Sum the values instead of averaging for FY view
         monthData.total_reserves += item.total_reserves || 0;
         monthData.foreign_currency_assets += item.foreign_currency_assets || 0;
         monthData.gold += item.gold || 0;
@@ -107,15 +108,8 @@ export const FRChart = ({
         monthData.count++;
       });
       
-      // Average the values
-      return Array.from(monthlyData.values()).map(item => ({
-        ...item,
-        total_reserves: item.total_reserves / item.count,
-        foreign_currency_assets: item.foreign_currency_assets / item.count,
-        gold: item.gold / item.count,
-        sdrs: item.sdrs / item.count,
-        reserve_position_imf: item.reserve_position_imf / item.count
-      })).sort((a, b) => a.date.localeCompare(b.date));
+      // Use the sum values (representing total for the month)
+      return Array.from(monthlyData.values()).sort((a, b) => a.date.localeCompare(b.date));
     }
 
     if (timeframe === 'all' || timeframe === '10Y' || timeframe === '5Y') {
@@ -255,49 +249,43 @@ export const FRChart = ({
             Foreign Exchange Reserves
           </div>
           
-          {/* Unit Toggle */}
-          <div className="flex bg-muted rounded-lg p-1">
-            <Button
-              variant={unit === 'usd' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setUnit('usd')}
-              className="h-8 px-3"
-            >
-              USD
-            </Button>
-            <Button
-              variant={unit === 'inr' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setUnit('inr')}
-              className="h-8 px-3"
-            >
-              INR
-            </Button>
+          <div className="flex items-center gap-3">
+            {/* Financial Year Dropdown */}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <select
+                value={selectedFY || 'all'}
+                onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
+                className="bg-background border border-input rounded-md px-3 py-1 text-sm"
+              >
+                <option value="all">All Years</option>
+                {availableFYs?.map(fy => (
+                  <option key={fy} value={fy}>FY{fy}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Unit Toggle */}
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={unit === 'usd' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setUnit('usd')}
+                className="h-8 px-3"
+              >
+                USD
+              </Button>
+              <Button
+                variant={unit === 'inr' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setUnit('inr')}
+                className="h-8 px-3"
+              >
+                INR
+              </Button>
+            </div>
           </div>
         </CardTitle>
-        
-        {/* Financial Year Selection */}
-        <div className="flex items-center gap-2 flex-wrap mt-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Financial Year:</span>
-          <Button
-            variant={selectedFY === null ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedFY(null)}
-          >
-            All Years
-          </Button>
-          {availableFYs?.map(fy => (
-            <Button
-              key={fy}
-              variant={selectedFY === fy ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedFY(fy)}
-            >
-              FY{fy}
-            </Button>
-          ))}
-        </div>
 
         {/* Timeline Options (only when no FY selected) */}
         {!selectedFY && (
@@ -355,46 +343,25 @@ export const FRChart = ({
         
         {/* Component Selection */}
         <div className="mt-4 pt-4 border-t">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3 flex-wrap">
             <h4 className="text-sm font-medium text-muted-foreground">Components:</h4>
-            <div className="flex gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scrollComponents('left')}
-                disabled={componentScrollIndex === 0}
-                className="h-7 w-7 p-0"
-              >
-                <ChevronLeft className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scrollComponents('right')}
-                disabled={componentScrollIndex >= components.length - 3}
-                className="h-7 w-7 p-0"
-              >
-                <ChevronRight className="h-3 w-3" />
-              </Button>
+            <div className="flex gap-2 flex-wrap">
+              {components.map((component) => (
+                <Button
+                  key={component.key}
+                  variant={selectedComponents.includes(component.key) ? 'default' : 'outline'}
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => toggleComponent(component.key)}
+                  style={selectedComponents.includes(component.key) ? { 
+                    backgroundColor: component.color, 
+                    borderColor: component.color 
+                  } : {}}
+                >
+                  {component.label}
+                </Button>
+              ))}
             </div>
-          </div>
-          
-          <div className="flex gap-2 justify-end flex-wrap">
-            {visibleComponents.map((component) => (
-              <Button
-                key={component.key}
-                variant={selectedComponents.includes(component.key) ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs h-8"
-                onClick={() => toggleComponent(component.key)}
-                style={selectedComponents.includes(component.key) ? { 
-                  backgroundColor: component.color, 
-                  borderColor: component.color 
-                } : {}}
-              >
-                {component.label}
-              </Button>
-            ))}
           </div>
         </div>
       </CardContent>

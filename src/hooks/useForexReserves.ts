@@ -45,8 +45,20 @@ export const useForexReserves = (
     let startDate: Date;
 
     if (selectedFY) {
-      // Parse FY format like "24-25" to get start and end dates
-      const [startYear, endYear] = selectedFY.split('-').map(y => parseInt(`20${y}`));
+      // Parse FY format like "24-25" or "2024-25" to get start and end dates
+      const [startYearStr, endYearStr] = selectedFY.split('-');
+      let startYear, endYear;
+      
+      if (startYearStr.length === 2) {
+        // Format like "24-25"
+        startYear = parseInt(`20${startYearStr}`);
+        endYear = parseInt(`20${endYearStr}`);
+      } else {
+        // Format like "2024-25"
+        startYear = parseInt(startYearStr);
+        endYear = parseInt(`20${endYearStr}`);
+      }
+      
       startDate = new Date(startYear, 3, 1); // April 1st
       const endDate = new Date(endYear, 2, 31); // March 31st
       return { startDate, endDate };
