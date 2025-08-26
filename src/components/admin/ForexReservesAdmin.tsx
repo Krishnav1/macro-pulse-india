@@ -58,14 +58,14 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
   const fetchForexData = async () => {
     setLoading(true);
     try {
-      const { data: forexData, error } = await supabase
+      const { data: forexData, error } = await (supabase as any)
         .from('forex_reserves_weekly')
         .select('*')
         .order('week_ended', { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      setData(forexData || []);
+      setData((forexData || []) as ForexReservesRow[]);
     } catch (error) {
       console.error('Error fetching forex data:', error);
       toast.error('Failed to load forex reserves data');
@@ -215,7 +215,7 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
       
       // Upload to Supabase
       if (validRows.length > 0) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('forex_reserves_weekly')
           .upsert(validRows, { 
             onConflict: 'week_ended',

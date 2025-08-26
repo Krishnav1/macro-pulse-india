@@ -36,6 +36,7 @@ const App = () => (
               <Route path="/indicators/cpi" element={<CPIPage />} />
               <Route path="/indicators/cpi/insights" element={<CPIFullInsight />} />
               <Route path="/indicators/iip" element={<IIPPage />} />
+              <Route path="/indicators/forex_reserves" element={<IndicatorRouter />} />
               <Route path="/indicator/iip" element={<IIPPage />} />
               <Route path="/indicator/:id" element={<IndicatorRouter />} />
               <Route path="/events" element={<Events />} />

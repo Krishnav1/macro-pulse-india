@@ -81,23 +81,27 @@ export const useForexReserves = (
         setLoading(true);
         setError(null);
 
-        // First, get available FYs
-        const { data: allData, error: fyError } = await supabase
-          .from('forex_reserves_weekly')
-          .select('week_ended')
-          .order('week_ended', { ascending: false });
+        // First, get available FYs from Supabase
+        try {
+          const { data: allData, error: fyError } = await (supabase as any)
+            .from('forex_reserves_weekly')
+            .select('week_ended')
+            .order('week_ended', { ascending: false });
 
-        if (fyError) throw fyError;
-
-        if (allData) {
-          const fys = Array.from(new Set(
-            allData.map(item => getFYFromDate(item.week_ended))
-          )).sort().reverse();
-          setAvailableFYs(fys);
+          if (!fyError && allData) {
+            const fys = Array.from(new Set(
+              allData.map((item: any) => getFYFromDate(item.week_ended))
+            )).sort().reverse() as string[];
+            setAvailableFYs(fys);
+          } else {
+            setAvailableFYs(['24-25', '23-24', '22-23', '21-22', '20-21']);
+          }
+        } catch {
+          setAvailableFYs(['24-25', '23-24', '22-23', '21-22', '20-21']);
         }
 
-        // Build query
-        let query = supabase
+        // Build Supabase query
+        let query = (supabase as any)
           .from('forex_reserves_weekly')
           .select('*')
           .order('week_ended', { ascending: false });
@@ -117,12 +121,16 @@ export const useForexReserves = (
 
         const { data: forexData, error } = await query;
 
-        if (error) throw error;
-
-        setData(forexData || []);
+        if (error) {
+          console.warn('Forex data fetch failed, using empty data:', error);
+          setData([]);
+        } else {
+          setData((forexData || []) as ForexReservesData[]);
+        }
       } catch (err) {
         console.error('Error fetching forex reserves data:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
+        setData([]);
       } finally {
         setLoading(false);
       }

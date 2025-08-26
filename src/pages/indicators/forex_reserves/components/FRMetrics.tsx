@@ -22,11 +22,11 @@ export const FRMetrics = ({ unit, selectedFY }: FRMetricsProps) => {
     }
   };
 
-  const formatChange = (current: number | undefined, previous: number | undefined) => {
+  const formatChange = (current: number | undefined, previous: number | undefined): { value: string; trend: 'up' | 'down' | 'neutral' } => {
     if (!current || !previous) return { value: 'N/A', trend: 'neutral' as const };
     
     const change = ((current - previous) / previous) * 100;
-    const trend = change > 0 ? 'up' : change < 0 ? 'down' : 'neutral';
+    const trend: 'up' | 'down' | 'neutral' = change > 0 ? 'up' : change < 0 ? 'down' : 'neutral';
     
     return {
       value: `${change > 0 ? '+' : ''}${change.toFixed(2)}%`,
