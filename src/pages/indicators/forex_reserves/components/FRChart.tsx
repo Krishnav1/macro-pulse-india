@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Calendar, TrendingUp, BarChart3, PieChart } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Calendar, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useForexReserves } from '@/hooks/useForexReserves';
+import { format } from 'date-fns';
 
 interface FRChartProps {
   timeframe: string;
@@ -13,6 +13,8 @@ interface FRChartProps {
   setUnit: (unit: 'usd' | 'inr') => void;
   selectedFY: string | null;
   setSelectedFY: (fy: string | null) => void;
+  selectedComponents: string[];
+  setSelectedComponents: (components: string[]) => void;
 }
 
 const timeframeOptions = [
@@ -23,10 +25,10 @@ const timeframeOptions = [
 ];
 
 const components = [
-  { key: 'foreign_currency_assets', label: 'Foreign Currency Assets', color: '#8884d8' },
-  { key: 'gold', label: 'Gold', color: '#82ca9d' },
-  { key: 'sdrs', label: 'SDRs', color: '#ffc658' },
-  { key: 'reserve_position_imf', label: 'IMF Position', color: '#ff7300' }
+  { key: 'foreign_currency_assets', label: 'Foreign Currency Assets', color: '#22c55e' },
+  { key: 'gold', label: 'Gold', color: '#f59e0b' },
+  { key: 'sdrs', label: 'SDRs', color: '#3b82f6' },
+  { key: 'reserve_position_imf', label: 'IMF Position', color: '#ef4444' }
 ];
 
 export const FRChart = ({ 
@@ -35,30 +37,130 @@ export const FRChart = ({
   unit, 
   setUnit, 
   selectedFY, 
-  setSelectedFY 
+  setSelectedFY,
+  selectedComponents,
+  setSelectedComponents
 }: FRChartProps) => {
-  const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
-  const [showAsPercentage, setShowAsPercentage] = useState(false);
-  const [chartType, setChartType] = useState<'line' | 'stacked'>('line');
+  const [componentScrollIndex, setComponentScrollIndex] = useState(0);
   
   const { data: forexData, availableFYs, loading } = useForexReserves(unit, timeframe, selectedFY);
 
-  const toggleComponent = (componentKey: string) => {
-    setSelectedComponents(prev => {
-      const newSelection = prev.includes(componentKey) 
-        ? prev.filter(key => key !== componentKey)
-        : [...prev, componentKey];
-      
-      // Auto-switch to stacked chart when components are selected
-      if (newSelection.length > 0) {
-        setChartType('stacked');
-      } else {
-        setChartType('line');
-      }
-      
-      return newSelection;
+  // Process data for chart display
+  const chartData = useMemo(() => {
+    if (!forexData?.length) return [];
+    
+    return forexData.map(item => {
+      const processed: any = {
+        ...item,
+        date: item.week_ended,
+        displayDate: selectedFY 
+          ? format(new Date(item.week_ended), 'MMM')
+          : timeframe === 'all' || timeframe === '10Y' || timeframe === '5Y'
+            ? format(new Date(item.week_ended), 'yyyy')
+            : format(new Date(item.week_ended), 'MMM yy')
+      };
+
+      // Add component values with proper field names
+      const suffix = unit === 'usd' ? 'mn' : 'crore';
+      processed.total_reserves = item[`total_reserves_${unit}_${suffix}`];
+      processed.foreign_currency_assets = item[`foreign_currency_assets_${unit}_${suffix}`];
+      processed.gold = item[`gold_${unit}_${suffix}`];
+      processed.sdrs = item[`sdrs_${unit}_${suffix}`];
+      processed.reserve_position_imf = item[`reserve_position_imf_${unit}_${suffix}`];
+
+      return processed;
     });
-  };
+  }, [forexData, selectedFY, timeframe, unit]);
+
+  // Aggregate data based on timeframe and FY
+  const aggregatedData = useMemo(() => {
+    if (!chartData.length) return [];
+
+    if (selectedFY) {
+      // For FY view, aggregate by month
+      const monthlyData = new Map();
+      
+      chartData.forEach(item => {
+        const date = new Date(item.date);
+        const monthKey = format(date, 'yyyy-MM');
+        const displayMonth = format(date, 'MMM');
+        
+        if (!monthlyData.has(monthKey)) {
+          monthlyData.set(monthKey, {
+            displayDate: displayMonth,
+            date: monthKey,
+            total_reserves: 0,
+            foreign_currency_assets: 0,
+            gold: 0,
+            sdrs: 0,
+            reserve_position_imf: 0,
+            count: 0
+          });
+        }
+        
+        const monthData = monthlyData.get(monthKey);
+        monthData.total_reserves += item.total_reserves || 0;
+        monthData.foreign_currency_assets += item.foreign_currency_assets || 0;
+        monthData.gold += item.gold || 0;
+        monthData.sdrs += item.sdrs || 0;
+        monthData.reserve_position_imf += item.reserve_position_imf || 0;
+        monthData.count++;
+      });
+      
+      // Average the values
+      return Array.from(monthlyData.values()).map(item => ({
+        ...item,
+        total_reserves: item.total_reserves / item.count,
+        foreign_currency_assets: item.foreign_currency_assets / item.count,
+        gold: item.gold / item.count,
+        sdrs: item.sdrs / item.count,
+        reserve_position_imf: item.reserve_position_imf / item.count
+      })).sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    if (timeframe === 'all' || timeframe === '10Y' || timeframe === '5Y') {
+      // For long timeframes, aggregate by year
+      const yearlyData = new Map();
+      
+      chartData.forEach(item => {
+        const date = new Date(item.date);
+        const year = date.getFullYear().toString();
+        
+        if (!yearlyData.has(year)) {
+          yearlyData.set(year, {
+            displayDate: year,
+            date: year,
+            total_reserves: 0,
+            foreign_currency_assets: 0,
+            gold: 0,
+            sdrs: 0,
+            reserve_position_imf: 0,
+            count: 0
+          });
+        }
+        
+        const yearData = yearlyData.get(year);
+        yearData.total_reserves += item.total_reserves || 0;
+        yearData.foreign_currency_assets += item.foreign_currency_assets || 0;
+        yearData.gold += item.gold || 0;
+        yearData.sdrs += item.sdrs || 0;
+        yearData.reserve_position_imf += item.reserve_position_imf || 0;
+        yearData.count++;
+      });
+      
+      // Average the values
+      return Array.from(yearlyData.values()).map(item => ({
+        ...item,
+        total_reserves: item.total_reserves / item.count,
+        foreign_currency_assets: item.foreign_currency_assets / item.count,
+        gold: item.gold / item.count,
+        sdrs: item.sdrs / item.count,
+        reserve_position_imf: item.reserve_position_imf / item.count
+      })).sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    return chartData;
+  }, [chartData, selectedFY, timeframe]);
 
   const formatValue = (value: number) => {
     if (unit === 'usd') {
@@ -68,218 +170,232 @@ export const FRChart = ({
     }
   };
 
-  const getUnitLabel = () => unit === 'usd' ? 'USD Million' : 'INR Crore';
+  const formatTooltip = (value: any, name: string) => {
+    const formattedValue = typeof value === 'number' ? formatValue(value) : value;
+    let label = name;
+    
+    if (name === 'total_reserves') label = 'Total Reserves';
+    else if (name === 'foreign_currency_assets') label = 'Foreign Currency Assets';
+    else if (name === 'gold') label = 'Gold';
+    else if (name === 'sdrs') label = 'SDRs';
+    else if (name === 'reserve_position_imf') label = 'IMF Position';
+    
+    return [formattedValue, label];
+  };
 
-  const processedData = forexData?.map(item => {
-    const processed: any = {
-      ...item,
-      date: new Date(item.week_ended).toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: '2-digit',
-        year: selectedFY ? undefined : '2-digit'
-      })
-    };
+  const customTooltipLabel = (label: string) => {
+    if (selectedFY) return label;
+    return label;
+  };
 
-    if (showAsPercentage && selectedComponents.length > 0) {
-      const total = item[`total_reserves_${unit}_${unit === 'usd' ? 'mn' : 'crore'}`];
-      components.forEach(comp => {
-        const fieldName = `${comp.key}_${unit}_${unit === 'usd' ? 'mn' : 'crore'}`;
-        processed[fieldName] = ((item[fieldName] / total) * 100);
-      });
+  const scrollComponents = (direction: 'left' | 'right') => {
+    const maxIndex = Math.max(0, components.length - 3);
+    if (direction === 'left') {
+      setComponentScrollIndex(Math.max(0, componentScrollIndex - 1));
+    } else {
+      setComponentScrollIndex(Math.min(maxIndex, componentScrollIndex + 1));
     }
+  };
 
-    return processed;
-  });
+  const visibleComponents = components.slice(componentScrollIndex, componentScrollIndex + 3);
+
+  const toggleComponent = (componentKey: string) => {
+    const newComponents = selectedComponents.includes(componentKey) 
+      ? selectedComponents.filter(key => key !== componentKey)
+      : [...selectedComponents, componentKey];
+    setSelectedComponents(newComponents);
+  };
+
+  // Render lines for total reserves and selected components
+  const renderLines = () => {
+    const lines = [];
+    
+    // Always show total reserves line
+    lines.push(
+      <Line 
+        key="total_reserves"
+        type="monotone" 
+        dataKey="total_reserves"
+        stroke="#8884d8"
+        strokeWidth={3}
+        dot={false}
+        activeDot={{ r: 6 }}
+        name="Total Reserves"
+      />
+    );
+    
+    // Add selected component lines
+    selectedComponents.forEach(componentKey => {
+      const component = components.find(c => c.key === componentKey);
+      if (component) {
+        lines.push(
+          <Line 
+            key={componentKey}
+            type="monotone" 
+            dataKey={componentKey}
+            stroke={component.color}
+            strokeWidth={2}
+            dot={false}
+            strokeDasharray="5 5"
+            name={component.label}
+          />
+        );
+      }
+    });
+    
+    return lines;
+  };
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-4">
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Foreign Exchange Reserves
-            </CardTitle>
-            
-            {/* Unit Toggle */}
-            <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={unit === 'usd' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setUnit('usd')}
-                className="h-8 px-3"
-              >
-                USD
-              </Button>
-              <Button
-                variant={unit === 'inr' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setUnit('inr')}
-                className="h-8 px-3"
-              >
-                INR
-              </Button>
-            </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Foreign Exchange Reserves
           </div>
-
-          {/* FY Slicer */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Financial Year:</span>
+          
+          {/* Unit Toggle */}
+          <div className="flex bg-muted rounded-lg p-1">
             <Button
-              variant={selectedFY === null ? 'default' : 'outline'}
+              variant={unit === 'usd' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setSelectedFY(null)}
+              onClick={() => setUnit('usd')}
+              className="h-8 px-3"
             >
-              All Years
+              USD
             </Button>
-            {availableFYs?.map(fy => (
+            <Button
+              variant={unit === 'inr' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setUnit('inr')}
+              className="h-8 px-3"
+            >
+              INR
+            </Button>
+          </div>
+        </CardTitle>
+        
+        {/* Financial Year Selection */}
+        <div className="flex items-center gap-2 flex-wrap mt-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Financial Year:</span>
+          <Button
+            variant={selectedFY === null ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedFY(null)}
+          >
+            All Years
+          </Button>
+          {availableFYs?.map(fy => (
+            <Button
+              key={fy}
+              variant={selectedFY === fy ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedFY(fy)}
+            >
+              FY{fy}
+            </Button>
+          ))}
+        </div>
+
+        {/* Timeline Options (only when no FY selected) */}
+        {!selectedFY && (
+          <div className="flex gap-2 mt-2">
+            {timeframeOptions.map(option => (
               <Button
-                key={fy}
-                variant={selectedFY === fy ? 'default' : 'outline'}
+                key={option.value}
+                variant={timeframe === option.value ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setSelectedFY(fy)}
+                onClick={() => setTimeframe(option.value)}
               >
-                FY{fy}
+                {option.label}
               </Button>
             ))}
           </div>
-
-          {/* Timeframe Options (only when no FY selected) */}
-          {!selectedFY && (
-            <div className="flex gap-2 flex-wrap">
-              {timeframeOptions.map(option => (
-                <Button
-                  key={option.value}
-                  variant={timeframe === option.value ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTimeframe(option.value)}
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          )}
-
-          {/* Component Selection */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Components:</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {components.map(comp => (
-                <Badge
-                  key={comp.key}
-                  variant={selectedComponents.includes(comp.key) ? 'default' : 'outline'}
-                  className="cursor-pointer hover:bg-primary/20"
-                  onClick={() => toggleComponent(comp.key)}
-                  style={{
-                    backgroundColor: selectedComponents.includes(comp.key) ? comp.color : undefined,
-                    borderColor: comp.color
-                  }}
-                >
-                  {comp.label}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          {/* Chart Options (only when components selected) */}
-          {selectedComponents.length > 0 && (
-            <div className="flex items-center gap-4">
-              <Button
-                variant={showAsPercentage ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setShowAsPercentage(!showAsPercentage)}
-                className="flex items-center gap-2"
-              >
-                <PieChart className="h-4 w-4" />
-                % Share
-              </Button>
-            </div>
-          )}
-        </div>
+        )}
       </CardHeader>
 
       <CardContent>
-        <div className="h-[400px]">
+        <div className="h-80">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-muted-foreground">Loading chart data...</div>
+              <div className="text-muted-foreground">Loading forex reserves data...</div>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              {chartType === 'line' ? (
-                <LineChart data={processedData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 12 }}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={formatValue}
-                  />
-                  <Tooltip 
-                    formatter={(value: number) => [formatValue(value), `Total Reserves (${getUnitLabel()})`]}
-                    labelStyle={{ color: '#000' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey={`total_reserves_${unit}_${unit === 'usd' ? 'mn' : 'crore'}`}
-                    stroke="#8884d8" 
-                    strokeWidth={2}
-                    dot={{ r: 2 }}
-                    activeDot={{ r: 4 }}
-                  />
-                </LineChart>
-              ) : (
-                <AreaChart data={processedData} stackOffset={showAsPercentage ? 'expand' : undefined}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 12 }}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={showAsPercentage ? (value) => `${value}%` : formatValue}
-                    domain={showAsPercentage ? [0, 100] : undefined}
-                  />
-                  <Tooltip 
-                    formatter={(value: number, name: string) => {
-                      const component = components.find(c => name.includes(c.key));
-                      const label = component?.label || name;
-                      return [
-                        showAsPercentage ? `${value.toFixed(1)}%` : formatValue(value), 
-                        label
-                      ];
-                    }}
-                    labelStyle={{ color: '#000' }}
-                  />
-                  <Legend />
-                  {selectedComponents.map(compKey => {
-                    const component = components.find(c => c.key === compKey);
-                    if (!component) return null;
-                    
-                    return (
-                      <Area
-                        key={compKey}
-                        type="monotone"
-                        dataKey={`${compKey}_${unit}_${unit === 'usd' ? 'mn' : 'crore'}`}
-                        stackId="1"
-                        stroke={component.color}
-                        fill={component.color}
-                        fillOpacity={0.7}
-                      />
-                    );
-                  })}
-                </AreaChart>
-              )}
+              <LineChart data={aggregatedData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="displayDate" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  interval="preserveStartEnd"
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  tickFormatter={formatValue}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                  formatter={formatTooltip}
+                  labelFormatter={customTooltipLabel}
+                />
+                
+                {renderLines()}
+              </LineChart>
             </ResponsiveContainer>
           )}
+        </div>
+        
+        {/* Component Selection */}
+        <div className="mt-4 pt-4 border-t">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-medium text-muted-foreground">Components:</h4>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => scrollComponents('left')}
+                disabled={componentScrollIndex === 0}
+                className="h-7 w-7 p-0"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => scrollComponents('right')}
+                disabled={componentScrollIndex >= components.length - 3}
+                className="h-7 w-7 p-0"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 justify-end flex-wrap">
+            {visibleComponents.map((component) => (
+              <Button
+                key={component.key}
+                variant={selectedComponents.includes(component.key) ? 'default' : 'outline'}
+                size="sm"
+                className="text-xs h-8"
+                onClick={() => toggleComponent(component.key)}
+                style={selectedComponents.includes(component.key) ? { 
+                  backgroundColor: component.color, 
+                  borderColor: component.color 
+                } : {}}
+              >
+                {component.label}
+              </Button>
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>

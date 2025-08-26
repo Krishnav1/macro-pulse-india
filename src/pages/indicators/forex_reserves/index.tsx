@@ -10,6 +10,7 @@ const ForexReservesPage = () => {
   const [timeframe, setTimeframe] = useState('all');
   const [unit, setUnit] = useState<'usd' | 'inr'>('usd');
   const [selectedFY, setSelectedFY] = useState<string | null>(null);
+  const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
@@ -26,6 +27,8 @@ const ForexReservesPage = () => {
               setUnit={setUnit}
               selectedFY={selectedFY}
               setSelectedFY={setSelectedFY}
+              selectedComponents={selectedComponents}
+              setSelectedComponents={setSelectedComponents}
             />
           </div>
 
@@ -34,6 +37,7 @@ const ForexReservesPage = () => {
             <FRMetrics 
               unit={unit} 
               selectedFY={selectedFY}
+              timeframe={timeframe}
             />
             
             {/* View Full Insight Button */}

@@ -6,9 +6,10 @@ import { useForexReserves } from '@/hooks/useForexReserves';
 interface FRMetricsProps {
   unit: 'usd' | 'inr';
   selectedFY: string | null;
+  timeframe: string;
 }
 
-export const FRMetrics = ({ unit, selectedFY }: FRMetricsProps) => {
+export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
   const { data: forexData, loading } = useForexReserves(unit, 'latest', selectedFY);
   
   const latestData = forexData?.[0];
