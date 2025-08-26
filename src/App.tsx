@@ -17,6 +17,7 @@ const CPIPage = lazy(() => import("./pages/indicators/cpi"));
 const CPIFullInsight = lazy(() => import("./pages/CPIFullInsight"));
 const IIPIndicator = lazy(() => import('./pages/IIPIndicator'));
 const IIPPage = lazy(() => import('./pages/indicators/iip'));
+const RealGdpGrowthPage = lazy(() => import('./pages/indicators/real_gdp_growth'));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/indicators/cpi/insights" element={<CPIFullInsight />} />
               <Route path="/indicators/iip" element={<IIPPage />} />
               <Route path="/indicators/forex_reserves" element={<IndicatorRouter />} />
+              <Route path="/indicators/real_gdp_growth" element={<RealGdpGrowthPage />} />
               <Route path="/indicator/iip" element={<IIPPage />} />
               <Route path="/indicator/:id" element={<IndicatorRouter />} />
               <Route path="/events" element={<Events />} />

@@ -5,11 +5,13 @@ import IndicatorDetailPage from './IndicatorDetailPage';
 // Lazily load indicator pages for code-splitting
 const RepoRatePage = React.lazy(() => import('./indicators/repo_rate'));
 const ForexReservesPage = React.lazy(() => import('./indicators/forex_reserves'));
+const RealGdpGrowthPage = React.lazy(() => import('./indicators/real_gdp_growth'));
 
 // A mapping from indicator ID to its specific component
 const indicatorPageMap: { [key: string]: React.FC } = {
   'repo_rate': RepoRatePage,
   'forex_reserves': ForexReservesPage,
+  'real_gdp_growth': RealGdpGrowthPage,
 };
 
 const IndicatorRouter = () => {
