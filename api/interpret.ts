@@ -2,21 +2,22 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = 'gemini-pro';
+const MODEL_NAME = 'gemini-1.5-pro-latest';
 
 if (!API_KEY) {
   throw new Error('Missing GEMINI_API_KEY environment variable');
 }
 
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: MODEL_NAME });
-
-const generationConfig = {
-  temperature: 0.7,
-  topK: 1,
-  topP: 1,
-  maxOutputTokens: 256,
-};
+const model = genAI.getGenerativeModel({ 
+  model: MODEL_NAME,
+  generationConfig: {
+    temperature: 0.7,
+    topK: 1,
+    topP: 1,
+    maxOutputTokens: 256,
+  }
+});
 
 const safetySettings = [
   { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -52,13 +53,7 @@ export default async function handler(
       return res.status(200).json({ interpretation: cached.text });
     }
 
-    const parts = [{ text: prompt }];
-
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts }],
-      generationConfig,
-      safetySettings,
-    });
+    const result = await model.generateContent(prompt);
 
     const interpretation = result.response.text();
 

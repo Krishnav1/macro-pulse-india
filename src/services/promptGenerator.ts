@@ -25,7 +25,7 @@ export const createForexPrompt = (promptData: ForexPromptData): string => {
 
     case 'composition':
       const fcaPercent = ((data[0]?.value / additionalContext.total) * 100).toFixed(1);
-      const goldPercent = ((data[1]?.value / additionalContext.total) * 100).toFixed(1);
+      const goldPercent = data[1] ? ((data[1].value / additionalContext.total) * 100).toFixed(1) : '0.0';
       return `${baseInstruction}
       Data: Reserve Composition - Foreign Currency Assets: ${fcaPercent}%, Gold: ${goldPercent}%.
       Task: Explain the significance of this composition. Why is FCA dominance important? What does the gold percentage indicate about the reserve strategy?`;
