@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Calendar, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useForexReserves } from '@/hooks/useForexReserves';
 import { format } from 'date-fns';
@@ -13,8 +12,6 @@ interface FRChartProps {
   setUnit: (unit: 'usd' | 'inr') => void;
   selectedFY: string | null;
   setSelectedFY: (fy: string | null) => void;
-  selectedComponents: string[];
-  setSelectedComponents: (components: string[]) => void;
 }
 
 const timeframeOptions = [
@@ -25,10 +22,10 @@ const timeframeOptions = [
 ];
 
 const components = [
-  { key: 'foreign_currency_assets', label: 'Foreign Currency Assets', color: '#22c55e' },
-  { key: 'gold', label: 'Gold', color: '#f59e0b' },
-  { key: 'sdrs', label: 'SDRs', color: '#3b82f6' },
-  { key: 'reserve_position_imf', label: 'IMF Position', color: '#ef4444' }
+  { key: 'foreign_currency_assets', label: 'FCA', color: 'hsl(var(--chart-1))' },
+  { key: 'gold', label: 'Gold', color: 'hsl(var(--chart-2))' },
+  { key: 'sdrs', label: 'SDRs', color: 'hsl(var(--chart-3))' },
+  { key: 'reserve_position_imf', label: 'IMF Position', color: 'hsl(var(--chart-4))' }
 ];
 
 export const FRChart = ({ 
@@ -38,10 +35,7 @@ export const FRChart = ({
   setUnit, 
   selectedFY, 
   setSelectedFY,
-  selectedComponents,
-  setSelectedComponents
 }: FRChartProps) => {
-  const [componentScrollIndex, setComponentScrollIndex] = useState(0);
   
   const { data: forexData, availableFYs, loading } = useForexReserves(unit, timeframe, selectedFY);
 
@@ -61,12 +55,12 @@ export const FRChart = ({
       };
 
       // Add component values with proper field names
-      const suffix = unit === 'usd' ? 'mn' : 'crore';
-      processed.total_reserves = item[`total_reserves_${unit}_${suffix}`];
-      processed.foreign_currency_assets = item[`foreign_currency_assets_${unit}_${suffix}`];
-      processed.gold = item[`gold_${unit}_${suffix}`];
-      processed.sdrs = item[`sdrs_${unit}_${suffix}`];
-      processed.reserve_position_imf = item[`reserve_position_imf_${unit}_${suffix}`];
+      const suffix = unit === 'usd' ? 'usd_mn' : 'inr_crore';
+      processed.total_reserves = item[`total_reserves_${suffix}`];
+      processed.foreign_currency_assets = item[`foreign_currency_assets_${suffix}`];
+      processed.gold = item[`gold_${suffix}`];
+      processed.sdrs = item[`sdrs_${suffix}`];
+      processed.reserve_position_imf = item[`reserve_position_imf_${suffix}`];
 
       return processed;
     });
@@ -164,17 +158,17 @@ export const FRChart = ({
     }
   };
 
-  const formatTooltip = (value: any, name: string) => {
+  const formatTooltip = (value: any, name: string, props: any) => {
+    const { payload } = props;
+    const total = payload.total_reserves;
+    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
     const formattedValue = typeof value === 'number' ? formatValue(value) : value;
     let label = name;
+
+    const component = components.find(c => c.key === name);
+    if (component) label = component.label;
     
-    if (name === 'total_reserves') label = 'Total Reserves';
-    else if (name === 'foreign_currency_assets') label = 'Foreign Currency Assets';
-    else if (name === 'gold') label = 'Gold';
-    else if (name === 'sdrs') label = 'SDRs';
-    else if (name === 'reserve_position_imf') label = 'IMF Position';
-    
-    return [formattedValue, label];
+    return [`${formattedValue} (${percentage}%)`, label];
   };
 
   const customTooltipLabel = (label: string) => {
@@ -182,63 +176,6 @@ export const FRChart = ({
     return label;
   };
 
-  const scrollComponents = (direction: 'left' | 'right') => {
-    const maxIndex = Math.max(0, components.length - 3);
-    if (direction === 'left') {
-      setComponentScrollIndex(Math.max(0, componentScrollIndex - 1));
-    } else {
-      setComponentScrollIndex(Math.min(maxIndex, componentScrollIndex + 1));
-    }
-  };
-
-  const visibleComponents = components.slice(componentScrollIndex, componentScrollIndex + 3);
-
-  const toggleComponent = (componentKey: string) => {
-    const newComponents = selectedComponents.includes(componentKey) 
-      ? selectedComponents.filter(key => key !== componentKey)
-      : [...selectedComponents, componentKey];
-    setSelectedComponents(newComponents);
-  };
-
-  // Render lines for total reserves and selected components
-  const renderLines = () => {
-    const lines = [];
-    
-    // Always show total reserves line
-    lines.push(
-      <Line 
-        key="total_reserves"
-        type="monotone" 
-        dataKey="total_reserves"
-        stroke="#8884d8"
-        strokeWidth={3}
-        dot={false}
-        activeDot={{ r: 6 }}
-        name="Total Reserves"
-      />
-    );
-    
-    // Add selected component lines
-    selectedComponents.forEach(componentKey => {
-      const component = components.find(c => c.key === componentKey);
-      if (component) {
-        lines.push(
-          <Line 
-            key={componentKey}
-            type="monotone" 
-            dataKey={componentKey}
-            stroke={component.color}
-            strokeWidth={2}
-            dot={false}
-            strokeDasharray="5 5"
-            name={component.label}
-          />
-        );
-      }
-    });
-    
-    return lines;
-  };
 
   return (
     <Card>
@@ -267,22 +204,26 @@ export const FRChart = ({
             
             {/* Unit Toggle */}
             <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={unit === 'usd' ? 'default' : 'ghost'}
-                size="sm"
+              <button
                 onClick={() => setUnit('usd')}
-                className="h-8 px-3"
+                className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 ${
+                  unit === 'usd' 
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                    : 'hover:bg-accent hover:text-accent-foreground'
+                }`}
               >
                 USD
-              </Button>
-              <Button
-                variant={unit === 'inr' ? 'default' : 'ghost'}
-                size="sm"
+              </button>
+              <button
                 onClick={() => setUnit('inr')}
-                className="h-8 px-3"
+                className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 ${
+                  unit === 'inr' 
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                    : 'hover:bg-accent hover:text-accent-foreground'
+                }`}
               >
                 INR
-              </Button>
+              </button>
             </div>
           </div>
         </CardTitle>
@@ -291,14 +232,17 @@ export const FRChart = ({
         {!selectedFY && (
           <div className="flex gap-2 mt-2">
             {timeframeOptions.map(option => (
-              <Button
+              <button
                 key={option.value}
-                variant={timeframe === option.value ? 'default' : 'outline'}
-                size="sm"
                 onClick={() => setTimeframe(option.value)}
+                className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 px-3 ${
+                  timeframe === option.value
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                }`}
               >
                 {option.label}
-              </Button>
+              </button>
             ))}
           </div>
         )}
@@ -312,7 +256,7 @@ export const FRChart = ({
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={aggregatedData}>
+              <AreaChart data={aggregatedData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="displayDate" 
@@ -334,36 +278,25 @@ export const FRChart = ({
                   formatter={formatTooltip}
                   labelFormatter={customTooltipLabel}
                 />
-                
-                {renderLines()}
-              </LineChart>
+                <Legend />
+                {
+                  components.map(comp => (
+                    <Area 
+                      key={comp.key} 
+                      type="monotone" 
+                      dataKey={comp.key} 
+                      stackId="1" 
+                      stroke={comp.color} 
+                      fill={comp.color} 
+                      name={comp.label} 
+                    />
+                  ))
+                }
+              </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
         
-        {/* Component Selection */}
-        <div className="mt-4 pt-4 border-t">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h4 className="text-sm font-medium text-muted-foreground">Components:</h4>
-            <div className="flex gap-2 flex-wrap">
-              {components.map((component) => (
-                <Button
-                  key={component.key}
-                  variant={selectedComponents.includes(component.key) ? 'default' : 'outline'}
-                  size="sm"
-                  className="text-xs h-8"
-                  onClick={() => toggleComponent(component.key)}
-                  style={selectedComponents.includes(component.key) ? { 
-                    backgroundColor: component.color, 
-                    borderColor: component.color 
-                  } : {}}
-                >
-                  {component.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
