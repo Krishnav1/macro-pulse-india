@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { Calendar, ChevronLeft, ChevronRight, AlertCircle, TrendingUp, Zap } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from 'recharts';
 import { useCpiSeries } from '@/hooks/useCpiSeries';
+import { useCpiEvents } from '@/hooks/useCpiEvents';
 import { format } from 'date-fns';
 
 interface CPIChartProps {
@@ -18,6 +19,9 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
   const [dataType, setDataType] = useState<'index' | 'inflation'>('inflation');
   const [selectedComparisons, setSelectedComparisons] = useState<string[]>([]);
   const [showComparisonError, setShowComparisonError] = useState(false);
+  const [showEvents, setShowEvents] = useState(true);
+  const [selectedImpacts, setSelectedImpacts] = useState<string[]>(['high', 'medium', 'low']);
+  const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
 
   const comparisonIndicators = [
     { id: 'cfpi', name: 'Consumer Food Price Index' },
@@ -76,6 +80,12 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
     enabled: geography.includes('combined')
   });
 
+  // Fetch CPI events for the current timeframe
+  const { data: eventsData, loading: eventsLoading } = useCpiEvents({
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate
+  });
+
   const loading = ruralLoading || urbanLoading || combinedLoading;
   const cpiData = [...(ruralData || []), ...(urbanData || []), ...(combinedData || [])];
 
@@ -104,6 +114,36 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
     
     return Array.from(dataByDate.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [cpiData, dataType]);
+
+  // Process events for display
+  const processedEvents = useMemo(() => {
+    if (!eventsData || !showEvents) return [];
+    
+    return eventsData
+      .filter(event => selectedImpacts.includes(event.impact))
+      .map(event => ({
+        ...event,
+        displayDate: event.date,
+        color: event.impact === 'high' ? '#ef4444' : 
+               event.impact === 'medium' ? '#f59e0b' : '#22c55e',
+        icon: event.impact === 'high' ? AlertCircle : 
+              event.impact === 'medium' ? TrendingUp : Zap
+      }));
+  }, [eventsData, showEvents, selectedImpacts]);
+
+  // Get Y position for event markers (slightly below the chart area)
+  const getEventYPosition = () => {
+    if (!chartData.length) return 0;
+    const allValues = chartData.flatMap(item => 
+      Object.keys(item)
+        .filter(key => key !== 'date')
+        .map(key => item[key])
+        .filter(val => typeof val === 'number' && !isNaN(val))
+    );
+    if (!allValues.length) return 0;
+    const min = Math.min(...allValues);
+    return min - (Math.abs(min) * 0.1); // Position 10% below minimum value
+  };
 
   // Calculate Y-axis domain for better scaling
   const yAxisDomain = useMemo(() => {
@@ -199,6 +239,46 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
     setGeography(newGeography);
   };
 
+  // Toggle impact filter
+  const toggleImpact = (impact: string) => {
+    setSelectedImpacts(prev => 
+      prev.includes(impact) 
+        ? prev.filter(i => i !== impact)
+        : [...prev, impact]
+    );
+  };
+
+  // Custom event tooltip
+  const renderEventTooltip = (event: any) => {
+    if (!hoveredEvent || hoveredEvent !== event.id) return null;
+    
+    return (
+      <div className="absolute z-50 p-3 bg-white border border-gray-200 rounded-lg shadow-lg max-w-xs">
+        <div className="flex items-center gap-2 mb-2">
+          <div 
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: event.color }}
+          />
+          <span className="text-xs font-medium text-gray-500 uppercase">
+            {event.impact} Impact
+          </span>
+        </div>
+        <h4 className="font-medium text-sm mb-1">{event.title}</h4>
+        <p className="text-xs text-gray-600 mb-2">
+          {format(new Date(event.date), 'MMM dd, yyyy')}
+        </p>
+        {event.description && (
+          <p className="text-xs text-gray-700">{event.description}</p>
+        )}
+        {event.tag && (
+          <span className="inline-block mt-2 px-2 py-1 bg-gray-100 text-xs rounded">
+            {event.tag}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   // Geography colors
   const geoColors = {
     rural: '#22c55e',    // Green
@@ -266,22 +346,66 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
           </div>
         </CardTitle>
         
-        {/* Data Type Toggle */}
-        <div className="flex gap-2 mt-2">
-          <Button
-            variant={dataType === 'index' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDataType('index')}
-          >
-            Index
-          </Button>
-          <Button
-            variant={dataType === 'inflation' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDataType('inflation')}
-          >
-            Inflation Rate
-          </Button>
+        {/* Data Type and Events Toggle */}
+        <div className="flex gap-2 mt-2 flex-wrap">
+          <div className="flex gap-2">
+            <button
+              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                dataType === 'index' 
+                  ? 'bg-primary text-primary-foreground border-primary' 
+                  : 'bg-background text-foreground border-border hover:bg-accent'
+              }`}
+              onClick={() => setDataType('index')}
+            >
+              Index
+            </button>
+            <button
+              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                dataType === 'inflation' 
+                  ? 'bg-primary text-primary-foreground border-primary' 
+                  : 'bg-background text-foreground border-border hover:bg-accent'
+              }`}
+              onClick={() => setDataType('inflation')}
+            >
+              Inflation Rate
+            </button>
+          </div>
+          
+          {/* Events Toggle */}
+          <div className="flex gap-2 items-center">
+            <button
+              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                showEvents 
+                  ? 'bg-blue-500 text-white border-blue-500' 
+                  : 'bg-background text-foreground border-border hover:bg-accent'
+              }`}
+              onClick={() => setShowEvents(!showEvents)}
+            >
+              📅 Events
+            </button>
+            
+            {/* Impact Filters */}
+            {showEvents && (
+              <div className="flex gap-1">
+                {[{ key: 'high', label: 'High', color: '#ef4444' }, 
+                  { key: 'medium', label: 'Med', color: '#f59e0b' }, 
+                  { key: 'low', label: 'Low', color: '#22c55e' }].map(impact => (
+                  <button
+                    key={impact.key}
+                    className={`px-2 py-1 text-xs rounded border transition-colors ${
+                      selectedImpacts.includes(impact.key)
+                        ? 'text-white border-transparent'
+                        : 'bg-background text-foreground border-border hover:bg-accent'
+                    }`}
+                    style={selectedImpacts.includes(impact.key) ? { backgroundColor: impact.color } : {}}
+                    onClick={() => toggleImpact(impact.key)}
+                  >
+                    {impact.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <CardDescription>
           CPI inflation trends with major economic events highlighted
@@ -322,14 +446,54 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
                 
                 {/* Dynamic Lines for Geography and Comparisons */}
                 {renderLines()}
+                
+                {/* Event Markers */}
+                {showEvents && processedEvents.map((event) => (
+                  <ReferenceDot
+                    key={event.id}
+                    x={event.displayDate}
+                    y={getEventYPosition()}
+                    r={4}
+                    fill={event.color}
+                    stroke="white"
+                    strokeWidth={2}
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={() => setHoveredEvent(event.id)}
+                    onMouseLeave={() => setHoveredEvent(null)}
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           )}
         </div>
         
-        {/* Base Year Note */}
-        <div className="mt-2 text-xs text-muted-foreground text-center">
-          Data is based on Base: 2012 = 100
+        {/* Event Tooltip */}
+        {hoveredEvent && processedEvents.find(e => e.id === hoveredEvent) && 
+          renderEventTooltip(processedEvents.find(e => e.id === hoveredEvent))
+        }
+        
+        {/* Base Year Note and Event Legend */}
+        <div className="mt-2 flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            Data is based on Base: 2012 = 100
+          </div>
+          {showEvents && processedEvents.length > 0 && (
+            <div className="flex items-center gap-4 text-xs">
+              <span className="text-muted-foreground">Events:</span>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                <span>High</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                <span>Medium</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                <span>Low</span>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Geography and Compare Options */}
@@ -339,30 +503,39 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
             <div className="flex items-center gap-3">
               <h4 className="text-sm font-medium text-muted-foreground">Geography:</h4>
               <div className="flex gap-2">
-                <Button
-                  variant={geography.includes('rural') ? 'default' : 'outline'}
-                  size="sm"
+                <button
+                  className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                    geography.includes('rural')
+                      ? 'text-white border-transparent'
+                      : 'bg-background text-foreground border-border hover:bg-accent'
+                  }`}
+                  style={geography.includes('rural') ? { backgroundColor: geoColors.rural } : {}}
                   onClick={() => toggleGeography('rural')}
-                  style={geography.includes('rural') ? { backgroundColor: geoColors.rural, borderColor: geoColors.rural } : {}}
                 >
                   Rural
-                </Button>
-                <Button
-                  variant={geography.includes('urban') ? 'default' : 'outline'}
-                  size="sm"
+                </button>
+                <button
+                  className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                    geography.includes('urban')
+                      ? 'text-white border-transparent'
+                      : 'bg-background text-foreground border-border hover:bg-accent'
+                  }`}
+                  style={geography.includes('urban') ? { backgroundColor: geoColors.urban } : {}}
                   onClick={() => toggleGeography('urban')}
-                  style={geography.includes('urban') ? { backgroundColor: geoColors.urban, borderColor: geoColors.urban } : {}}
                 >
                   Urban
-                </Button>
-                <Button
-                  variant={geography.includes('combined') ? 'default' : 'outline'}
-                  size="sm"
+                </button>
+                <button
+                  className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                    geography.includes('combined')
+                      ? 'text-white border-transparent'
+                      : 'bg-background text-foreground border-border hover:bg-accent'
+                  }`}
+                  style={geography.includes('combined') ? { backgroundColor: geoColors.combined } : {}}
                   onClick={() => toggleGeography('combined')}
-                  style={geography.includes('combined') ? { backgroundColor: geoColors.combined, borderColor: geoColors.combined } : {}}
                 >
                   Combined
-                </Button>
+                </button>
               </div>
             </div>
 
@@ -370,24 +543,20 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
             <div className="flex items-center gap-3">
               <h4 className="text-sm font-medium text-muted-foreground">Compare with:</h4>
               <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
+                  className="h-7 w-7 p-0 rounded border border-border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   onClick={() => scrollComparisons('left')}
                   disabled={comparisonScrollIndex === 0}
-                  className="h-7 w-7 p-0"
                 >
                   <ChevronLeft className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
+                </button>
+                <button
+                  className="h-7 w-7 p-0 rounded border border-border bg-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   onClick={() => scrollComparisons('right')}
                   disabled={comparisonScrollIndex >= comparisonIndicators.length - 4}
-                  className="h-7 w-7 p-0"
                 >
                   <ChevronRight className="h-3 w-3" />
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -395,15 +564,17 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
           {/* Comparison Indicators - Clickable */}
           <div className="flex gap-2 justify-end flex-wrap">
             {visibleComparisons.map((comparison) => (
-              <Button
+              <button
                 key={comparison.id}
-                variant={selectedComparisons.includes(comparison.id) ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs h-8"
+                className={`px-3 py-1 text-xs h-8 rounded-md border transition-colors ${
+                  selectedComparisons.includes(comparison.id)
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background text-foreground border-border hover:bg-accent'
+                }`}
                 onClick={() => toggleComparison(comparison.id)}
               >
                 {comparison.name}
-              </Button>
+              </button>
             ))}
           </div>
           
