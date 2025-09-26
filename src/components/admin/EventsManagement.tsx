@@ -11,7 +11,7 @@ import { type IndicatorEventData } from '@/lib/supabase-admin';
 
 interface EventsManagementProps {
   events: IndicatorEventData[];
-  onAddEvent: (event: { date: string; description: string; impact: 'low' | 'medium' | 'high' }) => void;
+  onAddEvent: (event: { date: string; title: string; description: string; impact: 'low' | 'medium' | 'high'; tag?: string }) => void;
   onDeleteEvent: (index: number) => void;
   isLoading?: boolean;
 }
@@ -24,14 +24,16 @@ export const EventsManagement: React.FC<EventsManagementProps> = ({
 }) => {
   const [newEvent, setNewEvent] = useState({
     date: '',
+    title: '',
     description: '',
-    impact: 'medium' as 'low' | 'medium' | 'high'
+    impact: 'medium' as 'low' | 'medium' | 'high',
+    tag: ''
   });
 
   const handleAddEvent = () => {
-    if (newEvent.date && newEvent.description) {
+    if (newEvent.date && newEvent.title && newEvent.description) {
       onAddEvent(newEvent);
-      setNewEvent({ date: '', description: '', impact: 'medium' });
+      setNewEvent({ date: '', title: '', description: '', impact: 'medium', tag: '' });
     }
   };
 
@@ -87,6 +89,28 @@ export const EventsManagement: React.FC<EventsManagementProps> = ({
               </Select>
             </div>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="event_title">Event Title</Label>
+              <Input
+                id="event_title"
+                value={newEvent.title}
+                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                placeholder="e.g., Oil Price Surge, Budget Announcement"
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="event_tag">Tag</Label>
+              <Input
+                id="event_tag"
+                value={newEvent.tag}
+                onChange={(e) => setNewEvent({ ...newEvent, tag: e.target.value })}
+                placeholder="e.g., CPI, RBI, Policy"
+                disabled={isLoading}
+              />
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -100,7 +124,7 @@ export const EventsManagement: React.FC<EventsManagementProps> = ({
           </div>
           <Button 
             onClick={handleAddEvent} 
-            disabled={isLoading || !newEvent.date || !newEvent.description}
+            disabled={isLoading || !newEvent.date || !newEvent.title || !newEvent.description}
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Event
@@ -126,7 +150,11 @@ export const EventsManagement: React.FC<EventsManagementProps> = ({
                           <Badge className={getImpactColor(event.impact)}>
                             {event.impact} impact
                           </Badge>
+                          {(event as any).tag && (
+                            <Badge variant="secondary">{(event as any).tag}</Badge>
+                          )}
                         </div>
+                        <h4 className="font-medium text-sm mb-1">{(event as any).title || 'Untitled Event'}</h4>
                         <p className="text-sm text-gray-700">{event.description}</p>
                       </div>
                       <Button

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, ChevronLeft, ChevronRight, AlertCircle, TrendingUp, Zap } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceDot } from 'recharts';
 import { useCpiSeries } from '@/hooks/useCpiSeries';
-import { useCpiEvents } from '@/hooks/useCpiEvents';
+import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
 import { format } from 'date-fns';
 
 interface CPIChartProps {
@@ -21,7 +21,7 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
   const [showComparisonError, setShowComparisonError] = useState(false);
   const [showEvents, setShowEvents] = useState(true);
   const [selectedImpacts, setSelectedImpacts] = useState<string[]>(['high', 'medium', 'low']);
-  const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
+  const [hoveredEvent, setHoveredEvent] = useState<number | null>(null);
   const [clickedEvent, setClickedEvent] = useState<any | null>(null);
 
   const comparisonIndicators = [
@@ -82,7 +82,8 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
   });
 
   // Fetch CPI events for the current timeframe
-  const { data: eventsData, loading: eventsLoading } = useCpiEvents({
+  const { data: eventsData, loading: eventsLoading } = useIndicatorEvents({
+    indicatorSlug: 'cpi_inflation',
     startDate: dateRange.startDate,
     endDate: dateRange.endDate
   });

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, AlertCircle, TrendingUp, Zap } from 'lucide-react';
-import { useCpiEvents } from '@/hooks/useCpiEvents';
+import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
 import { useMemo } from 'react';
 
 interface CPIEventsProps {
@@ -31,7 +31,8 @@ export const CPIEvents = ({ timeframe }: CPIEventsProps) => {
   }, [timeframe]);
 
   // Fetch CPI events for the current timeframe
-  const { data: eventsData, loading } = useCpiEvents({
+  const { data: eventsData, loading } = useIndicatorEvents({
+    indicatorSlug: 'cpi_inflation',
     startDate: dateRange.startDate,
     endDate: dateRange.endDate
   });
