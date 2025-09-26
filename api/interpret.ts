@@ -9,10 +9,10 @@ if (!API_KEY) {
 // A simple in-memory cache to avoid redundant API calls for the same data
 const cache = new Map<string, { text: string; timestamp: number }>();
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
-
+//sadasdasd
 // Use direct REST API call to avoid library compatibility issues
 async function callGeminiAPI(prompt: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent?key=${API_KEY}`;
   
   const requestBody = {
     contents: [{
