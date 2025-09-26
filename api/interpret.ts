@@ -12,7 +12,7 @@ const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 
 // Use direct REST API call to avoid library compatibility issues
 async function callGeminiAPI(prompt: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${API_KEY}`;
   
   const requestBody = {
     contents: [{
