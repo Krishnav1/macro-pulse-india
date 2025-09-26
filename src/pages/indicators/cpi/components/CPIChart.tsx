@@ -133,18 +133,69 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
       }));
   }, [eventsData, showEvents, selectedImpacts]);
 
-  // Get Y position for event markers (slightly below the chart area)
-  const getEventYPosition = () => {
+  // Get Y position for event markers on the trend line
+  const getEventYPosition = (eventDate: string) => {
     if (!chartData.length) return 0;
+    
+    // Get available geography keys from chart data
+    const availableKeys = chartData.length > 0 ? Object.keys(chartData[0]).filter(key => key !== 'date') : [];
+    const primaryKey = availableKeys.find(key => key.includes('combined')) || 
+                      availableKeys.find(key => key.includes('cpi')) || 
+                      availableKeys[0];
+    
+    if (!primaryKey) return 0;
+    
+    // First try to find exact date match
+    const exactMatch = chartData.find(item => item.date === eventDate);
+    if (exactMatch && typeof exactMatch[primaryKey] === 'number' && !isNaN(exactMatch[primaryKey])) {
+      return exactMatch[primaryKey];
+    }
+    
+    // If no exact match, find closest date (same month/year)
+    const eventDateObj = new Date(eventDate);
+    const eventYear = eventDateObj.getFullYear();
+    const eventMonth = eventDateObj.getMonth();
+    
+    const closestMatch = chartData.find(item => {
+      const itemDate = new Date(item.date);
+      return itemDate.getFullYear() === eventYear && itemDate.getMonth() === eventMonth;
+    });
+    
+    if (closestMatch && typeof closestMatch[primaryKey] === 'number' && !isNaN(closestMatch[primaryKey])) {
+      return closestMatch[primaryKey];
+    }
+    
+    // If still no match, find the closest date overall
+    const eventTime = eventDateObj.getTime();
+    let closestItem = chartData[0];
+    let minDiff = Math.abs(new Date(chartData[0].date).getTime() - eventTime);
+    
+    for (const item of chartData) {
+      const diff = Math.abs(new Date(item.date).getTime() - eventTime);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestItem = item;
+      }
+    }
+    
+    if (closestItem && typeof closestItem[primaryKey] === 'number' && !isNaN(closestItem[primaryKey])) {
+      return closestItem[primaryKey];
+    }
+    
+    // Final fallback: return middle of Y-axis range
     const allValues = chartData.flatMap(item => 
       Object.keys(item)
         .filter(key => key !== 'date')
         .map(key => item[key])
         .filter(val => typeof val === 'number' && !isNaN(val))
     );
-    if (!allValues.length) return 0;
-    const min = Math.min(...allValues);
-    return min - (Math.abs(min) * 0.1); // Position 10% below minimum value
+    if (allValues.length > 0) {
+      const min = Math.min(...allValues);
+      const max = Math.max(...allValues);
+      return (min + max) / 2;
+    }
+    
+    return 0;
   };
 
   // Calculate Y-axis domain for better scaling
@@ -500,7 +551,7 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
                   <ReferenceDot
                     key={event.id}
                     x={event.displayDate}
-                    y={getEventYPosition()}
+                    y={getEventYPosition(event.date)}
                     r={4}
                     fill={event.color}
                     stroke="white"

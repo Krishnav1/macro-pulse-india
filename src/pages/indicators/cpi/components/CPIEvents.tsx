@@ -63,7 +63,7 @@ export const CPIEvents = ({ timeframe }: CPIEventsProps) => {
           <div className="text-center py-4 text-muted-foreground">No events recorded for this timeframe</div>
         ) : (
           <div className="space-y-4">
-            {events.slice(0, 4).map((event) => (
+            {events.map((event) => (
               <div key={event.id} className="p-3 bg-muted/30 rounded-lg">
                 {/* Date first, then impact at the right end of same row */}
                 <div className="flex items-center justify-between mb-2">
