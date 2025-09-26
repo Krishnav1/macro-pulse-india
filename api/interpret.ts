@@ -1,34 +1,54 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = 'gemini-1.5-flash';
 
 if (!API_KEY) {
   throw new Error('Missing GEMINI_API_KEY environment variable');
 }
 
-const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ 
-  model: MODEL_NAME,
-  generationConfig: {
-    temperature: 0.7,
-    topK: 1,
-    topP: 1,
-    maxOutputTokens: 256,
-  }
-});
-
-const safetySettings = [
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-];
-
 // A simple in-memory cache to avoid redundant API calls for the same data
 const cache = new Map<string, { text: string; timestamp: number }>();
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+
+// Use direct REST API call to avoid library compatibility issues
+async function callGeminiAPI(prompt: string): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${API_KEY}`;
+  
+  const requestBody = {
+    contents: [{
+      parts: [{
+        text: prompt
+      }]
+    }],
+    generationConfig: {
+      temperature: 0.7,
+      topK: 1,
+      topP: 1,
+      maxOutputTokens: 256,
+    }
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  
+  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+    throw new Error('Invalid response format from Gemini API');
+  }
+
+  return data.candidates[0].content.parts[0].text;
+}
 
 export default async function handler(
   req: VercelRequest,
@@ -53,9 +73,7 @@ export default async function handler(
       return res.status(200).json({ interpretation: cached.text });
     }
 
-    const result = await model.generateContent(prompt);
-
-    const interpretation = result.response.text();
+    const interpretation = await callGeminiAPI(prompt);
 
     // Store the result in the cache
     cache.set(cacheKey, { text: interpretation, timestamp: Date.now() });
