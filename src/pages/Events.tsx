@@ -42,29 +42,40 @@ const Events = () => {
       <div className="space-y-4">
         {allEvents.map((event, index) => (
           <Card key={`${event.indicatorId}-${index}`} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="flex items-center gap-2 mb-2">
-                    {getImpactIcon(event.impact)}
-                    {event.event}
-                  </CardTitle>
-                  <CardDescription>
-                    Impact on {event.indicatorName}
-                  </CardDescription>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-medium text-muted-foreground">
+                  {new Date(event.date).toLocaleDateString('en-IN', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <Badge variant="outline" className={`text-xs ${getImpactColor(event.impact)}`}>
-                    {event.impact} impact
+                <Badge variant="outline" className={`text-xs ${getImpactColor(event.impact)}`}>
+                  {event.impact} impact
+                </Badge>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  {getImpactIcon(event.impact)}
+                  {event.event}
+                </CardTitle>
+                {(event as any).tag && (
+                  <Badge variant="secondary" className="text-xs">
+                    {(event as any).tag}
                   </Badge>
-                  <div className="text-sm text-muted-foreground">
-                    {new Date(event.date).toLocaleDateString('en-IN', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </div>
-                </div>
+                )}
+              </div>
+              
+              {(event as any).description && (
+                <CardDescription className="mt-2">
+                  {(event as any).description}
+                </CardDescription>
+              )}
+              
+              <div className="text-xs text-muted-foreground mt-2">
+                Related to: {event.indicatorName}
               </div>
             </CardHeader>
           </Card>

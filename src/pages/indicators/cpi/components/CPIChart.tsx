@@ -22,6 +22,7 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
   const [showEvents, setShowEvents] = useState(true);
   const [selectedImpacts, setSelectedImpacts] = useState<string[]>(['high', 'medium', 'low']);
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
+  const [clickedEvent, setClickedEvent] = useState<any | null>(null);
 
   const comparisonIndicators = [
     { id: 'cfpi', name: 'Consumer Food Price Index' },
@@ -267,14 +268,60 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
         <p className="text-xs text-gray-600 mb-2">
           {format(new Date(event.date), 'MMM dd, yyyy')}
         </p>
-        {event.description && (
-          <p className="text-xs text-gray-700">{event.description}</p>
-        )}
-        {event.tag && (
-          <span className="inline-block mt-2 px-2 py-1 bg-gray-100 text-xs rounded">
-            {event.tag}
-          </span>
-        )}
+        <p className="text-xs text-gray-500">Click for details</p>
+      </div>
+    );
+  };
+
+  // Event click popup
+  const renderEventPopup = () => {
+    if (!clickedEvent) return null;
+    
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: clickedEvent.color }}
+              />
+              <span className="text-sm font-medium text-gray-500 uppercase">
+                {clickedEvent.impact} Impact Event
+              </span>
+            </div>
+            <button
+              onClick={() => setClickedEvent(null)}
+              className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+            >
+              ×
+            </button>
+          </div>
+          
+          <h3 className="text-lg font-semibold mb-2">{clickedEvent.title}</h3>
+          
+          <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+            <span>{format(new Date(clickedEvent.date), 'MMM dd, yyyy')}</span>
+            {clickedEvent.tag && (
+              <span className="px-2 py-1 bg-gray-100 rounded text-xs">
+                {clickedEvent.tag}
+              </span>
+            )}
+          </div>
+          
+          {clickedEvent.description && (
+            <p className="text-gray-700 mb-4">{clickedEvent.description}</p>
+          )}
+          
+          <div className="flex justify-end">
+            <button
+              onClick={() => setClickedEvent(null)}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       </div>
     );
   };
@@ -460,6 +507,7 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
                     style={{ cursor: 'pointer' }}
                     onMouseEnter={() => setHoveredEvent(event.id)}
                     onMouseLeave={() => setHoveredEvent(null)}
+                    onClick={() => setClickedEvent(event)}
                   />
                 ))}
               </LineChart>
@@ -586,6 +634,9 @@ export const CPIChart = ({ timeframe, setTimeframe, geography, setGeography }: C
           )}
         </div>
       </CardContent>
+      
+      {/* Event Click Popup */}
+      {renderEventPopup()}
     </Card>
   );
 };

@@ -1,43 +1,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from 'lucide-react';
-
-// Mock data for CPI events
-const mockEvents = [
-  { 
-    id: '1',
-    date: '2023-12-15', 
-    description: 'Food price surge due to supply disruptions', 
-    impact: 'high' as const
-  },
-  { 
-    id: '2',
-    date: '2023-08-20', 
-    description: 'Monsoon impact on vegetable prices', 
-    impact: 'medium' as const
-  },
-  { 
-    id: '3',
-    date: '2023-06-10', 
-    description: 'Base effect normalization', 
-    impact: 'low' as const
-  },
-  { 
-    id: '4',
-    date: '2023-04-05', 
-    description: 'Fuel price adjustments', 
-    impact: 'medium' as const
-  },
-];
+import { Calendar, AlertCircle, TrendingUp, Zap } from 'lucide-react';
+import { useCpiEvents } from '@/hooks/useCpiEvents';
+import { useMemo } from 'react';
 
 interface CPIEventsProps {
   timeframe: string;
 }
 
 export const CPIEvents = ({ timeframe }: CPIEventsProps) => {
-  const getFilteredEvents = () => {
+  // Calculate date range based on timeframe
+  const dateRange = useMemo(() => {
     const now = new Date();
-    let startDate = new Date(0);
+    let startDate = new Date(2000, 0, 1); // Default to all data
     switch (timeframe) {
       case '1y':
         startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
@@ -48,13 +23,26 @@ export const CPIEvents = ({ timeframe }: CPIEventsProps) => {
       case '10y':
         startDate = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
         break;
-      default:
-        break;
     }
-    return mockEvents.filter(event => new Date(event.date) >= startDate);
-  };
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: now.toISOString().split('T')[0]
+    };
+  }, [timeframe]);
 
-  const events = getFilteredEvents();
+  // Fetch CPI events for the current timeframe
+  const { data: eventsData, loading } = useCpiEvents({
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate
+  });
+
+  const events = eventsData || [];
+
+  const getImpactIcon = (impact: string) => {
+    if (impact === 'high') return <AlertCircle className="h-4 w-4" />;
+    if (impact === 'medium') return <TrendingUp className="h-4 w-4" />;
+    return <Zap className="h-4 w-4" />;
+  };
 
   return (
     <Card>
@@ -68,32 +56,52 @@ export const CPIEvents = ({ timeframe }: CPIEventsProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {events.slice(0, 4).map((event) => (
-            <div key={event.id} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-              <div className={`w-3 h-3 rounded-full mt-1 ${
-                event.impact === 'high' ? 'bg-destructive' : 
-                event.impact === 'medium' ? 'bg-warning' : 'bg-success'
-              }`} />
-              <div>
-                <div className="font-semibold text-sm">
-                  {new Date(event.date).toLocaleDateString('en-GB', { 
-                    day: 'numeric', 
-                    month: 'short', 
-                    year: 'numeric' 
-                  })}
+        {loading ? (
+          <div className="text-center py-4 text-muted-foreground">Loading events...</div>
+        ) : events.length === 0 ? (
+          <div className="text-center py-4 text-muted-foreground">No events recorded for this timeframe</div>
+        ) : (
+          <div className="space-y-4">
+            {events.slice(0, 4).map((event) => (
+              <div key={event.id} className="p-3 bg-muted/30 rounded-lg">
+                {/* Date first, then impact at the right end of same row */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold text-sm text-muted-foreground">
+                    {new Date(event.date).toLocaleDateString('en-GB', { 
+                      day: 'numeric', 
+                      month: 'short', 
+                      year: 'numeric' 
+                    })}
+                  </div>
+                  <div className={`w-3 h-3 rounded-full ${
+                    event.impact === 'high' ? 'bg-destructive' : 
+                    event.impact === 'medium' ? 'bg-warning' : 'bg-success'
+                  }`} />
                 </div>
-                <div className="text-sm text-muted-foreground">{event.description}</div>
-                <Badge 
-                  variant={event.impact === 'high' ? 'destructive' : event.impact === 'medium' ? 'secondary' : 'default'}
-                  className="mt-1 text-xs"
-                >
-                  {event.impact} impact
-                </Badge>
+                
+                {/* Title and tag in same row */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {getImpactIcon(event.impact)}
+                    <span className="font-medium text-sm">{event.title}</span>
+                  </div>
+                  {event.tag && (
+                    <Badge variant="secondary" className="text-xs">
+                      {event.tag}
+                    </Badge>
+                  )}
+                </div>
+                
+                {/* Description below */}
+                {event.description && (
+                  <div className="text-sm text-muted-foreground">
+                    {event.description}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
