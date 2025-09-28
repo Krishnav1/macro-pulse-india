@@ -326,33 +326,23 @@ export const FRChart = ({
     return null;
   };
 
-  // Event tooltip for markers
+  // Event tooltip for markers (simplified for hover)
   const EventTooltip = ({ event }: { event: any }) => {
     if (!event) return null;
     
     return (
-      <div className="absolute z-50 bg-card border border-border rounded-lg p-3 shadow-lg max-w-xs">
-        <div className="flex items-center gap-2 mb-2">
-          <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: event.color }} />
+      <div className="absolute z-50 bg-card border border-border rounded-lg p-2 shadow-lg max-w-xs pointer-events-none">
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full`} style={{ backgroundColor: event.color }} />
           <span className="font-medium text-sm">{event.title}</span>
         </div>
-        <div className="text-xs text-muted-foreground mb-1">
+        <div className="text-xs text-muted-foreground mt-1">
           {new Date(event.date).toLocaleDateString('en-GB', { 
             day: 'numeric', 
             month: 'short', 
             year: 'numeric' 
           })}
         </div>
-        {event.description && (
-          <div className="text-sm">{event.description}</div>
-        )}
-        {event.tag && (
-          <div className="mt-2">
-            <span className="text-xs bg-secondary/20 text-secondary-foreground px-2 py-1 rounded">
-              {event.tag}
-            </span>
-          </div>
-        )}
       </div>
     );
   };
@@ -607,10 +597,10 @@ export const FRChart = ({
           </div>
         </div>
         
-        {/* Event Details Popup */}
-        {(hoveredEvent || clickedEvent) && (
-          <div className="relative">
-            <EventTooltip event={hoveredEvent || clickedEvent} />
+        {/* Event Hover Tooltip - positioned relative to chart */}
+        {hoveredEvent && (
+          <div className="absolute top-4 left-4 z-50">
+            <EventTooltip event={hoveredEvent} />
           </div>
         )}
         

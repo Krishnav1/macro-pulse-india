@@ -14,7 +14,6 @@ const ForexReservesInsights = () => {
   const [timeframe, setTimeframe] = useState('5Y');
   const [unit, setUnit] = useState<'usd' | 'inr'>('usd');
   const [selectedYear, setSelectedYear] = useState<string>('latest');
-  const [dataType, setDataType] = useState<'latest' | 'year-end'>('latest');
 
   // Fetch data
   const { data: forexData, loading: forexLoading, availableFYs } = useForexReserves(unit, 'all');
@@ -30,7 +29,7 @@ const ForexReservesInsights = () => {
     comparison: ''
   });
 
-  // Get filtered data based on selected year and data type
+  // Get filtered data based on selected year (use latest data for selected year)
   const filteredData = useMemo(() => {
     if (!forexData.length) return [];
     
@@ -38,7 +37,7 @@ const ForexReservesInsights = () => {
       return forexData;
     }
     
-    // Filter data for specific year
+    // Filter data for specific year (use latest available data for that year)
     const targetYear = parseInt(selectedYear);
     const yearData = forexData.filter(item => {
       const itemDate = new Date(item.week_ended);
@@ -46,17 +45,8 @@ const ForexReservesInsights = () => {
       return fyYear === targetYear;
     });
     
-    if (dataType === 'year-end') {
-      // Get last entry of the financial year (March data)
-      const marchData = yearData.filter(item => {
-        const itemDate = new Date(item.week_ended);
-        return itemDate.getMonth() === 2; // March (0-indexed)
-      });
-      return marchData.length > 0 ? [marchData[marchData.length - 1]] : yearData.slice(0, 1);
-    }
-    
-    return yearData;
-  }, [forexData, selectedYear, dataType]);
+    return yearData; // Return all data for the selected year
+  }, [forexData, selectedYear]);
   
   // Calculate KPIs
   const kpis = useMemo(() => {
@@ -64,12 +54,35 @@ const ForexReservesInsights = () => {
 
     const latest = filteredData[0]; // Data is sorted DESC
     const previousWeek = filteredData[1];
-    const yearAgo = filteredData.find(item => {
-      const itemDate = new Date(item.week_ended);
-      const targetDate = subYears(new Date(latest.week_ended), 1);
-      const diffDays = Math.abs((itemDate.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
-      return diffDays <= 7; // Within a week of year ago
-    });
+    
+    // For year-over-year comparison, we need to look in the full dataset, not just filtered data
+    let yearAgo = null;
+    if (selectedYear === 'latest') {
+      // For latest data, find year ago in the same dataset
+      yearAgo = filteredData.find(item => {
+        const itemDate = new Date(item.week_ended);
+        const targetDate = subYears(new Date(latest.week_ended), 1);
+        const diffDays = Math.abs((itemDate.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+        return diffDays <= 7; // Within a week of year ago
+      });
+    } else {
+      // For specific year, find corresponding data from previous FY in full dataset
+      const currentYear = parseInt(selectedYear);
+      const previousYear = currentYear - 1;
+      
+      yearAgo = forexData.find(item => {
+        const itemDate = new Date(item.week_ended);
+        const fyYear = itemDate.getMonth() >= 3 ? itemDate.getFullYear() : itemDate.getFullYear() - 1;
+        
+        // Find similar time period in previous FY
+        if (fyYear === previousYear) {
+          const latestDate = new Date(latest.week_ended);
+          const diffDays = Math.abs((itemDate.getTime() - latestDate.getTime()) / (1000 * 60 * 60 * 24));
+          return diffDays <= 30; // Within a month of similar period
+        }
+        return false;
+      });
+    }
 
     const latestTotal = unit === 'usd' ? latest.total_reserves_usd_mn : latest.total_reserves_inr_crore;
     const prevTotal = unit === 'usd' ? previousWeek?.total_reserves_usd_mn : previousWeek?.total_reserves_inr_crore;
@@ -271,31 +284,6 @@ const ForexReservesInsights = () => {
               </select>
             </div>
             
-            {/* Data Type Toggle (only show when year is selected) */}
-            {selectedYear !== 'latest' && (
-              <div className="flex bg-muted rounded-lg p-1">
-                <button
-                  onClick={() => setDataType('latest')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                    dataType === 'latest' 
-                      ? 'bg-background shadow-sm text-foreground' 
-                      : 'hover:bg-background/50 text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Latest
-                </button>
-                <button
-                  onClick={() => setDataType('year-end')}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                    dataType === 'year-end' 
-                      ? 'bg-background shadow-sm text-foreground' 
-                      : 'hover:bg-background/50 text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Year End
-                </button>
-              </div>
-            )}
             
             {/* Unit Toggle */}
             <div className="flex bg-muted rounded-lg p-1">
@@ -426,10 +414,11 @@ const ForexReservesInsights = () => {
                       }}
                       labelFormatter={(label) => label}
                       contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
+                        backgroundColor: 'white',
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
-                        fontSize: '12px'
+                        fontSize: '12px',
+                        color: 'black'
                       }}
                     />
                     <Legend />

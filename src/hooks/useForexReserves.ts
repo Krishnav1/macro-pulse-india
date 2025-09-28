@@ -56,7 +56,12 @@ export const useForexReserves = (
       } else {
         // Format like "2024-25"
         startYear = parseInt(startYearStr);
-        endYear = parseInt(`20${endYearStr}`);
+        // Fix: Handle both 2-digit and 4-digit end year
+        if (endYearStr.length === 2) {
+          endYear = parseInt(`20${endYearStr}`);
+        } else {
+          endYear = parseInt(endYearStr);
+        }
       }
       
       startDate = new Date(startYear, 3, 1); // April 1st
