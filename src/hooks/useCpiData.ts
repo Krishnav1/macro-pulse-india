@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.VITE_SUPABASE_ANON_KEY || ''
-);
+import { supabase } from '@/integrations/supabase/client';
 
 export interface CpiDataPoint {
   date: string;
@@ -24,7 +19,7 @@ export const useCpiData = () => {
         setError(null);
 
         const { data: cpiData, error: cpiError } = await supabase
-          .from('cpi_series')
+          .from('cpi_series' as any)
           .select('date, inflation_yoy, index_value')
           .eq('geography', 'combined')
           .eq('series_code', 'headline')
@@ -36,7 +31,7 @@ export const useCpiData = () => {
 
         // Process data to calculate inflation where missing
         const processedData: CpiDataPoint[] = [];
-        const rawData = cpiData || [];
+        const rawData = (cpiData as any[]) || [];
         
         for (let i = 0; i < rawData.length; i++) {
           const current = rawData[i];
