@@ -30,8 +30,10 @@ export interface IndicatorEventData {
   id?: number;
   indicator_slug: string;
   date: string;
+  title?: string;
   description: string;
   impact?: 'low' | 'medium' | 'high';
+  tag?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -156,6 +158,25 @@ const getFromLocalStorage = (key: string) => {
   }
 };
 
+// Additional utility functions
+const persistLocal = (key: string, data: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.warn('Failed to persist to localStorage:', error);
+  }
+};
+
+const readLocal = <T>(key: string, defaultValue: T): T => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch (error) {
+    console.warn('Failed to read from localStorage:', error);
+    return defaultValue;
+  }
+};
+
 // Generic CRUD functions for all indicators
 
 // Get all indicators
@@ -273,8 +294,14 @@ export const getIndicatorEvents = async (slug: string): Promise<IndicatorEventDa
     
     if (error) throw error;
     
-    mirrorToLocalStorage(`indicator:${slug}:events`, data);
-    return data || [];
+    // Transform the data to ensure proper typing
+    const transformedData = (data || []).map(event => ({
+      ...event,
+      impact: event.impact as 'low' | 'medium' | 'high'
+    }));
+    
+    mirrorToLocalStorage(`indicator:${slug}:events`, transformedData);
+    return transformedData;
   } catch (error) {
     console.error(`Error fetching events for ${slug}:`, error);
     return getFromLocalStorage(`indicator:${slug}:events`) || [];
@@ -549,3 +576,4 @@ export const getRepoRateComparisons = async (): Promise<RepoRateComparison[]> =>
     return getFromLocalStorage('repoRateComparisons') || [];
   }
 };
+

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Edit, Upload, Download, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import EventsManagement from './EventsManagement';
+import InsightsManagement from './InsightsManagement';
+import ComparisonsManagement from './ComparisonsManagement';
 
 interface Indicator {
   slug: string;
@@ -43,6 +47,9 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
   onEditIndicator
 }) => {
   const [data, setData] = useState<ForexReservesRow[]>([]);
+  const [events, setEvents] = useState([]);
+  const [insights, setInsights] = useState([]);
+  const [comparisons, setComparisons] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<{
@@ -52,20 +59,45 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
   } | null>(null);
 
   useEffect(() => {
-    fetchForexData();
-  }, []);
+    fetchIndicatorData();
+  }, [indicator.slug]);
 
-  const fetchForexData = async () => {
+  const fetchIndicatorData = async () => {
     setLoading(true);
     try {
-      const { data: forexData, error } = await (supabase as any)
+      // Fetch forex reserves data
+      const { data: forexData, error: forexError } = await (supabase as any)
         .from('forex_reserves_weekly')
         .select('*')
         .order('week_ended', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
+      if (forexError) throw forexError;
       setData((forexData || []) as ForexReservesRow[]);
+
+      // Fetch events
+      const { data: eventsData } = await supabase
+        .from('indicator_events')
+        .select('*')
+        .eq('indicator_slug', indicator.slug)
+        .order('date', { ascending: false });
+
+      // Fetch insights
+      const { data: insightsData } = await supabase
+        .from('indicator_insights')
+        .select('*')
+        .eq('indicator_slug', indicator.slug)
+        .order('order_index');
+
+      // Fetch comparisons
+      const { data: comparisonsData } = await supabase
+        .from('indicator_comparisons')
+        .select('*')
+        .eq('indicator_slug', indicator.slug);
+
+      setEvents(eventsData || []);
+      setInsights(insightsData || []);
+      setComparisons(comparisonsData || []);
     } catch (error) {
       console.error('Error fetching forex data:', error);
       toast.error('Failed to load forex reserves data');
@@ -249,7 +281,7 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
         }
         
         toast.success(`Successfully uploaded ${validRows.length} records`);
-        await fetchForexData();
+        await fetchIndicatorData();
       }
       
       setUploadStatus({
@@ -283,6 +315,112 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
     processExcelFile(file);
   };
 
+  const handleAddEvent = async (event: any) => {
+    try {
+      const { error } = await supabase
+        .from('indicator_events')
+        .insert([{ ...event, indicator_slug: indicator.slug }]);
+
+      if (error) throw error;
+      toast.success('Event added successfully');
+      fetchIndicatorData();
+    } catch (error) {
+      console.error('Error adding event:', error);
+      toast.error('Failed to add event');
+    }
+  };
+
+  const handleDeleteEvent = async (index: number) => {
+    try {
+      const eventToDelete = events[index];
+      if (!eventToDelete) return;
+
+      const { error } = await supabase
+        .from('indicator_events')
+        .delete()
+        .eq('id', (eventToDelete as any).id);
+
+      if (error) throw error;
+      toast.success('Event deleted successfully');
+      fetchIndicatorData();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event');
+    }
+  };
+
+  const handleAddInsight = async (insight: any) => {
+    try {
+      const { error } = await supabase
+        .from('indicator_insights')
+        .insert([{ ...insight, indicator_slug: indicator.slug }]);
+
+      if (error) throw error;
+      toast.success('Insight added successfully');
+      fetchIndicatorData();
+    } catch (error) {
+      console.error('Error adding insight:', error);
+      toast.error('Failed to add insight');
+    }
+  };
+
+  const handleDeleteInsight = async (index: number) => {
+    try {
+      const insightToDelete = insights[index];
+      if (!insightToDelete) return;
+
+      const { error } = await supabase
+        .from('indicator_insights')
+        .delete()
+        .eq('id', (insightToDelete as any).id);
+
+      if (error) throw error;
+      toast.success('Insight deleted successfully');
+      fetchIndicatorData();
+    } catch (error) {
+      console.error('Error deleting insight:', error);
+      toast.error('Failed to delete insight');
+    }
+  };
+
+  const handleAddComparison = async (comparison: any) => {
+    try {
+      const { error } = await supabase
+        .from('indicator_comparisons')
+        .insert([{ ...comparison, indicator_slug: indicator.slug }]);
+
+      if (error) throw error;
+      toast.success('Comparison added successfully');
+      fetchIndicatorData();
+    } catch (error) {
+      console.error('Error adding comparison:', error);
+      toast.error('Failed to add comparison');
+    }
+  };
+
+  const handleDeleteComparison = async (index: number) => {
+    try {
+      const comparisonToDelete = comparisons[index];
+      if (!comparisonToDelete) return;
+
+      const { error } = await supabase
+        .from('indicator_comparisons')
+        .delete()
+        .eq('id', (comparisonToDelete as any).id);
+
+      if (error) throw error;
+      toast.success('Comparison deleted successfully');
+      fetchIndicatorData();
+    } catch (error) {
+      console.error('Error deleting comparison:', error);
+      toast.error('Failed to delete comparison');
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">Loading forex reserves data...</div>;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -304,22 +442,39 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
         <CardHeader>
           <CardTitle>{indicator.name}</CardTitle>
           <CardDescription>
-            {indicator.slug} • Weekly data from RBI
+            {indicator.slug} • {indicator.category || 'Uncategorized'}
+            {indicator.unit && ` • ${indicator.unit}`}
+            {indicator.frequency && ` • ${indicator.frequency}`}
           </CardDescription>
+          {indicator.definition && (
+            <p className="text-sm text-muted-foreground mt-2">
+              {indicator.definition}
+            </p>
+          )}
         </CardHeader>
       </Card>
 
-      {/* Upload Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Data Upload
-          </CardTitle>
-          <CardDescription>
-            Upload Excel file with forex reserves data. FY-only rows will be automatically ignored.
-          </CardDescription>
-        </CardHeader>
+      {/* Forex Reserves Management Tabs */}
+      <Tabs defaultValue="data" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="data">Data ({data.length})</TabsTrigger>
+          <TabsTrigger value="events">Events ({events.length})</TabsTrigger>
+          <TabsTrigger value="insights">Insights ({insights.length})</TabsTrigger>
+          <TabsTrigger value="comparisons">Comparisons ({comparisons.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="data" className="space-y-4">
+          {/* Upload Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Data Upload
+              </CardTitle>
+              <CardDescription>
+                Upload Excel file with forex reserves data. FY-only rows will be automatically ignored.
+              </CardDescription>
+            </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
             <Button 
@@ -374,11 +529,11 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Data Preview */}
-      <Card>
+          {/* Data Preview */}
+          <Card>
         <CardHeader>
           <CardTitle>Recent Data ({data.length} records)</CardTitle>
         </CardHeader>
@@ -434,8 +589,34 @@ export const ForexReservesAdmin: React.FC<ForexReservesAdminProps> = ({
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        </TabsContent>
+
+        <TabsContent value="events" className="space-y-4">
+          <EventsManagement
+            events={events}
+            onAddEvent={handleAddEvent}
+            onDeleteEvent={handleDeleteEvent}
+          />
+        </TabsContent>
+
+        <TabsContent value="insights" className="space-y-4">
+          <InsightsManagement
+            insights={insights}
+            onAddInsight={handleAddInsight}
+            onDeleteInsight={handleDeleteInsight}
+          />
+        </TabsContent>
+
+        <TabsContent value="comparisons" className="space-y-4">
+          <ComparisonsManagement
+            comparisons={comparisons}
+            onAddComparison={handleAddComparison}
+            onDeleteComparison={handleDeleteComparison}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

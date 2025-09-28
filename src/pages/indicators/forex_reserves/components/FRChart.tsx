@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Calendar, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceDot } from 'recharts';
+import { Calendar, TrendingUp, ChevronLeft, ChevronRight, AlertCircle, Zap } from 'lucide-react';
 import { useForexReserves } from '@/hooks/useForexReserves';
+import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
 import { format } from 'date-fns';
 
 interface FRChartProps {
@@ -36,8 +37,111 @@ export const FRChart = ({
   selectedFY, 
   setSelectedFY,
 }: FRChartProps) => {
+  const [showEvents, setShowEvents] = useState(true);
+  const [selectedImpacts, setSelectedImpacts] = useState<string[]>(['high', 'medium', 'low']);
   
   const { data: forexData, availableFYs, loading } = useForexReserves(unit, timeframe, selectedFY);
+  
+  // Calculate date range for events based on timeframe
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    let startDate = new Date(2000, 0, 1); // Default to all data
+    switch (timeframe) {
+      case '1Y':
+        startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        break;
+      case '5Y':
+        startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+        break;
+      case '10Y':
+        startDate = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
+        break;
+    }
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: now.toISOString().split('T')[0]
+    };
+  }, [timeframe]);
+  
+  // Fetch events data
+  const { data: eventsData } = useIndicatorEvents({
+    indicatorSlug: 'foreign-exchange-reserves',
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate
+  });
+
+  // Process events for display
+  const processedEvents = useMemo(() => {
+    if (!eventsData || !showEvents) return [];
+    
+    return eventsData
+      .filter(event => selectedImpacts.includes(event.impact || 'low'))
+      .map(event => ({
+        ...event,
+        displayDate: selectedFY 
+          ? format(new Date(event.date), 'MMM')
+          : timeframe === 'all' || timeframe === '10Y' || timeframe === '5Y'
+            ? format(new Date(event.date), 'yyyy')
+            : format(new Date(event.date), 'MMM yy'),
+        color: event.impact === 'high' ? '#dc2626' : 
+               event.impact === 'medium' ? '#ea580c' : '#16a34a'
+      }));
+  }, [eventsData, showEvents, selectedImpacts, selectedFY, timeframe]);
+  
+  // Get Y position for event markers on the trend line
+  const getEventYPosition = (eventDate: string) => {
+    if (!chartData.length) return 0;
+    
+    // Use total_reserves as the primary value for positioning
+    const primaryKey = 'total_reserves';
+    
+    // First try to find exact date match
+    const exactMatch = chartData.find(item => item.date === eventDate);
+    if (exactMatch && typeof exactMatch[primaryKey] === 'number' && !isNaN(exactMatch[primaryKey])) {
+      return exactMatch[primaryKey];
+    }
+    
+    // If no exact match, find closest date (same month/year)
+    const eventDateObj = new Date(eventDate);
+    const eventYear = eventDateObj.getFullYear();
+    const eventMonth = eventDateObj.getMonth();
+    
+    const closestMatch = chartData.find(item => {
+      const itemDate = new Date(item.date);
+      return itemDate.getFullYear() === eventYear && itemDate.getMonth() === eventMonth;
+    });
+    
+    if (closestMatch && typeof closestMatch[primaryKey] === 'number' && !isNaN(closestMatch[primaryKey])) {
+      return closestMatch[primaryKey];
+    }
+    
+    // If still no match, find the closest date overall
+    const eventTime = eventDateObj.getTime();
+    let closestItem = chartData[0];
+    let minDiff = Math.abs(new Date(chartData[0].date).getTime() - eventTime);
+    
+    for (const item of chartData) {
+      const diff = Math.abs(new Date(item.date).getTime() - eventTime);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestItem = item;
+      }
+    }
+    
+    if (closestItem && typeof closestItem[primaryKey] === 'number' && !isNaN(closestItem[primaryKey])) {
+      return closestItem[primaryKey];
+    }
+    
+    // Fallback to middle of Y-axis range
+    const values = chartData.map(item => item[primaryKey]).filter(val => typeof val === 'number' && !isNaN(val));
+    if (values.length > 0) {
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      return (min + max) / 2;
+    }
+    
+    return 0;
+  };
 
   // Process data for chart display
   const chartData = useMemo(() => {
@@ -292,10 +396,72 @@ export const FRChart = ({
                     />
                   ))
                 }
+                {/* Event Markers */}
+                {processedEvents.map((event) => (
+                  <ReferenceDot
+                    key={event.id}
+                    x={event.displayDate}
+                    y={getEventYPosition(event.date)}
+                    r={4}
+                    fill={event.color}
+                    stroke="white"
+                    strokeWidth={2}
+                  />
+                ))}
               </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
+        
+        {/* Events Toggle */}
+        {eventsData && eventsData.length > 0 && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={showEvents}
+                  onChange={(e) => setShowEvents(e.target.checked)}
+                  className="rounded"
+                />
+                Show Events
+              </label>
+              
+              {showEvents && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Impact:</span>
+                  {['high', 'medium', 'low'].map(impact => (
+                    <label key={impact} className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={selectedImpacts.includes(impact)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedImpacts([...selectedImpacts, impact]);
+                          } else {
+                            setSelectedImpacts(selectedImpacts.filter(i => i !== impact));
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      <span className={`w-2 h-2 rounded-full ${
+                        impact === 'high' ? 'bg-red-500' : 
+                        impact === 'medium' ? 'bg-orange-500' : 'bg-green-500'
+                      }`} />
+                      {impact}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {showEvents && processedEvents.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {processedEvents.length} event{processedEvents.length !== 1 ? 's' : ''} shown
+              </div>
+            )}
+          </div>
+        )}
         
       </CardContent>
     </Card>

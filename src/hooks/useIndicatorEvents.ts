@@ -2,82 +2,91 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface IndicatorEventData {
-  id: number;
+  id?: number;
   indicator_slug: string;
   date: string;
-  title: string | null;
+  title?: string;
   description: string;
-  impact: 'low' | 'medium' | 'high';
-  tag: string | null;
-  created_at: string;
-  updated_at: string;
+  impact?: 'low' | 'medium' | 'high';
+  tag?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface UseIndicatorEventsParams {
   indicatorSlug: string;
   startDate?: string;
   endDate?: string;
-  impact?: 'low' | 'medium' | 'high';
-  tag?: string;
 }
 
-export const useIndicatorEvents = (params: UseIndicatorEventsParams) => {
+export const useIndicatorEvents = (params: UseIndicatorEventsParams | string) => {
   const [data, setData] = useState<IndicatorEventData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { indicatorSlug, startDate, endDate, impact, tag } = params;
+  // Handle both object and string parameters for backward compatibility
+  const indicatorSlug = typeof params === 'string' ? params : params.indicatorSlug;
+  const startDate = typeof params === 'object' ? params.startDate : undefined;
+  const endDate = typeof params === 'object' ? params.endDate : undefined;
+
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      let query = supabase
+        .from('indicator_events')
+        .select('*')
+        .eq('indicator_slug', indicatorSlug)
+        .order('date', { ascending: false });
+
+      // Add date filtering if provided
+      if (startDate) {
+        query = query.gte('date', startDate);
+      }
+      if (endDate) {
+        query = query.lte('date', endDate);
+      }
+
+      const { data: eventsData, error } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      // Transform the data to ensure proper typing
+      const transformedData: IndicatorEventData[] = (eventsData || []).map((event: any) => ({
+        id: event.id,
+        indicator_slug: event.indicator_slug,
+        date: event.date,
+        title: event.title || '',
+        description: event.description,
+        impact: event.impact as 'low' | 'medium' | 'high',
+        tag: event.tag || '',
+        created_at: event.created_at,
+        updated_at: event.updated_at
+      }));
+
+      setData(transformedData);
+    } catch (err) {
+      console.error('Error fetching indicator events:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchIndicatorEvents = async () => {
-      try {
-        setLoading(true);
-        let query = supabase
-          .from('indicator_events')
-          .select('*')
-          .eq('indicator_slug', indicatorSlug)
-          .order('date', { ascending: false });
-
-        if (startDate) {
-          query = query.gte('date', startDate);
-        }
-        if (endDate) {
-          query = query.lte('date', endDate);
-        }
-        if (impact) {
-          query = query.eq('impact', impact);
-        }
-        if (tag) {
-          query = query.eq('tag', tag);
-        }
-
-        const { data: eventsData, error } = await query;
-
-        if (error) {
-          console.error('Error fetching indicator events:', error);
-          setError(error.message);
-        } else {
-          // Transform the data to ensure title and tag are included
-          const transformedData = (eventsData || []).map(event => ({
-            ...event,
-            title: (event as any).title || 'Untitled Event',
-            tag: (event as any).tag || null,
-            impact: event.impact as 'low' | 'medium' | 'high'
-          })) as IndicatorEventData[];
-          setData(transformedData);
-        }
-      } catch (err) {
-        console.error('Error fetching indicator events:', err);
-        setError('Failed to fetch indicator events data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (indicatorSlug) {
-      fetchIndicatorEvents();
+      fetchEvents();
     }
-  }, [indicatorSlug, startDate, endDate, impact, tag]);
+  }, [indicatorSlug, startDate, endDate]);
 
-  return { data, loading, error };
+  return {
+    data,
+    loading,
+    error,
+    refetch: fetchEvents
+  };
 };
