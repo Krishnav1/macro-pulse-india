@@ -11,13 +11,13 @@ interface RepoRateChartProps {
 
 const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear }) => {
   const { series, loading, error } = useIndicatorData('repo_rate');
-  const { events } = useIndicatorEvents('repo_rate');
+  const { data: events } = useIndicatorEvents('repo_rate');
 
   // Transform data for chart
-  const chartData = series
+  const chartData = (series || [])
     .map(item => ({
       date: item.period_date,
-      rate: parseFloat(item.value),
+      rate: parseFloat(item.value.toString()),
       displayDate: new Date(item.period_date).toLocaleDateString('en-GB', { 
         month: 'short', 
         year: 'numeric' 
@@ -160,7 +160,7 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear }) => {
               />
               
               {/* Event markers */}
-              {events.map((event, index) => {
+              {(events || []).map((event, index) => {
                 const eventInRange = selectedYear === 'all' || (() => {
                   const eventYear = new Date(event.date).getFullYear();
                   const currentYear = new Date().getFullYear();

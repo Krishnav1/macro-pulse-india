@@ -5,7 +5,7 @@ import { Calendar } from 'lucide-react';
 import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
 
 const RepoRateEvents: React.FC = () => {
-  const { events, loading, error } = useIndicatorEvents('repo_rate');
+  const { data: events, loading, error } = useIndicatorEvents('repo_rate');
 
   if (loading) {
     return (
@@ -65,7 +65,7 @@ const RepoRateEvents: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {events.map((event, index) => (
+          {(events || []).map((event, index) => (
             <div key={index} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
               <div className={`w-3 h-3 rounded-full mt-1 ${
                 event.impact === 'high' ? 'bg-destructive' : 
