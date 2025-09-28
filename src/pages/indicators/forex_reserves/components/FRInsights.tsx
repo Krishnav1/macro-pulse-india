@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, AlertTriangle, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, Info, Lightbulb } from 'lucide-react';
 import { useForexReserves } from '@/hooks/useForexReserves';
+import { useIndicatorInsights } from '@/hooks/useIndicatorInsights';
 
 interface FRInsightsProps {
   unit: 'usd' | 'inr';
@@ -10,6 +11,7 @@ interface FRInsightsProps {
 
 export const FRInsights = ({ unit, selectedFY }: FRInsightsProps) => {
   const { data: forexData, loading } = useForexReserves(unit, 'recent', selectedFY);
+  const { data: insightsData, loading: insightsLoading } = useIndicatorInsights('foreign-exchange-reserves');
 
   const generateInsights = () => {
     if (!forexData || forexData.length < 2) return [];
@@ -113,39 +115,38 @@ export const FRInsights = ({ unit, selectedFY }: FRInsightsProps) => {
         )}
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {insightsLoading ? (
           <div className="text-center text-muted-foreground py-4">
-            Generating insights...
+            Loading insights...
           </div>
-        ) : insights.length === 0 ? (
+        ) : insightsData.length === 0 ? (
           <div className="text-center text-muted-foreground py-4">
-            Insufficient data for insights
+            No insights available. Add insights from the admin panel.
           </div>
         ) : (
-          <div className="space-y-4">
-            {insights.map((insight, index) => {
-              const IconComponent = insight.icon;
-              return (
-                <div 
-                  key={index} 
-                  className={`p-4 rounded-lg border ${getInsightColor(insight.type)}`}
-                >
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <IconComponent className={`h-4 w-4 ${getIconColor(insight.type)}`} />
+          <div className="space-y-3">
+            {insightsData.map((insight, index) => (
+              <div 
+                key={insight.id} 
+                className="p-3 rounded-lg border border-blue-200 bg-blue-50/50"
+              >
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <Lightbulb className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+                        #{index + 1}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-sm mb-1">
-                        {insight.title}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        {insight.description}
-                      </p>
-                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {insight.content}
+                    </p>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
 

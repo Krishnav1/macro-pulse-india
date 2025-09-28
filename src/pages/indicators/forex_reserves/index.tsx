@@ -9,7 +9,7 @@ const ForexReservesPage = () => {
   const navigate = useNavigate();
   const [timeframe, setTimeframe] = useState('all');
   const [unit, setUnit] = useState<'usd' | 'inr'>('usd');
-  const [selectedFY, setSelectedFY] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
 
   return (
@@ -25,10 +25,8 @@ const ForexReservesPage = () => {
               setTimeframe={setTimeframe}
               unit={unit}
               setUnit={setUnit}
-              selectedFY={selectedFY}
-              setSelectedFY={setSelectedFY}
-              selectedComponents={selectedComponents}
-              setSelectedComponents={setSelectedComponents}
+              selectedFY={selectedYear}
+              setSelectedFY={setSelectedYear}
             />
           </div>
 
@@ -36,7 +34,7 @@ const ForexReservesPage = () => {
           <div className="space-y-4">
             <FRMetrics 
               unit={unit} 
-              selectedFY={selectedFY}
+              selectedFY={selectedYear}
               timeframe={timeframe}
             />
             
@@ -53,7 +51,7 @@ const ForexReservesPage = () => {
         {/* Economic Events & Insights */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <FREvents timeframe={timeframe} />
-          <FRInsights unit={unit} selectedFY={selectedFY} />
+          <FRInsights unit={unit} selectedFY={selectedYear} />
         </div>
       </div>
     </div>

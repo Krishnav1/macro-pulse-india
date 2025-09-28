@@ -597,9 +597,16 @@ export const FRChart = ({
           </div>
         </div>
         
-        {/* Event Hover Tooltip - positioned relative to chart */}
+        {/* Event Hover Tooltip - positioned near event marker */}
         {hoveredEvent && (
-          <div className="absolute top-4 left-4 z-50">
+          <div 
+            className="absolute z-50 pointer-events-none"
+            style={{
+              top: '20%',
+              left: '50%',
+              transform: 'translateX(-50%)'
+            }}
+          >
             <EventTooltip event={hoveredEvent} />
           </div>
         )}

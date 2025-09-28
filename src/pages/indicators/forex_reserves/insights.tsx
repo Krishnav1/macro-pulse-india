@@ -37,12 +37,11 @@ const ForexReservesInsights = () => {
       return forexData;
     }
     
-    // Filter data for specific year (use latest available data for that year)
+    // Filter data for specific year (use calendar year)
     const targetYear = parseInt(selectedYear);
     const yearData = forexData.filter(item => {
       const itemDate = new Date(item.week_ended);
-      const fyYear = itemDate.getMonth() >= 3 ? itemDate.getFullYear() : itemDate.getFullYear() - 1;
-      return fyYear === targetYear;
+      return itemDate.getFullYear() === targetYear;
     });
     
     return yearData; // Return all data for the selected year
@@ -66,16 +65,16 @@ const ForexReservesInsights = () => {
         return diffDays <= 7; // Within a week of year ago
       });
     } else {
-      // For specific year, find corresponding data from previous FY in full dataset
+      // For specific year, find corresponding data from previous year in full dataset
       const currentYear = parseInt(selectedYear);
       const previousYear = currentYear - 1;
       
       yearAgo = forexData.find(item => {
         const itemDate = new Date(item.week_ended);
-        const fyYear = itemDate.getMonth() >= 3 ? itemDate.getFullYear() : itemDate.getFullYear() - 1;
+        const itemYear = itemDate.getFullYear();
         
-        // Find similar time period in previous FY
-        if (fyYear === previousYear) {
+        // Find similar time period in previous year
+        if (itemYear === previousYear) {
           const latestDate = new Date(latest.week_ended);
           const diffDays = Math.abs((itemDate.getTime() - latestDate.getTime()) / (1000 * 60 * 60 * 24));
           return diffDays <= 30; // Within a month of similar period
@@ -278,8 +277,8 @@ const ForexReservesInsights = () => {
                 className="bg-background border border-input rounded-md px-3 py-1 text-sm"
               >
                 <option value="latest">Latest Data</option>
-                {availableFYs?.map(fy => (
-                  <option key={fy} value={fy}>FY {fy}</option>
+                {availableFYs?.map(year => (
+                  <option key={year} value={year}>{year}</option>
                 ))}
               </select>
             </div>

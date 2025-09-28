@@ -21,63 +21,42 @@ interface ForexReservesData {
 export const useForexReserves = (
   unit: 'usd' | 'inr',
   timeframe: string = 'all',
-  selectedFY?: string | null
+  selectedYear?: string | null
 ) => {
   const [data, setData] = useState<ForexReservesData[]>([]);
   const [availableFYs, setAvailableFYs] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getFYFromDate = (dateStr: string) => {
+  const getYearFromDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1; // JavaScript months are 0-indexed
-    
-    if (month >= 4) {
-      return `${year}-${(year + 1).toString().slice(-2)}`;
-    } else {
-      return `${year - 1}-${year.toString().slice(-2)}`;
-    }
+    return date.getFullYear().toString();
   };
 
-  const getDateRange = (timeframe: string, selectedFY?: string | null) => {
+  const getDateRange = (timeframe: string, selectedYear?: string | null) => {
     const now = new Date();
     let startDate: Date;
 
-    if (selectedFY) {
-      // Parse FY format like "24-25" or "2024-25" to get start and end dates
-      const [startYearStr, endYearStr] = selectedFY.split('-');
-      let startYear, endYear;
-      
-      if (startYearStr.length === 2) {
-        // Format like "24-25"
-        startYear = parseInt(`20${startYearStr}`);
-        endYear = parseInt(`20${endYearStr}`);
-      } else {
-        // Format like "2024-25"
-        startYear = parseInt(startYearStr);
-        // Fix: Handle both 2-digit and 4-digit end year
-        if (endYearStr.length === 2) {
-          endYear = parseInt(`20${endYearStr}`);
-        } else {
-          endYear = parseInt(endYearStr);
-        }
-      }
-      
-      startDate = new Date(startYear, 3, 1); // April 1st
-      const endDate = new Date(endYear, 2, 31); // March 31st
+    if (selectedYear) {
+      // Use simple year format like "2024", "2023"
+      const year = parseInt(selectedYear);
+      startDate = new Date(year, 0, 1); // January 1st
+      const endDate = new Date(year, 11, 31); // December 31st
       return { startDate, endDate };
     }
 
     switch (timeframe) {
       case '1Y':
-        startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        startDate = new Date();
+        startDate.setFullYear(startDate.getFullYear() - 1);
         break;
       case '5Y':
-        startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+        startDate = new Date();
+        startDate.setFullYear(startDate.getFullYear() - 5);
         break;
       case '10Y':
-        startDate = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
+        startDate = new Date();
+        startDate.setFullYear(startDate.getFullYear() - 10);
         break;
       case 'latest':
         // Get only the latest record
@@ -106,15 +85,15 @@ export const useForexReserves = (
             .order('week_ended', { ascending: false });
 
           if (!fyError && allData) {
-            const fys = Array.from(new Set(
-              allData.map((item: any) => getFYFromDate(item.week_ended))
+            const years = Array.from(new Set(
+              allData.map((item: any) => getYearFromDate(item.week_ended))
             )).sort().reverse() as string[];
-            setAvailableFYs(fys);
+            setAvailableFYs(years);
           } else {
-            setAvailableFYs(['24-25', '23-24', '22-23', '21-22', '20-21']);
+            setAvailableFYs(['2024', '2023', '2022', '2021', '2020']);
           }
         } catch {
-          setAvailableFYs(['24-25', '23-24', '22-23', '21-22', '20-21']);
+          setAvailableFYs(['2024', '2023', '2022', '2021', '2020']);
         }
 
         // Build Supabase query
@@ -123,7 +102,7 @@ export const useForexReserves = (
           .select('*')
           .order('week_ended', { ascending: false });
 
-        const dateRange = getDateRange(timeframe, selectedFY);
+        const dateRange = getDateRange(timeframe, selectedYear);
 
         if ('limit' in dateRange) {
           query = query.limit(dateRange.limit);
@@ -154,7 +133,7 @@ export const useForexReserves = (
     };
 
     fetchData();
-  }, [unit, timeframe, selectedFY]);
+  }, [unit, timeframe, selectedYear]);
 
   return {
     data,
