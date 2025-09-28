@@ -47,7 +47,7 @@ export const useIndicatorInsights = (indicatorSlug: string) => {
   }, [indicatorSlug]);
 
   return {
-    data,
+    insights: data,
     loading,
     error,
     refetch: fetchInsights
