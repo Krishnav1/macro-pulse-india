@@ -11,30 +11,6 @@ const RepoRatePage = () => {
   const [selectedYear, setSelectedYear] = useState('all');
   const { series, loading, error } = useIndicatorData('repo_rate');
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
-        <div className="max-w-[1600px] mx-auto px-6 py-6">
-          <div className="text-center py-12">
-            <div className="text-lg">Loading repo rate data...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
-        <div className="max-w-[1600px] mx-auto px-6 py-6">
-          <div className="text-center py-12">
-            <div className="text-lg text-destructive">Error loading repo rate data</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Transform series data for display
   const repoRateData = (series || [])
     .map(item => ({
@@ -70,6 +46,30 @@ const RepoRatePage = () => {
     { value: '10', label: '10Y' },
     { value: 'all', label: 'MAX' }
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
+        <div className="max-w-[1600px] mx-auto px-6 py-6">
+          <div className="text-center py-12">
+            <div className="text-lg">Loading repo rate data...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
+        <div className="max-w-[1600px] mx-auto px-6 py-6">
+          <div className="text-center py-12">
+            <div className="text-lg text-destructive">Error loading repo rate data</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
