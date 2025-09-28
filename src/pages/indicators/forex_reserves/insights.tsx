@@ -37,14 +37,15 @@ const ForexReservesInsights = () => {
       return forexData;
     }
     
-    // Filter data for specific year (use calendar year)
+    // Filter data for specific year (use calendar year) and get latest data point
     const targetYear = parseInt(selectedYear);
     const yearData = forexData.filter(item => {
       const itemDate = new Date(item.week_ended);
       return itemDate.getFullYear() === targetYear;
     });
     
-    return yearData; // Return all data for the selected year
+    // Return only the latest data point for the selected year (first item since data is sorted DESC)
+    return yearData.length > 0 ? [yearData[0]] : [];
   }, [forexData, selectedYear]);
   
   // Calculate KPIs

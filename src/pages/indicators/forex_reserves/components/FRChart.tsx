@@ -190,7 +190,7 @@ export const FRChart = ({
     if (!chartData.length) return [];
 
     if (selectedFY) {
-      // For FY view, aggregate by month (sum weekly data within each month)
+      // For year view, show monthly progression using latest data point for each month
       const monthlyData = new Map();
       
       chartData.forEach(item => {
@@ -202,26 +202,31 @@ export const FRChart = ({
           monthlyData.set(monthKey, {
             displayDate: displayMonth,
             date: monthKey,
-            total_reserves: 0,
-            foreign_currency_assets: 0,
-            gold: 0,
-            sdrs: 0,
-            reserve_position_imf: 0,
-            count: 0
+            total_reserves: item.total_reserves || 0,
+            foreign_currency_assets: item.foreign_currency_assets || 0,
+            gold: item.gold || 0,
+            sdrs: item.sdrs || 0,
+            reserve_position_imf: item.reserve_position_imf || 0,
+            week_ended: item.date
           });
+        } else {
+          // Keep the latest data point for the month (data is sorted DESC)
+          const existing = monthlyData.get(monthKey);
+          if (new Date(item.date) > new Date(existing.week_ended)) {
+            monthlyData.set(monthKey, {
+              displayDate: displayMonth,
+              date: monthKey,
+              total_reserves: item.total_reserves || 0,
+              foreign_currency_assets: item.foreign_currency_assets || 0,
+              gold: item.gold || 0,
+              sdrs: item.sdrs || 0,
+              reserve_position_imf: item.reserve_position_imf || 0,
+              week_ended: item.date
+            });
+          }
         }
-        
-        const monthData = monthlyData.get(monthKey);
-        // Sum the values instead of averaging for FY view
-        monthData.total_reserves += item.total_reserves || 0;
-        monthData.foreign_currency_assets += item.foreign_currency_assets || 0;
-        monthData.gold += item.gold || 0;
-        monthData.sdrs += item.sdrs || 0;
-        monthData.reserve_position_imf += item.reserve_position_imf || 0;
-        monthData.count++;
       });
       
-      // Use the sum values (representing total for the month)
       return Array.from(monthlyData.values()).sort((a, b) => a.date.localeCompare(b.date));
     }
 
@@ -596,14 +601,15 @@ export const FRChart = ({
           </div>
         </div>
         
-        {/* Event Hover Tooltip - positioned near event marker */}
+        {/* Event Hover Tooltip - positioned directly above event marker */}
         {hoveredEvent && (
           <div 
             className="absolute z-50 pointer-events-none"
             style={{
-              top: '20%',
+              top: '10px',
               left: '50%',
-              transform: 'translateX(-50%)'
+              transform: 'translateX(-50%)',
+              maxWidth: '250px'
             }}
           >
             <EventTooltip event={hoveredEvent} />

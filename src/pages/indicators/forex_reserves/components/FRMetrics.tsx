@@ -18,31 +18,11 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
     if (!forexData?.length) return null;
     
     if (selectedFY) {
-      // Calculate FY totals by summing all data points
-      const unitSuffix = unit === 'usd' ? 'mn' : 'crore';
-      const totalField = `total_reserves_${unit}_${unitSuffix}`;
-      const fcaField = `foreign_currency_assets_${unit}_${unitSuffix}`;
-      const goldField = `gold_${unit}_${unitSuffix}`;
-      const sdrField = `sdrs_${unit}_${unitSuffix}`;
-      const imfField = `reserve_position_imf_${unit}_${unitSuffix}`;
-      
-      const totals = forexData.reduce((acc, item) => ({
-        [totalField]: acc[totalField] + (item[totalField] || 0),
-        [fcaField]: acc[fcaField] + (item[fcaField] || 0),
-        [goldField]: acc[goldField] + (item[goldField] || 0),
-        [sdrField]: acc[sdrField] + (item[sdrField] || 0),
-        [imfField]: acc[imfField] + (item[imfField] || 0),
-        week_ended: `FY${selectedFY} Total`
-      }), {
-        [totalField]: 0,
-        [fcaField]: 0,
-        [goldField]: 0,
-        [sdrField]: 0,
-        [imfField]: 0,
-        week_ended: `FY${selectedFY} Total`
-      });
-      
-      return totals;
+      // For selected year, use the latest data point (first item since data is sorted DESC)
+      return {
+        ...forexData[0],
+        week_ended: `${selectedFY} Latest`
+      };
     }
     
     return forexData[0];
@@ -143,10 +123,10 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">
-          {selectedFY ? `FY${selectedFY} Year-End` : 'Latest Metrics'}
+          {selectedFY ? `${selectedFY} Latest Data` : 'Latest Metrics'}
         </CardTitle>
         <div className="text-sm text-muted-foreground">
-          {selectedFY ? 'As of March 31' : `Week ended: ${new Date(displayData.week_ended).toLocaleDateString()}`}
+          {selectedFY ? `Latest available for ${selectedFY}` : `Week ended: ${new Date(displayData.week_ended).toLocaleDateString()}`}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
