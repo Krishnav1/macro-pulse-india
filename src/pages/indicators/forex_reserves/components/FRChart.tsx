@@ -39,6 +39,10 @@ export const FRChart = ({
 }: FRChartProps) => {
   const [showEvents, setShowEvents] = useState(true);
   const [selectedImpacts, setSelectedImpacts] = useState<string[]>(['high', 'medium', 'low']);
+  const [hoveredEvent, setHoveredEvent] = useState<any | null>(null);
+  const [clickedEvent, setClickedEvent] = useState<any | null>(null);
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedComponents, setSelectedComponents] = useState<string[]>(['foreign_currency_assets', 'gold', 'sdrs', 'reserve_position_imf']);
   
   const { data: forexData, availableFYs, loading } = useForexReserves(unit, timeframe, selectedFY);
   
@@ -280,6 +284,68 @@ export const FRChart = ({
     return label;
   };
 
+  // Custom tooltip that hides when hovering over events
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    // Don't show tooltip if we're hovering over an event marker
+    if (hoveredEvent) return null;
+    
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-medium mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => {
+            const component = components.find(c => c.key === entry.dataKey);
+            const formattedValue = typeof entry.value === 'number' ? formatValue(entry.value) : entry.value;
+            const total = payload.find((p: any) => p.dataKey === 'total_reserves')?.value || 0;
+            const percentage = total > 0 ? ((entry.value / total) * 100).toFixed(1) : 0;
+            
+            return (
+              <div key={index} className="flex items-center gap-2 text-sm">
+                <div 
+                  className="w-3 h-3 rounded-sm" 
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span>{component?.label || entry.dataKey}: {formattedValue} ({percentage}%)</span>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Event tooltip for markers
+  const EventTooltip = ({ event }: { event: any }) => {
+    if (!event) return null;
+    
+    return (
+      <div className="absolute z-50 bg-card border border-border rounded-lg p-3 shadow-lg max-w-xs">
+        <div className="flex items-center gap-2 mb-2">
+          <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: event.color }} />
+          <span className="font-medium text-sm">{event.title}</span>
+        </div>
+        <div className="text-xs text-muted-foreground mb-1">
+          {new Date(event.date).toLocaleDateString('en-GB', { 
+            day: 'numeric', 
+            month: 'short', 
+            year: 'numeric' 
+          })}
+        </div>
+        {event.description && (
+          <div className="text-sm">{event.description}</div>
+        )}
+        {event.tag && (
+          <div className="mt-2">
+            <span className="text-xs bg-secondary/20 text-secondary-foreground px-2 py-1 rounded">
+              {event.tag}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
 
   return (
     <Card>
@@ -374,27 +440,42 @@ export const FRChart = ({
                   tickFormatter={formatValue}
                 />
                 <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                  formatter={formatTooltip}
-                  labelFormatter={customTooltipLabel}
+                  content={<CustomTooltip />}
                 />
                 <Legend />
                 {
-                  components.map(comp => (
-                    <Area 
-                      key={comp.key} 
-                      type="monotone" 
-                      dataKey={comp.key} 
-                      stackId="1" 
-                      stroke={comp.color} 
-                      fill={comp.color} 
-                      name={comp.label} 
-                    />
-                  ))
+                  compareMode ? (
+                    // In compare mode, show selected components as lines instead of stacked areas
+                    selectedComponents.map(compKey => {
+                      const comp = components.find(c => c.key === compKey);
+                      if (!comp) return null;
+                      return (
+                        <Area 
+                          key={comp.key} 
+                          type="monotone" 
+                          dataKey={comp.key} 
+                          stackId={undefined}
+                          stroke={comp.color} 
+                          fill="none"
+                          strokeWidth={2}
+                          name={comp.label} 
+                        />
+                      );
+                    })
+                  ) : (
+                    // Normal mode - show all components as stacked areas
+                    components.map(comp => (
+                      <Area 
+                        key={comp.key} 
+                        type="monotone" 
+                        dataKey={comp.key} 
+                        stackId="1" 
+                        stroke={comp.color} 
+                        fill={comp.color} 
+                        name={comp.label} 
+                      />
+                    ))
+                  )
                 }
                 {/* Event Markers */}
                 {processedEvents.map((event) => (
@@ -402,10 +483,14 @@ export const FRChart = ({
                     key={event.id}
                     x={event.displayDate}
                     y={getEventYPosition(event.date)}
-                    r={4}
+                    r={hoveredEvent?.id === event.id ? 6 : 4}
                     fill={event.color}
                     stroke="white"
                     strokeWidth={2}
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={() => setHoveredEvent(event)}
+                    onMouseLeave={() => setHoveredEvent(null)}
+                    onClick={() => setClickedEvent(clickedEvent?.id === event.id ? null : event)}
                   />
                 ))}
               </AreaChart>
@@ -413,57 +498,179 @@ export const FRChart = ({
           )}
         </div>
         
-        {/* Events Toggle */}
-        {eventsData && eventsData.length > 0 && (
-          <div className="mt-4 flex items-center justify-between">
+        {/* Chart Controls */}
+        <div className="mt-4 space-y-3">
+          {/* Events Toggle */}
+          {eventsData && eventsData.length > 0 && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={showEvents}
+                    onChange={(e) => setShowEvents(e.target.checked)}
+                    className="rounded"
+                  />
+                  Show Events
+                </label>
+                
+                {showEvents && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Impact:</span>
+                    {['high', 'medium', 'low'].map(impact => (
+                      <label key={impact} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={selectedImpacts.includes(impact)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedImpacts([...selectedImpacts, impact]);
+                            } else {
+                              setSelectedImpacts(selectedImpacts.filter(i => i !== impact));
+                            }
+                          }}
+                          className="rounded"
+                        />
+                        <span className={`w-2 h-2 rounded-full ${
+                          impact === 'high' ? 'bg-red-500' : 
+                          impact === 'medium' ? 'bg-orange-500' : 'bg-green-500'
+                        }`} />
+                        {impact}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {showEvents && processedEvents.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  {processedEvents.length} event{processedEvents.length !== 1 ? 's' : ''} shown
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Compare Mode Toggle */}
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
-                  checked={showEvents}
-                  onChange={(e) => setShowEvents(e.target.checked)}
+                  checked={compareMode}
+                  onChange={(e) => setCompareMode(e.target.checked)}
                   className="rounded"
                 />
-                Show Events
+                Compare Components
               </label>
               
-              {showEvents && (
+              {compareMode && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Impact:</span>
-                  {['high', 'medium', 'low'].map(impact => (
-                    <label key={impact} className="flex items-center gap-1 text-xs">
+                  <span className="text-xs text-muted-foreground">Select:</span>
+                  {components.map(comp => (
+                    <label key={comp.key} className="flex items-center gap-1 text-xs">
                       <input
                         type="checkbox"
-                        checked={selectedImpacts.includes(impact)}
+                        checked={selectedComponents.includes(comp.key)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedImpacts([...selectedImpacts, impact]);
+                            setSelectedComponents([...selectedComponents, comp.key]);
                           } else {
-                            setSelectedImpacts(selectedImpacts.filter(i => i !== impact));
+                            setSelectedComponents(selectedComponents.filter(c => c !== comp.key));
                           }
                         }}
                         className="rounded"
                       />
-                      <span className={`w-2 h-2 rounded-full ${
-                        impact === 'high' ? 'bg-red-500' : 
-                        impact === 'medium' ? 'bg-orange-500' : 'bg-green-500'
-                      }`} />
-                      {impact}
+                      <span className={`w-2 h-2 rounded-full`} style={{ backgroundColor: comp.color }} />
+                      {comp.label}
                     </label>
                   ))}
                 </div>
               )}
             </div>
             
-            {showEvents && processedEvents.length > 0 && (
+            {compareMode && (
               <div className="text-xs text-muted-foreground">
-                {processedEvents.length} event{processedEvents.length !== 1 ? 's' : ''} shown
+                {selectedComponents.length} component{selectedComponents.length !== 1 ? 's' : ''} selected
               </div>
             )}
+          </div>
+        </div>
+        
+        {/* Event Details Popup */}
+        {(hoveredEvent || clickedEvent) && (
+          <div className="relative">
+            <EventTooltip event={hoveredEvent || clickedEvent} />
           </div>
         )}
         
       </CardContent>
+      
+      {/* Clicked Event Modal */}
+      {clickedEvent && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setClickedEvent(null)}
+        >
+          <div 
+            className="bg-card border border-border rounded-lg p-6 max-w-md mx-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className={`w-4 h-4 rounded-full`} style={{ backgroundColor: clickedEvent.color }} />
+                <h3 className="font-semibold">{clickedEvent.title}</h3>
+              </div>
+              <button 
+                onClick={() => setClickedEvent(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Date:</span>
+                <div className="text-sm">
+                  {new Date(clickedEvent.date).toLocaleDateString('en-GB', { 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                  })}
+                </div>
+              </div>
+              
+              {clickedEvent.description && (
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Description:</span>
+                  <div className="text-sm mt-1">{clickedEvent.description}</div>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-4">
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Impact:</span>
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: clickedEvent.color }} />
+                    <span className="text-sm capitalize">{clickedEvent.impact}</span>
+                  </div>
+                </div>
+                
+                {clickedEvent.tag && (
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Tags:</span>
+                    <div className="mt-1">
+                      <span className="text-xs bg-secondary/20 text-secondary-foreground px-2 py-1 rounded">
+                        {clickedEvent.tag}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };
