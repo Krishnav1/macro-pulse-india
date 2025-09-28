@@ -1,19 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Calendar, TrendingUp } from 'lucide-react';
 import { useIndicatorData } from '@/hooks/useIndicatorData';
 import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
+import { useCpiData } from '@/hooks/useCpiData';
 
-interface RepoRateChartProps {
+interface RepoRateVsCPIChartProps {
   selectedYear: string;
   setSelectedYear: (year: string) => void;
 }
 
-const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelectedYear }) => {
-  const { series, loading, error } = useIndicatorData('repo_rate');
+const RepoRateVsCPIChart: React.FC<RepoRateVsCPIChartProps> = ({ selectedYear, setSelectedYear }) => {
+  const { series: repoSeries, loading: repoLoading } = useIndicatorData('repo_rate');
+  const { data: cpiData, loading: cpiLoading } = useCpiData();
   const { data: events } = useIndicatorEvents('repo_rate');
   
   // Event filter states
@@ -31,29 +33,58 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
     }));
   };
 
-  // Transform data for chart
-  const chartData = (series || [])
-    .map(item => ({
-      date: item.period_date,
-      rate: parseFloat(item.value.toString()),
-      displayDate: new Date(item.period_date).toLocaleDateString('en-GB', { 
-        month: 'short', 
-        year: 'numeric' 
-      })
-    }))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // Combine and filter data
+  const combinedData = useMemo(() => {
+    if (!repoSeries || !cpiData) return [];
 
-  // Filter data by selected year
-  const filteredData = selectedYear === 'all' 
-    ? chartData 
-    : chartData.filter(item => {
-        const itemYear = new Date(item.date).getFullYear();
-        const currentYear = new Date().getFullYear();
-        const yearsBack = parseInt(selectedYear);
-        return itemYear >= (currentYear - yearsBack);
-      });
+    // Create a map of repo rate data by date
+    const repoMap = new Map();
+    repoSeries.forEach(item => {
+      const date = item.period_date.substring(0, 7); // YYYY-MM format
+      repoMap.set(date, parseFloat(item.value.toString()));
+    });
 
-  // Filter events based on selected filters and year
+    // Create a map of CPI data by date
+    const cpiMap = new Map();
+    cpiData.forEach(item => {
+      const date = item.date.substring(0, 7); // YYYY-MM format
+      cpiMap.set(date, item.inflation_yoy);
+    });
+
+    // Combine data points where both exist
+    const combined: any[] = [];
+    const allDates = new Set([...repoMap.keys(), ...cpiMap.keys()]);
+    
+    Array.from(allDates).sort().forEach(date => {
+      const repoRate = repoMap.get(date);
+      const cpiRate = cpiMap.get(date);
+      
+      if (repoRate !== undefined || cpiRate !== undefined) {
+        combined.push({
+          date,
+          repoRate: repoRate || null,
+          cpiRate: cpiRate || null,
+          displayDate: new Date(date + '-01').toLocaleDateString('en-GB', {
+            month: 'short',
+            year: 'numeric'
+          })
+        });
+      }
+    });
+
+    // Filter by selected year
+    if (selectedYear !== 'all') {
+      const currentYear = new Date().getFullYear();
+      const yearsBack = parseInt(selectedYear);
+      const cutoffDate = `${currentYear - yearsBack}-01`;
+      
+      return combined.filter(item => item.date >= cutoffDate);
+    }
+
+    return combined;
+  }, [repoSeries, cpiData, selectedYear]);
+
+  // Filter events
   const filteredEvents = (events || []).filter(event => {
     // Year filter
     const eventInRange = selectedYear === 'all' || (() => {
@@ -69,91 +100,43 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
     return eventInRange && impactVisible && showEvents;
   });
 
-  // Get latest data point for display
-  const latestData = filteredData[filteredData.length - 1];
-  const latestDate = latestData ? new Date(latestData.date).toLocaleDateString('en-GB', { 
-    month: 'long', 
-    year: 'numeric' 
-  }) : '';
-
-  // Event count by impact
-  const eventCounts = {
-    high: (events || []).filter(e => e.impact === 'high').length,
-    medium: (events || []).filter(e => e.impact === 'medium').length,
-    low: (events || []).filter(e => e.impact === 'low').length
-  };
-
-  // Function to get Y position for event markers on the trend line
+  // Function to get Y position for event markers on repo rate line
   const getEventYPosition = (eventDate: string): number => {
     const eventDateObj = new Date(eventDate);
+    const eventMonth = eventDateObj.toISOString().substring(0, 7);
     
-    // Find exact date match first
-    let matchingData = filteredData.find(item => 
-      new Date(item.date).getTime() === eventDateObj.getTime()
-    );
+    // Find matching data point
+    const matchingData = combinedData.find(item => item.date === eventMonth);
     
-    if (matchingData) {
-      return matchingData.rate;
-    }
-    
-    // Find same month/year match
-    matchingData = filteredData.find(item => {
-      const itemDate = new Date(item.date);
-      return itemDate.getFullYear() === eventDateObj.getFullYear() &&
-             itemDate.getMonth() === eventDateObj.getMonth();
-    });
-    
-    if (matchingData) {
-      return matchingData.rate;
+    if (matchingData && matchingData.repoRate !== null) {
+      return matchingData.repoRate;
     }
     
     // Find closest date
-    const sortedByDistance = filteredData
+    const sortedByDistance = combinedData
+      .filter(item => item.repoRate !== null)
       .map(item => ({
         ...item,
-        distance: Math.abs(new Date(item.date).getTime() - eventDateObj.getTime())
+        distance: Math.abs(new Date(item.date + '-01').getTime() - eventDateObj.getTime())
       }))
       .sort((a, b) => a.distance - b.distance);
-    
+
     if (sortedByDistance.length > 0) {
-      return sortedByDistance[0].rate;
+      return sortedByDistance[0].repoRate;
     }
-    
-    // Fallback to middle of range
-    const rates = filteredData.map(d => d.rate);
-    return rates.length > 0 ? (Math.max(...rates) + Math.min(...rates)) / 2 : 6;
+
+    return 6; // Fallback
   };
 
-  if (loading) {
+  if (repoLoading || cpiLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Repo Rate Trend
-          </CardTitle>
+          <CardTitle>Repo Rate vs CPI Inflation</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-80 flex items-center justify-center">
-            <div className="text-muted-foreground">Loading chart data...</div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Repo Rate Trend
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80 flex items-center justify-center">
-            <div className="text-destructive">Error loading chart data</div>
+            <div className="text-muted-foreground">Loading correlation data...</div>
           </div>
         </CardContent>
       </Card>
@@ -165,8 +148,8 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Repo Rate
+            <TrendingUp className="h-5 w-5" />
+            Repo Rate vs CPI Inflation
           </div>
           <div className="flex gap-2">
             <Button variant={selectedYear === '1' ? 'default' : 'outline'} size="sm" onClick={() => setSelectedYear('1')}>1Y</Button>
@@ -177,7 +160,7 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
           </div>
         </CardTitle>
         <CardDescription>
-          RBI policy rate changes with major economic events highlighted
+          Correlation between RBI policy rate and consumer price inflation
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -185,9 +168,11 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Rate</span>
               <Badge variant="secondary" className="bg-orange-500/10 border-orange-500/20 border text-orange-700 dark:text-orange-300">
-                Policy Rate
+                Repo Rate
+              </Badge>
+              <Badge variant="secondary" className="bg-yellow-500/10 border-yellow-500/20 border text-yellow-700 dark:text-yellow-300">
+                CPI Inflation
               </Badge>
             </div>
             
@@ -232,22 +217,12 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
               )}
             </div>
           </div>
-
-          {/* Latest Value Display */}
-          {latestData && (
-            <div className="text-right">
-              <div className="text-xl font-bold text-orange-600">
-                Repo Rate: {latestData.rate.toFixed(2)}%
-              </div>
-              <div className="text-sm text-muted-foreground">{latestDate}</div>
-            </div>
-          )}
         </div>
 
         {/* Chart */}
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={filteredData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <LineChart data={combinedData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="displayDate" 
@@ -255,10 +230,19 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
                 fontSize={12}
               />
               <YAxis 
+                yAxisId="left"
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
-                domain={['dataMin - 0.5', 'dataMax + 0.5']}
                 tickFormatter={(value) => `${value}%`}
+                label={{ value: 'CPI Inflation (%)', angle: -90, position: 'insideLeft' }}
+              />
+              <YAxis 
+                yAxisId="right"
+                orientation="right"
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickFormatter={(value) => `${value}%`}
+                label={{ value: 'Repo Rate (%)', angle: 90, position: 'insideRight' }}
               />
               <Tooltip 
                 contentStyle={{
@@ -266,17 +250,34 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '8px'
                 }}
-                formatter={(value: any) => [`${value}%`, 'Repo Rate']}
+                formatter={(value: any, name: string) => [
+                  value ? `${value}%` : 'N/A', 
+                  name === 'cpiRate' ? 'CPI Inflation' : 'Repo Rate'
+                ]}
                 labelFormatter={(label) => `Date: ${label}`}
               />
               
-              {/* Main trend line */}
+              {/* CPI Inflation line */}
               <Line 
+                yAxisId="left"
+                type="monotone" 
+                dataKey="cpiRate"
+                stroke="#EAB308" 
+                strokeWidth={2}
+                dot={false}
+                connectNulls={false}
+                activeDot={{ r: 4, fill: '#EAB308' }}
+              />
+              
+              {/* Repo Rate line */}
+              <Line 
+                yAxisId="right"
                 type="stepAfter" 
-                dataKey="rate"
+                dataKey="repoRate"
                 stroke="hsl(var(--primary))" 
                 strokeWidth={3}
                 dot={false}
+                connectNulls={false}
                 activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
               />
               
@@ -284,6 +285,7 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
               {filteredEvents.map((event, index) => (
                 <ReferenceDot
                   key={index}
+                  yAxisId="right"
                   x={new Date(event.date).toLocaleDateString('en-GB', { 
                     month: 'short', 
                     year: 'numeric' 
@@ -302,9 +304,17 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
           </ResponsiveContainer>
         </div>
 
+        {/* Insight */}
+        <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+          <p className="text-sm text-muted-foreground">
+            <strong>Policy Insight:</strong> When CPI inflation rises sharply, RBI typically responds by increasing the repo rate to control price pressures. 
+            Conversely, when inflation moderates, RBI may pause or cut rates to support economic growth.
+          </p>
+        </div>
+
         {/* Footer */}
         <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
-          <div>Data is based on RBI policy announcements</div>
+          <div>Data: RBI (Repo Rate) & MOSPI (CPI Inflation)</div>
           <div className="flex items-center gap-4">
             <span>Events:</span>
             <div className="flex items-center gap-3">
@@ -328,4 +338,4 @@ const RepoRateChart: React.FC<RepoRateChartProps> = ({ selectedYear, setSelected
   );
 };
 
-export default RepoRateChart;
+export default RepoRateVsCPIChart;

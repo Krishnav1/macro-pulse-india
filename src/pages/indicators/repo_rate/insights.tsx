@@ -1,15 +1,19 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, TrendingUp, Info, Calendar, BarChart3 } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Info, Calendar, BarChart3, Clock, Target, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useIndicatorInsights } from '@/hooks/useIndicatorInsights';
 import { useIndicatorData } from '@/hooks/useIndicatorData';
+import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
 import RepoRateEvents from './components/RepoRateEvents';
+import RepoRateVsCPIChart from './components/RepoRateVsCPIChart';
 
 const RepoRateInsights = () => {
+  const [selectedYear, setSelectedYear] = useState('5');
   const { insights, loading: insightsLoading } = useIndicatorInsights('repo_rate');
   const { series, loading: dataLoading } = useIndicatorData('repo_rate');
+  const { data: events } = useIndicatorEvents('repo_rate');
 
   // Transform series data for display
   const repoRateData = (series || [])
@@ -20,6 +24,42 @@ const RepoRateInsights = () => {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const latestData = repoRateData[0] || { date: '', rate: 0 };
+  const previousData = repoRateData[1] || { date: '', rate: 0 };
+
+  // Calculate KPIs
+  const kpis = useMemo(() => {
+    const currentRate = latestData.rate;
+    const lastChange = currentRate - previousData.rate;
+    const lastChangeText = lastChange > 0 ? `+${(lastChange * 100).toFixed(0)} bps` : 
+                          lastChange < 0 ? `${(lastChange * 100).toFixed(0)} bps` : 'Unchanged';
+    const lastChangeDate = latestData.date ? new Date(latestData.date).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }) : '';
+    
+    const stance = currentRate > 6 ? 'Restrictive' : currentRate < 5 ? 'Accommodative' : 'Neutral';
+    
+    // Get last MPC event
+    const mpcEvents = (events || []).filter(e => 
+      e.tag?.toLowerCase().includes('mpc') || 
+      e.title?.toLowerCase().includes('mpc') ||
+      e.description?.toLowerCase().includes('mpc')
+    ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    const lastMpcDate = mpcEvents[0]?.date ? new Date(mpcEvents[0].date).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }) : '';
+
+    return {
+      currentRate,
+      lastChange: `${lastChangeText} on ${lastChangeDate}`,
+      stance,
+      nextMpc: 'Dec 2025' // This would be configurable in real implementation
+    };
+  }, [latestData, previousData, events]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
@@ -48,61 +88,87 @@ const RepoRateInsights = () => {
           </div>
         </div>
 
-        {/* Key Metrics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4">
+        {/* At-a-Glance KPI Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Current Rate</p>
-                  <p className="text-2xl font-bold">{latestData.rate?.toFixed(2) || '—'}%</p>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Current Repo Rate</p>
+                  <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                    {kpis.currentRate?.toFixed(2) || '—'}%
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    As of {latestData.date ? new Date(latestData.date).toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : 'N/A'}
+                  </p>
                 </div>
-                <BarChart3 className="h-8 w-8 text-blue-500" />
+                <Target className="h-10 w-10 text-blue-500" />
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200 dark:border-orange-800">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Policy Stance</p>
-                  <p className="text-lg font-semibold">
-                    {latestData.rate > 6 ? 'Restrictive' : latestData.rate < 5 ? 'Accommodative' : 'Neutral'}
+                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Last Change</p>
+                  <p className="text-lg font-bold text-orange-900 dark:text-orange-100">
+                    {kpis.lastChange}
+                  </p>
+                  <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                    Previous MPC Decision
                   </p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-green-500" />
+                <TrendingUp className="h-10 w-10 text-orange-500" />
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Period High</p>
-                  <p className="text-lg font-semibold">
-                    {repoRateData.length ? Math.max(...repoRateData.map(d => d.rate)).toFixed(2) : '—'}%
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">RBI's Stance</p>
+                  <p className="text-lg font-bold text-green-900 dark:text-green-100">
+                    {kpis.stance}
+                  </p>
+                  <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                    Current Policy Position
                   </p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-red-500" />
+                <BarChart3 className="h-10 w-10 text-green-500" />
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="p-4">
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Period Low</p>
-                  <p className="text-lg font-semibold">
-                    {repoRateData.length ? Math.min(...repoRateData.map(d => d.rate)).toFixed(2) : '—'}%
+                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Next MPC Meeting</p>
+                  <p className="text-lg font-bold text-purple-900 dark:text-purple-100">
+                    {kpis.nextMpc}
+                  </p>
+                  <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
+                    Upcoming Policy Review
                   </p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-blue-500 rotate-180" />
+                <Clock className="h-10 w-10 text-purple-500" />
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Correlation Chart */}
+        <div className="mb-8">
+          <RepoRateVsCPIChart 
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+          />
         </div>
 
         {/* Main Content Grid */}

@@ -74,52 +74,19 @@ const RepoRatePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
       <div className="max-w-[1600px] mx-auto px-6 py-6">
-        
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Repo Rate</h1>
-              <p className="text-muted-foreground mt-1">
-                Reserve Bank of India policy repo rate - the key monetary policy tool
-              </p>
-            </div>
-            <Badge variant="secondary" className="bg-blue-500/10 border-blue-500/20 border">
-              Monetary Policy
-            </Badge>
-          </div>
-        </div>
 
-        {/* Year Selection */}
-        <div className="mb-6">
-          <div className="flex gap-2">
-            {yearButtons.map((button) => (
-              <button
-                key={button.value}
-                onClick={() => setSelectedYear(button.value)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  selectedYear === button.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {button.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Main Layout */}
+        {/* Main Layout - Chart on Left, Details on Right */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-          
           {/* Chart Section */}
           <div className="xl:col-span-2">
-            <RepoRateChart selectedYear={selectedYear} />
+            <RepoRateChart 
+              selectedYear={selectedYear}
+              setSelectedYear={setSelectedYear}
+            />
           </div>
 
-          {/* Key Metrics */}
+          {/* Details Section */}
           <div className="space-y-4">
-            
             {/* Main Indicator Card */}
             <Card>
               <CardHeader>
@@ -178,6 +145,14 @@ const RepoRatePage = () => {
               </CardContent>
             </Card>
 
+            {/* View Full Insight Button */}
+            <button 
+              onClick={() => window.location.href = '/indicators/repo-rate/insights'}
+              className="w-full px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg text-sm font-medium transition-colors"
+            >
+              View Full Insight
+            </button>
+
             {/* Policy Context Card */}
             <Card>
               <CardHeader>
@@ -210,7 +185,7 @@ const RepoRatePage = () => {
           </div>
         </div>
 
-        {/* Events & Insights */}
+        {/* Economic Events & Insights */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <RepoRateEvents />
           <RepoRateInsights />
