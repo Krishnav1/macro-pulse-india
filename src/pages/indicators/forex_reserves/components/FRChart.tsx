@@ -360,15 +360,14 @@ export const FRChart = ({
           <div className="flex items-center gap-3">
             {/* Financial Year Dropdown */}
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
               <select
                 value={selectedFY || 'all'}
                 onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
                 className="bg-background border border-input rounded-md px-3 py-1 text-sm"
               >
                 <option value="all">All Years</option>
-                {availableFYs?.map(fy => (
-                  <option key={fy} value={fy}>FY{fy}</option>
+                {availableFYs?.map(year => (
+                  <option key={year} value={year}>{year.toString().slice(0, 4)}</option>
                 ))}
               </select>
             </div>
