@@ -96,8 +96,12 @@ export const FRChart = ({
   const getEventYPosition = (eventDate: string) => {
     if (!chartData.length) return 0;
     
-    // Use total_reserves as the primary value for positioning
-    const primaryKey = 'total_reserves';
+    // In compare mode, use the first selected component for positioning
+    // In normal mode, use total_reserves
+    let primaryKey = 'total_reserves';
+    if (compareMode && selectedComponents.length > 0) {
+      primaryKey = selectedComponents[0]; // Use first selected component
+    }
     
     // First try to find exact date match
     const exactMatch = chartData.find(item => item.date === eventDate);
@@ -136,12 +140,19 @@ export const FRChart = ({
       return closestItem[primaryKey];
     }
     
-    // Fallback to middle of Y-axis range
-    const values = chartData.map(item => item[primaryKey]).filter(val => typeof val === 'number' && !isNaN(val));
-    if (values.length > 0) {
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      return (min + max) / 2;
+    // Fallback: try any available component for positioning
+    const availableKeys = Object.keys(chartData[0] || {}).filter(key => 
+      key !== 'date' && key !== 'displayDate' && typeof chartData[0][key] === 'number'
+    );
+    
+    if (availableKeys.length > 0) {
+      const fallbackKey = availableKeys[0];
+      const values = chartData.map(item => item[fallbackKey]).filter(val => typeof val === 'number' && !isNaN(val));
+      if (values.length > 0) {
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        return (min + max) / 2;
+      }
     }
     
     return 0;

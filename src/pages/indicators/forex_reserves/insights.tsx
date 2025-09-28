@@ -13,9 +13,11 @@ const ForexReservesInsights = () => {
   const navigate = useNavigate();
   const [timeframe, setTimeframe] = useState('5Y');
   const [unit, setUnit] = useState<'usd' | 'inr'>('usd');
+  const [selectedYear, setSelectedYear] = useState<string>('latest');
+  const [dataType, setDataType] = useState<'latest' | 'year-end'>('latest');
 
   // Fetch data
-  const { data: forexData, loading: forexLoading } = useForexReserves(unit, 'all');
+  const { data: forexData, loading: forexLoading, availableFYs } = useForexReserves(unit, 'all');
   const { data: importsData, averageMonthlyImports, loading: importsLoading } = useMonthlyImports(12);
   const { data: usdInrData, loading: ratesLoading } = useUsdInrRates(timeframe);
 
@@ -28,13 +30,41 @@ const ForexReservesInsights = () => {
     comparison: ''
   });
 
+  // Get filtered data based on selected year and data type
+  const filteredData = useMemo(() => {
+    if (!forexData.length) return [];
+    
+    if (selectedYear === 'latest') {
+      return forexData;
+    }
+    
+    // Filter data for specific year
+    const targetYear = parseInt(selectedYear);
+    const yearData = forexData.filter(item => {
+      const itemDate = new Date(item.week_ended);
+      const fyYear = itemDate.getMonth() >= 3 ? itemDate.getFullYear() : itemDate.getFullYear() - 1;
+      return fyYear === targetYear;
+    });
+    
+    if (dataType === 'year-end') {
+      // Get last entry of the financial year (March data)
+      const marchData = yearData.filter(item => {
+        const itemDate = new Date(item.week_ended);
+        return itemDate.getMonth() === 2; // March (0-indexed)
+      });
+      return marchData.length > 0 ? [marchData[marchData.length - 1]] : yearData.slice(0, 1);
+    }
+    
+    return yearData;
+  }, [forexData, selectedYear, dataType]);
+  
   // Calculate KPIs
   const kpis = useMemo(() => {
-    if (!forexData.length) return null;
+    if (!filteredData.length) return null;
 
-    const latest = forexData[0]; // Data is sorted DESC
-    const previousWeek = forexData[1];
-    const yearAgo = forexData.find(item => {
+    const latest = filteredData[0]; // Data is sorted DESC
+    const previousWeek = filteredData[1];
+    const yearAgo = filteredData.find(item => {
       const itemDate = new Date(item.week_ended);
       const targetDate = subYears(new Date(latest.week_ended), 1);
       const diffDays = Math.abs((itemDate.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -58,13 +88,13 @@ const ForexReservesInsights = () => {
       yearlyChangePercent,
       date: latest.week_ended
     };
-  }, [forexData, unit]);
+  }, [filteredData, unit]);
 
   // Prepare composition data for donut chart
   const compositionData = useMemo(() => {
-    if (!forexData.length) return [];
+    if (!filteredData.length) return [];
 
-    const latest = forexData[0];
+    const latest = filteredData[0];
     const suffix = unit === 'usd' ? 'usd_mn' : 'inr_crore';
 
     return [
@@ -89,7 +119,7 @@ const ForexReservesInsights = () => {
         color: 'hsl(var(--chart-4))'
       }
     ];
-  }, [forexData, unit]);
+  }, [filteredData, unit]);
 
   // Calculate import cover
   const importCover = useMemo(() => {
@@ -224,28 +254,72 @@ const ForexReservesInsights = () => {
             </div>
           </div>
 
-          {/* Unit Toggle */}
-          <div className="flex bg-muted rounded-lg p-1">
-            <button
-              onClick={() => setUnit('usd')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                unit === 'usd' 
-                  ? 'bg-background shadow-sm text-foreground' 
-                  : 'hover:bg-background/50 text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              USD
-            </button>
-            <button
-              onClick={() => setUnit('inr')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                unit === 'inr' 
-                  ? 'bg-background shadow-sm text-foreground' 
-                  : 'hover:bg-background/50 text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              INR
-            </button>
+          {/* Controls */}
+          <div className="flex items-center gap-4">
+            {/* Year Selection */}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="bg-background border border-input rounded-md px-3 py-1 text-sm"
+              >
+                <option value="latest">Latest Data</option>
+                {availableFYs?.map(fy => (
+                  <option key={fy} value={fy}>FY {fy}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Data Type Toggle (only show when year is selected) */}
+            {selectedYear !== 'latest' && (
+              <div className="flex bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setDataType('latest')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    dataType === 'latest' 
+                      ? 'bg-background shadow-sm text-foreground' 
+                      : 'hover:bg-background/50 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Latest
+                </button>
+                <button
+                  onClick={() => setDataType('year-end')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    dataType === 'year-end' 
+                      ? 'bg-background shadow-sm text-foreground' 
+                      : 'hover:bg-background/50 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Year End
+                </button>
+              </div>
+            )}
+            
+            {/* Unit Toggle */}
+            <div className="flex bg-muted rounded-lg p-1">
+              <button
+                onClick={() => setUnit('usd')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                  unit === 'usd' 
+                    ? 'bg-background shadow-sm text-foreground' 
+                    : 'hover:bg-background/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                USD
+              </button>
+              <button
+                onClick={() => setUnit('inr')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                  unit === 'inr' 
+                    ? 'bg-background shadow-sm text-foreground' 
+                    : 'hover:bg-background/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                INR
+              </button>
+            </div>
           </div>
         </div>
 
@@ -315,9 +389,16 @@ const ForexReservesInsights = () => {
           {/* Composition Donut Chart */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Reserve Composition
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Reserve Composition
+                </div>
+                {kpis && (
+                  <div className="text-xs text-muted-foreground">
+                    As of {format(new Date(kpis.date), 'MMM dd, yyyy')}
+                  </div>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -338,8 +419,18 @@ const ForexReservesInsights = () => {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value: any) => [formatValue(value), '']}
+                      formatter={(value: any, name: string) => {
+                        const total = compositionData.reduce((sum, item) => sum + item.value, 0);
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return [`${formatValue(value)} (${percentage}%)`, name];
+                      }}
                       labelFormatter={(label) => label}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
                     />
                     <Legend />
                   </PieChart>
