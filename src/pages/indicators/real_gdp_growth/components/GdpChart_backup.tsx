@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceDot } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ReferenceDot } from 'recharts';
 import { Calendar, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useGdpData, DataType, PriceType, CurrencyType, ViewType } from '@/hooks/useGdpData';
 import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
@@ -70,7 +70,30 @@ export const GdpChart = ({
         : item.year,
       period: `${item.year}-${item.quarter}`
     }));
-  }, [gdpData, selectedFY, viewType]);
+    
+    return gdpData.map(item => {
+      const processed: any = {
+        ...item,
+        displayDate: viewType === 'quarterly' 
+          ? (selectedFY ? item.quarter : `${item.year} ${item.quarter}`)
+          : item.year,
+        period: `${item.year}-${item.quarter}`
+      };
+
+      // Add component values with simplified field names
+      processed.gdp = item.gdp;
+      processed.pfce = item.pfce;
+      processed.gfce = item.gfce;
+      processed.gfcf = item.gfcf;
+      processed.exports = item.exports;
+      processed.imports = item.imports;
+      processed.valuables = item.valuables;
+      processed.changes_in_stocks = item.changes_in_stocks;
+      processed.discrepancies = item.discrepancies;
+
+      return processed;
+    });
+  }, [gdpData, selectedFY, dataType, priceType]);
 
   // Filter and process events for display
   const filteredEvents = useMemo(() => {
@@ -185,6 +208,23 @@ export const GdpChart = ({
     setSelectedComponents(newComponents);
   };
 
+  // Prepare pie chart data for FY selection
+  const pieChartData = useMemo(() => {
+    if (!selectedFY || !chartData.length) return [];
+    
+    // Get the latest quarter data for the selected FY
+    const latestData = chartData[chartData.length - 1];
+    
+    return [
+      { name: 'PFCE', value: Math.abs(latestData.pfce || 0), color: '#22c55e' },
+      { name: 'GFCE', value: Math.abs(latestData.gfce || 0), color: '#f59e0b' },
+      { name: 'GFCF', value: Math.abs(latestData.gfcf || 0), color: '#3b82f6' },
+      { name: 'Exports', value: Math.abs(latestData.exports || 0), color: '#ef4444' },
+      { name: 'Imports', value: Math.abs(latestData.imports || 0), color: '#8b5cf6' },
+      { name: 'Valuables', value: Math.abs(latestData.valuables || 0), color: '#06b6d4' }
+    ].filter(item => item.value > 0);
+  }, [selectedFY, chartData]);
+
   // Render lines for selected components only
   const renderLines = () => {
     const lines = [];
@@ -279,85 +319,23 @@ export const GdpChart = ({
                 {availableFYs?.map(fy => (
                   <option key={fy} value={fy}>FY{fy}</option>
                 ))}
-              </select>
-            </div>
-          </div>
         </CardTitle>
 
-        {/* Price and Period Toggles - moved below years section */}
-        <div className="flex gap-3 mt-3 flex-wrap items-center">
-          {/* Price Type */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Price:</span>
-            <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={priceType === 'constant' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setPriceType('constant')}
-                className="h-7 px-2 text-xs"
-              >
-                Constant
-              </Button>
-              <Button
-                variant={priceType === 'current' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setPriceType('current')}
-                className="h-7 px-2 text-xs"
-              >
-                Current
-              </Button>
-            </div>
-          </div>
-
-          {/* Period Type */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Period:</span>
-            <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={viewType === 'annual' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewType('annual')}
-                className="h-7 px-2 text-xs"
-              >
-                Annual
-              </Button>
-              <Button
-                variant={viewType === 'quarterly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewType('quarterly')}
-                className="h-7 px-2 text-xs"
-                disabled={priceType === 'current'}
-              >
-                Quarterly
-              </Button>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent>
-        <div className="h-80">
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-muted-foreground">Loading GDP data...</div>
-            </div>
-          ) : selectedFY && chartData.length > 0 ? (
-            // Show bar chart for FY selection instead of pie chart
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[chartData[chartData.length - 1]]}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="year" />
-                <YAxis 
-                  tickFormatter={formatValue}
-                  label={{ value: `GDP (in ₹ Trillion)`, angle: -90, position: 'insideLeft' }}
-                />
-                <Tooltip formatter={formatTooltip} />
-                <Bar dataKey="pfce" fill="#22c55e" name="PFCE" />
-                <Bar dataKey="gfce" fill="#f59e0b" name="GFCE" />
-                <Bar dataKey="gfcf" fill="#3b82f6" name="GFCF" />
-                <Bar dataKey="exports" fill="#ef4444" name="Exports" />
-                <Bar dataKey="imports" fill="#8b5cf6" name="Imports" />
-              </BarChart>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={pieChartData}
+              cx="50%"
+              cy="50%"
+              outerRadius={120}
+              fill="#8884d8"
+              dataKey="value"
+              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+            >
+              {pieChartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+                <Tooltip formatter={(value) => formatValue(value as number)} />
+              </PieChart>
             </ResponsiveContainer>
           ) : (
             // Show line chart for all other cases
@@ -374,7 +352,6 @@ export const GdpChart = ({
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                   tickFormatter={formatValue}
-                  label={{ value: `GDP (in ₹ Trillion)`, angle: -90, position: 'insideLeft' }}
                 />
                 <Tooltip 
                   contentStyle={{
@@ -431,32 +408,6 @@ export const GdpChart = ({
                   {component.label}
                 </Button>
               ))}
-            </div>
-          </div>
-        </div>
-
-        {/* GDP Formula and Full Forms - moved here */}
-        <div className="mt-4 pt-4 border-t">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* GDP Formula */}
-            <div className="p-3 bg-muted/50 rounded-lg border">
-              <h4 className="text-sm font-medium mb-2">GDP Formula</h4>
-              <div className="text-xs text-muted-foreground">
-                GDP = C + G + I + ΔS + (X - M) + Discrepancies
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                C: Consumption, G: Government, I: Investment, ΔS: Stock Changes, X: Exports, M: Imports
-              </div>
-            </div>
-
-            {/* Full Forms */}
-            <div className="p-3 bg-muted/50 rounded-lg border">
-              <h4 className="text-sm font-medium mb-2">Component Full Forms</h4>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>PFCE: Private Final Consumption Expenditure</div>
-                <div>GFCE: Government Final Consumption Expenditure</div>
-                <div>GFCF: Gross Fixed Capital Formation</div>
-              </div>
             </div>
           </div>
         </div>

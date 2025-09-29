@@ -100,7 +100,7 @@ export const GdpInsightsPage = () => {
     };
   }, [quarterlyData]);
 
-  const formatValue = (value: number) => `₹${(value / 10000000).toFixed(1)}L Cr`;
+  const formatValue = (value: number) => `₹${(value / 1000000000000).toFixed(1)} Trillion`;
   const formatPercent = (value: number) => `${value.toFixed(1)}%`;
 
   if (!insights) {

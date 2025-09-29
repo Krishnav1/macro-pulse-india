@@ -50,7 +50,7 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
     if (dataType === 'growth') {
       return `${value.toFixed(1)}%`;
     }
-    return `₹${(value / 10000000).toFixed(1)}L Cr`;
+    return `₹${(value / 1000000000000).toFixed(1)} Trillion`;
   };
 
   const getActualChange = (current: number, field: string) => {
@@ -113,7 +113,7 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">
-            {selectedFY ? `FY${selectedFY} ${displayData.quarter}` : 'Latest Metrics'}
+            {selectedFY ? `FY${selectedFY} Metrics` : 'Latest Metrics'}
           </CardTitle>
           <div className="text-sm text-muted-foreground">
             {selectedFY 
@@ -143,17 +143,6 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
             </div>
             <div className="text-sm text-muted-foreground mt-1">
               {priceType === 'constant' ? 'Constant Prices' : 'Current Prices'} • INR
-            </div>
-          </div>
-
-          {/* GDP Formula Display */}
-          <div className="p-3 bg-muted/50 rounded-lg border">
-            <h4 className="text-sm font-medium mb-2">GDP Formula</h4>
-            <div className="text-xs text-muted-foreground">
-              GDP = C + G + I + ΔS + (X - M) + Discrepancies
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              C: Consumption, G: Government, I: Investment, ΔS: Stock Changes, X: Exports, M: Imports
             </div>
           </div>
 
@@ -224,12 +213,6 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
             </div>
           </div>
 
-          {/* Additional Info */}
-          <div className="text-xs text-muted-foreground pt-2 border-t">
-            <div>PFCE: Private Final Consumption Expenditure</div>
-            <div>GFCE: Government Final Consumption Expenditure</div>
-            <div>GFCF: Gross Fixed Capital Formation</div>
-          </div>
         </CardContent>
       </Card>
       
