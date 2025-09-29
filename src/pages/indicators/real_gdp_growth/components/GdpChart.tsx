@@ -268,10 +268,32 @@ export const GdpChart = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Real GDP {dataType === 'growth' ? 'Growth' : 'Value'}
+        <CardTitle className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Real GDP Growth
+            </div>
+            
+            {/* Growth/Value Toggle - moved to title area */}
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={dataType === 'growth' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDataType('growth')}
+                className="h-8 px-3"
+              >
+                Growth
+              </Button>
+              <Button
+                variant={dataType === 'value' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDataType('value')}
+                className="h-8 px-3"
+              >
+                Value
+              </Button>
+            </div>
           </div>
           
           {/* Timeline Options */}
@@ -283,91 +305,80 @@ export const GdpChart = ({
           </div>
         </CardTitle>
 
-        {/* Data Type and Control Toggles */}
-        <div className="flex gap-2 mt-2 flex-wrap">
-          {/* Growth/Value Toggle */}
-          <div className="flex bg-muted rounded-lg p-1">
-            <Button
-              variant={dataType === 'growth' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setDataType('growth')}
-              className="h-8 px-3"
-            >
-              Growth
-            </Button>
-            <Button
-              variant={dataType === 'value' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setDataType('value')}
-              className="h-8 px-3"
-            >
-              Value
-            </Button>
+        {/* Reorganized Control Toggles */}
+        <div className="flex gap-3 mt-3 flex-wrap items-center">
+
+          {/* Price Type */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Price:</span>
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={priceType === 'constant' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPriceType('constant')}
+                className="h-7 px-2 text-xs"
+              >
+                Constant
+              </Button>
+              <Button
+                variant={priceType === 'current' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  setPriceType('current');
+                  setViewType('annual');
+                }}
+                className="h-7 px-2 text-xs"
+              >
+                Current
+              </Button>
+            </div>
           </div>
 
-          {/* Price Type Toggle */}
-          <div className="flex bg-muted rounded-lg p-1">
-            <Button
-              variant={priceType === 'constant' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setPriceType('constant')}
-              className="h-8 px-3"
-            >
-              Constant
-            </Button>
-            <Button
-              variant={priceType === 'current' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => {
-                setPriceType('current');
-                // Force annual view for current prices (no quarterly data available)
-                setViewType('annual');
-              }}
-              className="h-8 px-3"
-            >
-              Current
-            </Button>
+          {/* View Type */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Period:</span>
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={viewType === 'annual' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewType('annual')}
+                className="h-7 px-2 text-xs"
+              >
+                Annual
+              </Button>
+              <Button
+                variant={viewType === 'quarterly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewType('quarterly')}
+                className="h-7 px-2 text-xs"
+                disabled={priceType === 'current'}
+              >
+                Quarterly
+              </Button>
+            </div>
           </div>
 
-          {/* View Type Toggle - disabled for current prices */}
-          <div className="flex bg-muted rounded-lg p-1">
-            <Button
-              variant={viewType === 'annual' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewType('annual')}
-              className="h-8 px-3"
-            >
-              Annual
-            </Button>
-            <Button
-              variant={viewType === 'quarterly' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewType('quarterly')}
-              className="h-8 px-3"
-              disabled={priceType === 'current'}
-            >
-              Quarterly
-            </Button>
-          </div>
-
-          {/* Currency Toggle */}
-          <div className="flex bg-muted rounded-lg p-1">
-            <Button
-              variant={currency === 'inr' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setCurrency('inr')}
-              className="h-8 px-3"
-            >
-              INR
-            </Button>
-            <Button
-              variant={currency === 'usd' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setCurrency('usd')}
-              className="h-8 px-3"
-            >
-              USD
-            </Button>
+          {/* Currency */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Currency:</span>
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={currency === 'inr' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrency('inr')}
+                className="h-7 px-2 text-xs"
+              >
+                INR
+              </Button>
+              <Button
+                variant={currency === 'usd' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrency('usd')}
+                className="h-7 px-2 text-xs"
+              >
+                USD
+              </Button>
+            </div>
           </div>
 
           {/* Financial Year Dropdown */}
@@ -376,7 +387,7 @@ export const GdpChart = ({
             <select
               value={selectedFY || 'all'}
               onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
-              className="bg-background border border-input rounded-md px-3 py-1 text-sm h-8"
+              className="bg-background border border-input rounded-md px-2 py-1 text-xs h-7 min-w-[100px]"
             >
               <option value="all">All Years</option>
               {availableFYs?.map(fy => (

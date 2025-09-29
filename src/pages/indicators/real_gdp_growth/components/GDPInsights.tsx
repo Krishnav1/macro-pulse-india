@@ -1,8 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lightbulb } from 'lucide-react';
 import { useIndicatorInsights } from '@/hooks/useIndicatorInsights';
+import { DataType, PriceType } from '@/hooks/useGdpData';
 
-export const GDPInsights = () => {
+interface GDPInsightsProps {
+  dataType?: DataType;
+  priceType?: PriceType;
+}
+
+export const GDPInsights = ({ dataType, priceType }: GDPInsightsProps) => {
   const { insights, loading, error } = useIndicatorInsights('real_gdp_growth');
 
   if (loading) {
