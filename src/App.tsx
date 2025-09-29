@@ -18,6 +18,7 @@ const CPIFullInsight = lazy(() => import("./pages/CPIFullInsight"));
 const IIPIndicator = lazy(() => import('./pages/IIPIndicator'));
 const IIPPage = lazy(() => import('./pages/indicators/iip'));
 const RealGdpGrowthPage = lazy(() => import('./pages/indicators/real_gdp_growth'));
+const RealGdpGrowthInsights = lazy(() => import('./pages/indicators/real_gdp_growth/insights'));
 const ForexReservesInsights = lazy(() => import('./pages/indicators/forex_reserves/insights'));
 const RepoRatePage = lazy(() => import('./pages/indicators/repo_rate'));
 const RepoRateInsights = lazy(() => import('./pages/indicators/repo_rate/insights'));
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/indicators/forex_reserves" element={<IndicatorRouter />} />
               <Route path="/indicators/forex_reserves/insights" element={<ForexReservesInsights />} />
               <Route path="/indicators/real_gdp_growth" element={<RealGdpGrowthPage />} />
+              <Route path="/indicators/real-gdp-growth/insights" element={<RealGdpGrowthInsights />} />
               <Route path="/indicators/repo-rate" element={<RepoRatePage />} />
               <Route path="/indicators/repo-rate/insights" element={<RepoRateInsights />} />
               <Route path="/indicator/iip" element={<IIPPage />} />

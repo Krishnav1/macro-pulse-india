@@ -2,18 +2,19 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { useGdpData, DataType, PriceType, CurrencyType } from '@/hooks/useGdpData';
+import { useGdpData, DataType, PriceType, CurrencyType, ViewType } from '@/hooks/useGdpData';
 
 interface GdpMetricsProps {
   dataType: DataType;
   priceType: PriceType;
   currency: CurrencyType;
+  viewType: ViewType;
   selectedFY: string | null;
   timeframe: string;
 }
 
-export const GdpMetrics = ({ dataType, priceType, currency, selectedFY, timeframe }: GdpMetricsProps) => {
-  const { data: gdpData, loading } = useGdpData(dataType, priceType, currency, selectedFY ? timeframe : 'latest', selectedFY);
+export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY, timeframe }: GdpMetricsProps) => {
+  const { data: gdpData, loading } = useGdpData(dataType, priceType, currency, viewType, selectedFY ? timeframe : 'latest', selectedFY);
   
   // Get latest data or FY data
   const displayData = useMemo(() => {
@@ -101,9 +102,9 @@ export const GdpMetrics = ({ dataType, priceType, currency, selectedFY, timefram
     );
   }
 
-  // Get field names based on price type
+  // Get field names based on price type (only constant prices)
   const getFieldName = (component: string) => {
-    return `${component}_${priceType}_price${dataType === 'growth' ? '_growth' : ''}`;
+    return `${component}_constant_price${dataType === 'growth' ? '_growth' : ''}`;
   };
 
   // Mock previous period data for change calculation
@@ -130,7 +131,12 @@ export const GdpMetrics = ({ dataType, priceType, currency, selectedFY, timefram
           {selectedFY ? `FY${selectedFY} ${displayData.quarter}` : 'Latest Metrics'}
         </CardTitle>
         <div className="text-sm text-muted-foreground">
-          {selectedFY ? `Financial Year ${selectedFY}` : `${displayData.year} ${displayData.quarter}`}
+          {selectedFY 
+            ? `Financial Year ${selectedFY}` 
+            : viewType === 'annual' 
+              ? `Annual ${displayData.year}` 
+              : `${displayData.year} ${displayData.quarter}`
+          }
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

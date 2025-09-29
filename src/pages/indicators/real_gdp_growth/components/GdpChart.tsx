@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ReferenceDot } from 'recharts';
 import { Calendar, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useGdpData, DataType, PriceType, CurrencyType } from '@/hooks/useGdpData';
+import { useGdpData, DataType, PriceType, CurrencyType, ViewType } from '@/hooks/useGdpData';
+import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
 
 interface GdpChartProps {
   timeframe: string;
@@ -11,9 +12,10 @@ interface GdpChartProps {
   dataType: DataType;
   setDataType: (type: DataType) => void;
   priceType: PriceType;
-  setPriceType: (type: PriceType) => void;
   currency: CurrencyType;
   setCurrency: (currency: CurrencyType) => void;
+  viewType: ViewType;
+  setViewType: (type: ViewType) => void;
   selectedFY: string | null;
   setSelectedFY: (fy: string | null) => void;
   selectedComponents: string[];
@@ -43,15 +45,17 @@ export const GdpChart = ({
   dataType,
   setDataType,
   priceType,
-  setPriceType,
   currency, 
   setCurrency, 
+  viewType,
+  setViewType,
   selectedFY, 
   setSelectedFY,
   selectedComponents,
   setSelectedComponents
 }: GdpChartProps) => {
-  const { data: gdpData, availableFYs, loading } = useGdpData(dataType, priceType, currency, timeframe, selectedFY);
+  const { data: gdpData, availableFYs, loading } = useGdpData(dataType, priceType, currency, viewType, timeframe, selectedFY);
+  const { data: events } = useIndicatorEvents('real_gdp_growth');
 
   // Process data for chart display
   const chartData = useMemo(() => {
@@ -60,14 +64,14 @@ export const GdpChart = ({
     return gdpData.map(item => {
       const processed: any = {
         ...item,
-        displayDate: selectedFY 
-          ? item.quarter
-          : `${item.year} ${item.quarter}`,
+        displayDate: viewType === 'quarterly' 
+          ? (selectedFY ? item.quarter : `${item.year} ${item.quarter}`)
+          : item.year,
         period: `${item.year}-${item.quarter}`
       };
 
-      // Add component values with proper field names
-      const suffix = `_${priceType}_price${dataType === 'growth' ? '_growth' : ''}`;
+      // Add component values with proper field names (only constant prices)
+      const suffix = `_constant_price${dataType === 'growth' ? '_growth' : ''}`;
       processed.gdp = item[`gdp${suffix}`];
       processed.pfce = item[`pfce${suffix}`];
       processed.gfce = item[`gfce${suffix}`];
@@ -81,6 +85,89 @@ export const GdpChart = ({
       return processed;
     });
   }, [gdpData, selectedFY, dataType, priceType]);
+
+  // Filter and process events for display
+  const filteredEvents = useMemo(() => {
+    if (!events?.length) return [];
+    
+    return events.filter(event => {
+      if (timeframe === 'all') return true;
+      
+      const eventDate = new Date(event.date);
+      const now = new Date();
+      const yearsBack = timeframe === '1Y' ? 1 : timeframe === '5Y' ? 5 : timeframe === '10Y' ? 10 : 0;
+      
+      if (yearsBack > 0) {
+        const cutoffDate = new Date(now.getFullYear() - yearsBack, now.getMonth(), now.getDate());
+        return eventDate >= cutoffDate;
+      }
+      
+      return true;
+    });
+  }, [events, timeframe]);
+
+  // Function to get Y position for event markers on the trend line
+  const getEventYPosition = (eventDate: string) => {
+    if (!chartData.length) return 0;
+    
+    const eventDateObj = new Date(eventDate);
+    
+    // Try to find exact date match first
+    let matchingDataPoint = chartData.find(item => {
+      const itemDate = new Date(`${item.year}-${getQuarterEndMonth(item.quarter)}-01`);
+      return Math.abs(itemDate.getTime() - eventDateObj.getTime()) < 24 * 60 * 60 * 1000; // Within 1 day
+    });
+    
+    // If no exact match, find closest date
+    if (!matchingDataPoint) {
+      let closestDistance = Infinity;
+      chartData.forEach(item => {
+        const itemDate = new Date(`${item.year}-${getQuarterEndMonth(item.quarter)}-01`);
+        const distance = Math.abs(itemDate.getTime() - eventDateObj.getTime());
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          matchingDataPoint = item;
+        }
+      });
+    }
+    
+    // Return GDP value for the primary component (GDP total)
+    return matchingDataPoint ? matchingDataPoint.gdp || 0 : 0;
+  };
+
+  // Helper function to get quarter end month
+  const getQuarterEndMonth = (quarter: string) => {
+    switch (quarter) {
+      case 'Q1': return '06'; // April-June
+      case 'Q2': return '09'; // July-September  
+      case 'Q3': return '12'; // October-December
+      case 'Q4': return '03'; // January-March
+      default: return '06';
+    }
+  };
+
+  // Helper function to get event quarter from date
+  const getEventQuarter = (eventDate: string) => {
+    const date = new Date(eventDate);
+    const month = date.getMonth() + 1; // getMonth() returns 0-11
+    
+    if (month >= 4 && month <= 6) return 'Q1';
+    if (month >= 7 && month <= 9) return 'Q2';
+    if (month >= 10 && month <= 12) return 'Q3';
+    return 'Q4'; // Jan-Mar
+  };
+
+  // Helper function to get event display date for chart
+  const getEventDisplayDate = (eventDate: string) => {
+    const date = new Date(eventDate);
+    const year = date.getFullYear();
+    const quarter = getEventQuarter(eventDate);
+    
+    // Convert to financial year format
+    const fyYear = quarter === 'Q4' ? `${year}-${(year + 1).toString().slice(-2)}` : `${year - 1}-${year.toString().slice(-2)}`;
+    
+    return `${fyYear} ${quarter}`;
+  };
 
   const formatValue = (value: number) => {
     if (dataType === 'growth') {
@@ -226,23 +313,23 @@ export const GdpChart = ({
 
         {/* Control Toggles */}
         <div className="flex flex-wrap gap-4 mt-2">
-          {/* Price Type Toggle */}
+          {/* View Type Toggle */}
           <div className="flex bg-muted rounded-lg p-1">
             <Button
-              variant={priceType === 'constant' ? 'default' : 'ghost'}
+              variant={viewType === 'annual' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setPriceType('constant')}
+              onClick={() => setViewType('annual')}
               className="h-8 px-3"
             >
-              Constant
+              Annual
             </Button>
             <Button
-              variant={priceType === 'current' ? 'default' : 'ghost'}
+              variant={viewType === 'quarterly' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setPriceType('current')}
+              onClick={() => setViewType('quarterly')}
               className="h-8 px-3"
             >
-              Current
+              Quarterly
             </Button>
           </div>
 
@@ -316,6 +403,26 @@ export const GdpChart = ({
                 />
                 
                 {renderLines()}
+                
+                {/* Event Markers */}
+                {filteredEvents.map((event, index) => {
+                  const eventDisplayDate = selectedFY 
+                    ? getEventQuarter(event.date)
+                    : getEventDisplayDate(event.date);
+                  
+                  return (
+                    <ReferenceDot
+                      key={`event-${event.id || index}`}
+                      x={eventDisplayDate}
+                      y={getEventYPosition(event.date)}
+                      r={6}
+                      fill="#ef4444"
+                      stroke="#ffffff"
+                      strokeWidth={2}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  );
+                })}
               </LineChart>
             </ResponsiveContainer>
           )}
