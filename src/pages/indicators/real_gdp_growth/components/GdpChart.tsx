@@ -12,6 +12,7 @@ interface GdpChartProps {
   dataType: DataType;
   setDataType: (type: DataType) => void;
   priceType: PriceType;
+  setPriceType: (type: PriceType) => void;
   currency: CurrencyType;
   setCurrency: (currency: CurrencyType) => void;
   viewType: ViewType;
@@ -45,6 +46,7 @@ export const GdpChart = ({
   dataType,
   setDataType,
   priceType,
+  setPriceType,
   currency, 
   setCurrency, 
   viewType,
@@ -70,17 +72,16 @@ export const GdpChart = ({
         period: `${item.year}-${item.quarter}`
       };
 
-      // Add component values with proper field names (only constant prices)
-      const suffix = `_constant_price${dataType === 'growth' ? '_growth' : ''}`;
-      processed.gdp = item[`gdp${suffix}`];
-      processed.pfce = item[`pfce${suffix}`];
-      processed.gfce = item[`gfce${suffix}`];
-      processed.gfcf = item[`gfcf${suffix}`];
-      processed.exports = item[`exports${suffix}`];
-      processed.imports = item[`imports${suffix}`];
-      processed.valuables = item[`valuables${suffix}`];
-      processed.changes_in_stocks = item[`changes_in_stocks${suffix}`];
-      processed.discrepancies = item[`discrepancies${suffix}`];
+      // Add component values with simplified field names
+      processed.gdp = item.gdp;
+      processed.pfce = item.pfce;
+      processed.gfce = item.gfce;
+      processed.gfcf = item.gfcf;
+      processed.exports = item.exports;
+      processed.imports = item.imports;
+      processed.valuables = item.valuables;
+      processed.changes_in_stocks = item.changes_in_stocks;
+      processed.discrepancies = item.discrepancies;
 
       return processed;
     });
@@ -273,47 +274,62 @@ export const GdpChart = ({
             Real GDP {dataType === 'growth' ? 'Growth' : 'Value'}
           </div>
           
-          <div className="flex items-center gap-3">
-            {/* Financial Year Dropdown */}
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <select
-                value={selectedFY || 'all'}
-                onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
-                className="bg-background border border-input rounded-md px-3 py-1 text-sm"
-              >
-                <option value="all">All Years</option>
-                {availableFYs?.map(fy => (
-                  <option key={fy} value={fy}>FY{fy}</option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Currency Toggle */}
-            <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={currency === 'inr' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setCurrency('inr')}
-                className="h-8 px-3"
-              >
-                INR
-              </Button>
-              <Button
-                variant={currency === 'usd' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setCurrency('usd')}
-                className="h-8 px-3"
-              >
-                USD
-              </Button>
-            </div>
+          {/* Timeline Options */}
+          <div className="flex gap-2">
+            <Button variant={timeframe === '1Y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('1Y')}>1Y</Button>
+            <Button variant={timeframe === '5Y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('5Y')}>5Y</Button>
+            <Button variant={timeframe === '10Y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('10Y')}>10Y</Button>
+            <Button variant={timeframe === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('all')}>MAX</Button>
           </div>
         </CardTitle>
 
-        {/* Control Toggles */}
-        <div className="flex flex-wrap gap-4 mt-2">
-          {/* View Type Toggle */}
+        {/* Data Type and Control Toggles */}
+        <div className="flex gap-2 mt-2 flex-wrap">
+          {/* Growth/Value Toggle */}
+          <div className="flex bg-muted rounded-lg p-1">
+            <Button
+              variant={dataType === 'growth' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setDataType('growth')}
+              className="h-8 px-3"
+            >
+              Growth
+            </Button>
+            <Button
+              variant={dataType === 'value' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setDataType('value')}
+              className="h-8 px-3"
+            >
+              Value
+            </Button>
+          </div>
+
+          {/* Price Type Toggle */}
+          <div className="flex bg-muted rounded-lg p-1">
+            <Button
+              variant={priceType === 'constant' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setPriceType('constant')}
+              className="h-8 px-3"
+            >
+              Constant
+            </Button>
+            <Button
+              variant={priceType === 'current' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => {
+                setPriceType('current');
+                // Force annual view for current prices (no quarterly data available)
+                setViewType('annual');
+              }}
+              className="h-8 px-3"
+            >
+              Current
+            </Button>
+          </div>
+
+          {/* View Type Toggle - disabled for current prices */}
           <div className="flex bg-muted rounded-lg p-1">
             <Button
               variant={viewType === 'annual' ? 'default' : 'ghost'}
@@ -328,26 +344,46 @@ export const GdpChart = ({
               size="sm"
               onClick={() => setViewType('quarterly')}
               className="h-8 px-3"
+              disabled={priceType === 'current'}
             >
               Quarterly
             </Button>
           </div>
 
-          {/* Timeline Options (only when no FY selected) */}
-          {!selectedFY && (
-            <div className="flex gap-2">
-              {timeframeOptions.map(option => (
-                <Button
-                  key={option.value}
-                  variant={timeframe === option.value ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTimeframe(option.value)}
-                >
-                  {option.label}
-                </Button>
+          {/* Currency Toggle */}
+          <div className="flex bg-muted rounded-lg p-1">
+            <Button
+              variant={currency === 'inr' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCurrency('inr')}
+              className="h-8 px-3"
+            >
+              INR
+            </Button>
+            <Button
+              variant={currency === 'usd' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCurrency('usd')}
+              className="h-8 px-3"
+            >
+              USD
+            </Button>
+          </div>
+
+          {/* Financial Year Dropdown */}
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={selectedFY || 'all'}
+              onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
+              className="bg-background border border-input rounded-md px-3 py-1 text-sm h-8"
+            >
+              <option value="all">All Years</option>
+              {availableFYs?.map(fy => (
+                <option key={fy} value={fy}>FY{fy}</option>
               ))}
-            </div>
-          )}
+            </select>
+          </div>
         </div>
       </CardHeader>
 

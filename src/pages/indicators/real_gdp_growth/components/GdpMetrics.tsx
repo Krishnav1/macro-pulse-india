@@ -102,9 +102,16 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
     );
   }
 
-  // Get field names based on price type (only constant prices)
+  // Get field names based on data structure (quarterly vs annual)
   const getFieldName = (component: string) => {
-    return `${component}_constant_price${dataType === 'growth' ? '_growth' : ''}`;
+    if (viewType === 'quarterly' && priceType === 'constant') {
+      // Quarterly data uses simple field names
+      return component;
+    } else {
+      // Annual data uses suffixed field names
+      const suffix = `_${priceType}_price${dataType === 'growth' ? '_growth' : ''}`;
+      return `${component}${suffix}`;
+    }
   };
 
   // Mock previous period data for change calculation
