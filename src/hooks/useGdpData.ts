@@ -111,7 +111,11 @@ export const useGdpData = (
 
       if (error) throw error;
 
-      const uniqueFYs = [...new Set(data?.map((item: any) => item.year) || [])] as string[];
+      // Clean the years and remove duplicates
+      const uniqueFYs = [...new Set(data?.map((item: any) => item.year?.trim()) || [])]
+        .filter(year => year) // Remove empty/null values
+        .sort((a, b) => (b as string).localeCompare(a as string)) as string[]; // Sort newest to oldest
+      
       setAvailableFYs(uniqueFYs);
     } catch (error) {
       console.error('Error fetching available FYs:', error);
@@ -129,7 +133,8 @@ export const useGdpData = (
 
         // Filter by FY if selected
         if (selectedFY) {
-          query = query.eq('year', selectedFY);
+          // Handle both formats: "2023-24" and "2023-24   " (with spaces)
+          query = query.or(`year.eq.${selectedFY},year.eq.${selectedFY.padEnd(10)}`);
         }
 
         // Apply timeframe filter for non-FY views
@@ -149,19 +154,37 @@ export const useGdpData = (
               break;
           }
           
-          query = query.gte('year', `${startYear}-${(startYear + 1).toString().slice(-2)}`);
+          // Handle year filtering with potential spaces
+          const startYearStr = `${startYear}-${(startYear + 1).toString().slice(-2)}`;
+          query = query.gte('year', startYearStr);
         }
 
-        query = query.order('year', { ascending: true }).order('quarter', { ascending: true });
+        query = query.order('year', { ascending: false }).order('quarter', { ascending: false });
 
         const { data, error } = await query;
 
         if (error) throw error;
 
+        // Clean and process the data
+        const cleanedData = (data || []).map(item => ({
+          ...item,
+          year: item.year?.trim(), // Remove any extra spaces
+          // Map database fields to simplified interface
+          pfce: item.pfce_constant_price || item.pfce || 0,
+          gfce: item.gfce_constant_price || item.gfce || 0,
+          gfcf: item.gfcf_constant_price || item.gfcf || 0,
+          changes_in_stocks: item.changes_in_stocks_constant_price || item.changes_in_stocks || 0,
+          valuables: item.valuables_constant_price || item.valuables || 0,
+          exports: item.exports_constant_price || item.exports || 0,
+          imports: item.imports_constant_price || item.imports || 0,
+          discrepancies: item.discrepancies_constant_price || item.discrepancies || 0,
+          gdp: item.gdp_constant_price || item.gdp || 0
+        }));
+
         if (dataType === 'value') {
-          setValueData((data || []) as GdpValueData[]);
+          setValueData(cleanedData as GdpValueData[]);
         } else {
-          setGrowthData((data || []) as GdpGrowthData[]);
+          setGrowthData(cleanedData as GdpGrowthData[]);
         }
       } else {
         // For annual data (both constant and current prices available)
@@ -189,16 +212,22 @@ export const useGdpData = (
           query = query.gte('year', startYear.toString());
         }
 
-        query = query.order('year', { ascending: true });
+        query = query.order('year', { ascending: false });
 
         const { data, error } = await query;
 
         if (error) throw error;
 
+        // Clean the data
+        const cleanedData = (data || []).map(item => ({
+          ...item,
+          year: item.year?.trim() // Remove any extra spaces
+        }));
+
         if (dataType === 'value') {
-          setAnnualValueData((data || []) as GdpAnnualValueData[]);
+          setAnnualValueData(cleanedData as GdpAnnualValueData[]);
         } else {
-          setAnnualGrowthData((data || []) as GdpAnnualGrowthData[]);
+          setAnnualGrowthData(cleanedData as GdpAnnualGrowthData[]);
         }
       }
     } catch (error) {

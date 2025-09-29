@@ -82,8 +82,8 @@ export const processExcelFile = async (
       switch (type) {
         case 'value':
           const valueRow: GdpValueRow = {
-            year: findColumnValue(row, ['Year', 'year', 'YEAR', 'Financial Year', 'FY']),
-            quarter: findColumnValue(row, ['Quarter', 'quarter', 'QUARTER', 'Q', 'Qtr']),
+            year: findColumnValue(row, ['Year', 'year', 'YEAR', 'Financial Year', 'FY'])?.toString().trim(),
+            quarter: findColumnValue(row, ['Quarter', 'quarter', 'QUARTER', 'Q', 'Qtr'])?.toString().trim(),
             pfce_constant_price: parseNumber(findColumnValue(row, ['PFCE', 'pfce', 'Private Final Consumption Expenditure'])),
             pfce_current_price: 0, // Quarterly data doesn't have current price
             gfce_constant_price: parseNumber(findColumnValue(row, ['GFCE', 'gfce', 'Government Final Consumption Expenditure'])),
@@ -108,8 +108,8 @@ export const processExcelFile = async (
           
         case 'growth':
           const growthRow: GdpGrowthRow = {
-            year: findColumnValue(row, ['Year', 'year', 'YEAR', 'Financial Year', 'FY']),
-            quarter: findColumnValue(row, ['Quarter', 'quarter', 'QUARTER', 'Q', 'Qtr']),
+            year: findColumnValue(row, ['Year', 'year', 'YEAR', 'Financial Year', 'FY'])?.toString().trim(),
+            quarter: findColumnValue(row, ['Quarter', 'quarter', 'QUARTER', 'Q', 'Qtr'])?.toString().trim(),
             pfce_constant_price_growth: parseNumber(findColumnValue(row, ['PFCE (% growth)', 'PFCE (%growth)', 'PFCE_growth', 'pfce_growth'])),
             pfce_current_price_growth: 0,
             gfce_constant_price_growth: parseNumber(findColumnValue(row, ['GFCE (% growth)', 'GFCE (%growth)', 'GFCE_growth', 'gfce_growth'])),
@@ -134,7 +134,7 @@ export const processExcelFile = async (
           
         case 'annual-value':
           const annualValueRow: GdpAnnualValueRow = {
-            year: findColumnValue(row, ['Year', 'year', 'YEAR', 'Financial Year', 'FY']),
+            year: findColumnValue(row, ['Year', 'year', 'YEAR', 'Financial Year', 'FY'])?.toString().trim(),
             pfce_constant_price: parseNumber(findColumnValue(row, ['PFCE Constant Price', 'PFCE_Constant_Price', 'pfce_constant_price'])),
             pfce_current_price: parseNumber(findColumnValue(row, ['PFCE Current Price', 'PFCE_Current_Price', 'pfce_current_price'])),
             gfce_constant_price: parseNumber(findColumnValue(row, ['GFCE Constant Price', 'GFCE_Constant_Price', 'gfce_constant_price'])),
@@ -159,7 +159,7 @@ export const processExcelFile = async (
           
         case 'annual-growth':
           const annualGrowthRow: GdpAnnualGrowthRow = {
-            year: findColumnValue(row, ['Year', 'year', 'YEAR', 'Financial Year', 'FY']),
+            year: findColumnValue(row, ['Year', 'year', 'YEAR', 'Financial Year', 'FY'])?.toString().trim(),
             pfce_constant_price_growth: parseNumber(findColumnValue(row, ['PFCE Constant Price Growth', 'PFCE_Constant_Price_Growth', 'pfce_constant_price_growth'])),
             pfce_current_price_growth: parseNumber(findColumnValue(row, ['PFCE Current Price Growth', 'PFCE_Current_Price_Growth', 'pfce_current_price_growth'])),
             gfce_constant_price_growth: parseNumber(findColumnValue(row, ['GFCE Constant Price Growth', 'GFCE_Constant_Price_Growth', 'gfce_constant_price_growth'])),
@@ -186,45 +186,49 @@ export const processExcelFile = async (
       setUploadStatus(prev => ({ ...prev!, processed: i + 1 }));
     }
     
-    // Upload to Supabase
+    // Upload to Supabase - Clear existing data and insert new data
     if (validRows.length > 0) {
       let tableName: string;
-      let conflictColumns: string;
       
       switch (type) {
         case 'value':
           tableName = 'gdp_value';
-          conflictColumns = 'year,quarter';
           break;
         case 'growth':
           tableName = 'gdp_growth';
-          conflictColumns = 'year,quarter';
           break;
         case 'annual-value':
           tableName = 'gdp_annual';
-          conflictColumns = 'year';
           break;
         case 'annual-growth':
           tableName = 'gdp_annual_growth';
-          conflictColumns = 'year';
           break;
         default:
           throw new Error('Invalid type');
       }
       
-      const { error } = await (supabase as any)
+      // Step 1: Clear existing data
+      const { error: deleteError } = await (supabase as any)
         .from(tableName)
-        .upsert(validRows, { 
-          onConflict: conflictColumns,
-          ignoreDuplicates: false 
-        });
+        .delete()
+        .neq('id', 0); // Delete all records
       
-      if (error) {
-        console.error('Supabase upsert error:', error);
-        throw error;
+      if (deleteError) {
+        console.error('Error clearing existing data:', deleteError);
+        throw deleteError;
       }
       
-      toast.success(`Successfully uploaded ${validRows.length} ${type} records`);
+      // Step 2: Insert new data
+      const { error: insertError } = await (supabase as any)
+        .from(tableName)
+        .insert(validRows);
+      
+      if (insertError) {
+        console.error('Supabase insert error:', insertError);
+        throw insertError;
+      }
+      
+      toast.success(`Successfully replaced all data with ${validRows.length} new ${type} records`);
       await fetchGdpData();
     }
     
