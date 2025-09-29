@@ -24,13 +24,42 @@ export const GdpDataPreview: React.FC<GdpDataPreviewProps> = ({
   loading
 }) => {
   return (
-    <Tabs defaultValue="annual-value-preview" className="space-y-4">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="annual-value-preview">Annual Value</TabsTrigger>
-        <TabsTrigger value="annual-growth-preview">Annual Growth</TabsTrigger>
-        <TabsTrigger value="value-preview">Quarterly Value</TabsTrigger>
-        <TabsTrigger value="growth-preview">Quarterly Growth</TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      {/* Sample Data Explanation */}
+      <Card className="bg-blue-50/50 border-blue-200">
+        <CardHeader>
+          <CardTitle className="text-blue-800 text-lg">📊 Data Format & Conversion Example</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-semibold mb-2">Input Data Format (Excel):</h4>
+              <div className="bg-white p-3 rounded border">
+                <p><strong>Raw Value:</strong> 33,012,921 (in Crore)</p>
+                <p className="text-muted-foreground">This is how data appears in your Excel files</p>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2">Display Format (Dashboard):</h4>
+              <div className="bg-white p-3 rounded border">
+                <p><strong>Converted Value:</strong> ₹330.12 Trillion</p>
+                <p className="text-muted-foreground">Calculation: 33,012,921 ÷ 100,000 = 330.12</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
+            <p className="text-green-800"><strong>Conversion Rule:</strong> 1 Lakh Crore = 1 Trillion | Divide by 100,000 to convert Crore to Trillion</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="annual-value-preview" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="annual-value-preview">Annual Value</TabsTrigger>
+          <TabsTrigger value="annual-growth-preview">Annual Growth</TabsTrigger>
+          <TabsTrigger value="value-preview">Quarterly Value</TabsTrigger>
+          <TabsTrigger value="growth-preview">Quarterly Growth</TabsTrigger>
+        </TabsList>
 
       <TabsContent value="annual-value-preview">
         <Card>
@@ -63,22 +92,22 @@ export const GdpDataPreview: React.FC<GdpDataPreviewProps> = ({
                       <tr key={index} className="border-b">
                         <td className="p-2">{row.year}</td>
                         <td className="text-right p-2">
-                          ₹{(row.gdp_constant_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.gdp_constant_price / 100000).toFixed(2)} Trillion
                         </td>
                         <td className="text-right p-2">
-                          ₹{(row.gdp_current_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.gdp_current_price / 100000).toFixed(2)} Trillion
                         </td>
                         <td className="text-right p-2">
-                          ₹{(row.pfce_constant_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.pfce_constant_price / 100000).toFixed(2)} Trillion
                         </td>
                         <td className="text-right p-2">
-                          ₹{(row.pfce_current_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.pfce_current_price / 100000).toFixed(2)} Trillion
                         </td>
                         <td className="text-right p-2">
-                          ₹{(row.gfce_constant_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.gfce_constant_price / 100000).toFixed(2)} Trillion
                         </td>
                         <td className="text-right p-2">
-                          ₹{(row.gfcf_constant_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.gfcf_constant_price / 100000).toFixed(2)} Trillion
                         </td>
                       </tr>
                     ))}
@@ -181,22 +210,22 @@ export const GdpDataPreview: React.FC<GdpDataPreviewProps> = ({
                         <td className="p-2">{row.year}</td>
                         <td className="p-2">{row.quarter}</td>
                         <td className="text-right p-2">
-                          ₹{(row.gdp_constant_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.gdp_constant_price / 100000).toFixed(2)} Trillion
                         </td>
                         <td className="text-right p-2">
-                          ₹{(row.pfce_constant_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.pfce_constant_price / 100000).toFixed(2)} Trillion
                         </td>
                         <td className="text-right p-2">
-                          ₹{(row.gfce_constant_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.gfce_constant_price / 100000).toFixed(2)} Trillion
                         </td>
                         <td className="text-right p-2">
-                          ₹{(row.gfcf_constant_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.gfcf_constant_price / 100000).toFixed(2)} Trillion
                         </td>
                         <td className="text-right p-2">
-                          ₹{(row.exports_constant_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.exports_constant_price / 100000).toFixed(2)} Trillion
                         </td>
                         <td className="text-right p-2">
-                          ₹{(row.imports_constant_price / 10000000).toFixed(1)}L Cr
+                          ₹{(row.imports_constant_price / 100000).toFixed(2)} Trillion
                         </td>
                       </tr>
                     ))}
@@ -268,5 +297,6 @@ export const GdpDataPreview: React.FC<GdpDataPreviewProps> = ({
         </Card>
       </TabsContent>
     </Tabs>
+    </div>
   );
 };

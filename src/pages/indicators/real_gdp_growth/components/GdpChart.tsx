@@ -160,7 +160,7 @@ export const GdpChart = ({
       return `${value.toFixed(1)}%`;
     }
     
-    return `₹${(value / 1000000000000).toFixed(1)} Trillion`;
+    return `₹${(value / 100000).toFixed(2)} Trillion`;
   };
 
   const formatTooltip = (value: any, name: string) => {

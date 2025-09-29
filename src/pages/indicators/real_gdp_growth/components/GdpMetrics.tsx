@@ -50,7 +50,7 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
     if (dataType === 'growth') {
       return `${value.toFixed(1)}%`;
     }
-    return `₹${(value / 1000000000000).toFixed(1)} Trillion`;
+    return `₹${(value / 100000).toFixed(2)} Trillion`;
   };
 
   const getActualChange = (current: number, field: string) => {
