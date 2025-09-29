@@ -114,7 +114,7 @@ export const useGdpData = (
       // Clean the years and remove duplicates
       const uniqueFYs = [...new Set(data?.map((item: any) => item.year?.trim()) || [])]
         .filter(year => year) // Remove empty/null values
-        .sort((a, b) => (b as string).localeCompare(a as string)) as string[]; // Sort newest to oldest
+        .sort((a, b) => (b as string).localeCompare(a as string)) as string[]; // Sort newest to oldest for dropdown
       
       setAvailableFYs(uniqueFYs);
     } catch (error) {
@@ -159,7 +159,7 @@ export const useGdpData = (
           query = query.gte('year', startYearStr);
         }
 
-        query = query.order('year', { ascending: false }).order('quarter', { ascending: false });
+        query = query.order('year', { ascending: true }).order('quarter', { ascending: true });
 
         const { data, error } = await query;
 
@@ -169,16 +169,34 @@ export const useGdpData = (
         const cleanedData = (data || []).map(item => ({
           ...item,
           year: item.year?.trim(), // Remove any extra spaces
-          // Map database fields to simplified interface
-          pfce: item.pfce_constant_price || item.pfce || 0,
-          gfce: item.gfce_constant_price || item.gfce || 0,
-          gfcf: item.gfcf_constant_price || item.gfcf || 0,
-          changes_in_stocks: item.changes_in_stocks_constant_price || item.changes_in_stocks || 0,
-          valuables: item.valuables_constant_price || item.valuables || 0,
-          exports: item.exports_constant_price || item.exports || 0,
-          imports: item.imports_constant_price || item.imports || 0,
-          discrepancies: item.discrepancies_constant_price || item.discrepancies || 0,
-          gdp: item.gdp_constant_price || item.gdp || 0
+          // Map database fields to simplified interface based on data type
+          pfce: dataType === 'growth' 
+            ? (item.pfce_constant_price_growth || item.pfce || 0)
+            : (item.pfce_constant_price || item.pfce || 0),
+          gfce: dataType === 'growth' 
+            ? (item.gfce_constant_price_growth || item.gfce || 0)
+            : (item.gfce_constant_price || item.gfce || 0),
+          gfcf: dataType === 'growth' 
+            ? (item.gfcf_constant_price_growth || item.gfcf || 0)
+            : (item.gfcf_constant_price || item.gfcf || 0),
+          changes_in_stocks: dataType === 'growth' 
+            ? (item.changes_in_stocks_constant_price_growth || item.changes_in_stocks || 0)
+            : (item.changes_in_stocks_constant_price || item.changes_in_stocks || 0),
+          valuables: dataType === 'growth' 
+            ? (item.valuables_constant_price_growth || item.valuables || 0)
+            : (item.valuables_constant_price || item.valuables || 0),
+          exports: dataType === 'growth' 
+            ? (item.exports_constant_price_growth || item.exports || 0)
+            : (item.exports_constant_price || item.exports || 0),
+          imports: dataType === 'growth' 
+            ? (item.imports_constant_price_growth || item.imports || 0)
+            : (item.imports_constant_price || item.imports || 0),
+          discrepancies: dataType === 'growth' 
+            ? (item.discrepancies_constant_price_growth || item.discrepancies || 0)
+            : (item.discrepancies_constant_price || item.discrepancies || 0),
+          gdp: dataType === 'growth' 
+            ? (item.gdp_constant_price_growth || item.gdp || 0)
+            : (item.gdp_constant_price || item.gdp || 0)
         }));
 
         if (dataType === 'value') {
@@ -212,7 +230,7 @@ export const useGdpData = (
           query = query.gte('year', startYear.toString());
         }
 
-        query = query.order('year', { ascending: false });
+        query = query.order('year', { ascending: true });
 
         const { data, error } = await query;
 

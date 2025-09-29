@@ -6,11 +6,11 @@ import { GDPInsights } from './components/GDPInsights';
 import { DataType, PriceType, CurrencyType, ViewType } from '@/hooks/useGdpData';
 
 export const RealGdpGrowthPage = () => {
-  const [timeframe, setTimeframe] = useState('5Y');
-  const [dataType, setDataType] = useState<DataType>('growth');
+  const [timeframe, setTimeframe] = useState('all');
+  const [dataType, setDataType] = useState<DataType>('value');
   const [priceType, setPriceType] = useState<PriceType>('constant');
   const [currency, setCurrency] = useState<CurrencyType>('inr');
-  const [viewType, setViewType] = useState<ViewType>('quarterly');
+  const [viewType, setViewType] = useState<ViewType>('annual');
   const [selectedFY, setSelectedFY] = useState<string | null>(null);
   const [selectedComponents, setSelectedComponents] = useState<string[]>(['gdp']);
 
@@ -54,7 +54,7 @@ export const RealGdpGrowthPage = () => {
         </div>
 
         {/* Economic Events & Insights */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-insights-section>
           <GDPEvents timeframe={timeframe} />
           <GDPInsights dataType={dataType} priceType={priceType} />
         </div>

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, TrendingUp } from 'lucide-react';
+import { Calendar, TrendingUp, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
 
 interface GDPEventsProps {
@@ -32,6 +32,15 @@ export const GDPEvents = ({ timeframe }: GDPEventsProps) => {
       case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'low': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getImpactIcon = (impact: string) => {
+    switch (impact) {
+      case 'high': return <AlertTriangle className="h-3 w-3" />;
+      case 'medium': return <AlertCircle className="h-3 w-3" />;
+      case 'low': return <Info className="h-3 w-3" />;
+      default: return <Info className="h-3 w-3" />;
     }
   };
 
@@ -109,8 +118,9 @@ export const GDPEvents = ({ timeframe }: GDPEventsProps) => {
                       {event.impact && (
                         <Badge 
                           variant="outline" 
-                          className={`text-xs ${getImpactColor(event.impact)}`}
+                          className={`text-xs flex items-center gap-1 ${getImpactColor(event.impact)}`}
                         >
+                          {getImpactIcon(event.impact)}
                           {event.impact.toUpperCase()}
                         </Badge>
                       )}

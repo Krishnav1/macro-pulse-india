@@ -10,45 +10,28 @@ interface GdpChartProps {
   timeframe: string;
   setTimeframe: (timeframe: string) => void;
   dataType: DataType;
-  setDataType: (type: DataType) => void;
+  setDataType: (dataType: DataType) => void;
   priceType: PriceType;
-  setPriceType: (type: PriceType) => void;
+  setPriceType: (priceType: PriceType) => void;
   currency: CurrencyType;
   setCurrency: (currency: CurrencyType) => void;
   viewType: ViewType;
-  setViewType: (type: ViewType) => void;
+  setViewType: (viewType: ViewType) => void;
   selectedFY: string | null;
   setSelectedFY: (fy: string | null) => void;
   selectedComponents: string[];
   setSelectedComponents: (components: string[]) => void;
 }
 
-const timeframeOptions = [
-  { value: '1Y', label: '1Y' },
-  { value: '5Y', label: '5Y' },
-  { value: '10Y', label: '10Y' },
-  { value: 'all', label: 'All' }
-];
-
-const components = [
-  { key: 'gdp', label: 'Total GDP', color: '#8884d8' },
-  { key: 'pfce', label: 'PFCE (Consumption)', color: '#22c55e' },
-  { key: 'gfce', label: 'GFCE (Government)', color: '#f59e0b' },
-  { key: 'gfcf', label: 'GFCF (Investment)', color: '#3b82f6' },
-  { key: 'exports', label: 'Exports', color: '#ef4444' },
-  { key: 'imports', label: 'Imports', color: '#8b5cf6' },
-  { key: 'valuables', label: 'Valuables', color: '#06b6d4' }
-];
-
-export const GdpChart = ({ 
-  timeframe, 
-  setTimeframe, 
+export const GdpChart = ({
+  timeframe,
+  setTimeframe,
   dataType,
   setDataType,
   priceType,
   setPriceType,
-  currency, 
-  setCurrency, 
+  currency,
+  setCurrency,
   viewType,
   setViewType,
   selectedFY, 
@@ -56,12 +39,37 @@ export const GdpChart = ({
   selectedComponents,
   setSelectedComponents
 }: GdpChartProps) => {
-  const { data: gdpData, availableFYs, loading } = useGdpData(dataType, priceType, currency, viewType, timeframe, selectedFY);
+  const { data: gdpData, loading, availableFYs } = useGdpData(
+    dataType,
+    priceType,
+    'inr', // Always use INR since we removed currency toggle
+    viewType,
+    selectedFY ? 'all' : timeframe,
+    selectedFY
+  );
   const { data: events } = useIndicatorEvents('real_gdp_growth');
+
+  // Define available components for selection
+  const components = [
+    { key: 'gdp', label: 'Total GDP', color: '#8884d8' },
+    { key: 'pfce', label: 'PFCE (C)', color: '#22c55e' },
+    { key: 'gfce', label: 'GFCE (G)', color: '#f59e0b' },
+    { key: 'gfcf', label: 'GFCF (I)', color: '#3b82f6' },
+    { key: 'exports', label: 'Exports (X)', color: '#ef4444' },
+    { key: 'imports', label: 'Imports (M)', color: '#8b5cf6' },
+    { key: 'valuables', label: 'Valuables', color: '#06b6d4' }
+  ];
 
   // Process data for chart display
   const chartData = useMemo(() => {
     if (!gdpData?.length) return [];
+    return gdpData.map(item => ({
+      ...item,
+      displayDate: viewType === 'quarterly' 
+        ? (selectedFY ? item.quarter : `${item.year} ${item.quarter}`)
+        : item.year,
+      period: `${item.year}-${item.quarter}`
+    }));
     
     return gdpData.map(item => {
       const processed: any = {
@@ -302,6 +310,21 @@ export const GdpChart = ({
             <Button variant={timeframe === '5Y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('5Y')}>5Y</Button>
             <Button variant={timeframe === '10Y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('10Y')}>10Y</Button>
             <Button variant={timeframe === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('all')}>MAX</Button>
+            
+            {/* Financial Year Dropdown - moved here */}
+            <div className="flex items-center gap-2 ml-4">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <select
+                value={selectedFY || 'all'}
+                onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
+                className="bg-background border border-input rounded-md px-2 py-1 text-xs h-7 min-w-[100px]"
+              >
+                <option value="all">All Years</option>
+                {availableFYs?.map(fy => (
+                  <option key={fy} value={fy}>FY{fy}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </CardTitle>
 
@@ -358,43 +381,6 @@ export const GdpChart = ({
             </div>
           </div>
 
-          {/* Currency */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Currency:</span>
-            <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={currency === 'inr' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setCurrency('inr')}
-                className="h-7 px-2 text-xs"
-              >
-                INR
-              </Button>
-              <Button
-                variant={currency === 'usd' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setCurrency('usd')}
-                className="h-7 px-2 text-xs"
-              >
-                USD
-              </Button>
-            </div>
-          </div>
-
-          {/* Financial Year Dropdown */}
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <select
-              value={selectedFY || 'all'}
-              onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
-              className="bg-background border border-input rounded-md px-2 py-1 text-xs h-7 min-w-[100px]"
-            >
-              <option value="all">All Years</option>
-              {availableFYs?.map(fy => (
-                <option key={fy} value={fy}>FY{fy}</option>
-              ))}
-            </select>
-          </div>
         </div>
       </CardHeader>
 

@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Minus, Eye } from 'lucide-react';
 import { useGdpData, DataType, PriceType, CurrencyType, ViewType } from '@/hooks/useGdpData';
 
 interface GdpMetricsProps {
@@ -132,20 +133,21 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
   const importsChange = formatChange(displayData[getFieldName('imports')], mockPreviousData.imports);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">
-          {selectedFY ? `FY${selectedFY} ${displayData.quarter}` : 'Latest Metrics'}
-        </CardTitle>
-        <div className="text-sm text-muted-foreground">
-          {selectedFY 
-            ? `Financial Year ${selectedFY}` 
-            : viewType === 'annual' 
-              ? `Annual ${displayData.year}` 
-              : `${displayData.year} ${displayData.quarter}`
-          }
-        </div>
-      </CardHeader>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">
+            {selectedFY ? `FY${selectedFY} ${displayData.quarter}` : 'Latest Metrics'}
+          </CardTitle>
+          <div className="text-sm text-muted-foreground">
+            {selectedFY 
+              ? `Financial Year ${selectedFY}` 
+              : viewType === 'annual' 
+                ? `Annual ${displayData.year}` 
+                : `${displayData.year} ${displayData.quarter}`
+            }
+          </div>
+        </CardHeader>
       <CardContent className="space-y-4">
         {/* Total GDP - Main Card */}
         <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
@@ -254,5 +256,26 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
         </div>
       </CardContent>
     </Card>
+    
+    {/* View Full Insights Button */}
+    <Card>
+      <CardContent className="pt-6">
+        <Button 
+          variant="outline" 
+          className="w-full" 
+          onClick={() => {
+            // Scroll to insights section
+            const insightsSection = document.querySelector('[data-insights-section]');
+            if (insightsSection) {
+              insightsSection.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+        >
+          <Eye className="h-4 w-4 mr-2" />
+          View Full Insights
+        </Button>
+      </CardContent>
+    </Card>
+    </div>
   );
 };
