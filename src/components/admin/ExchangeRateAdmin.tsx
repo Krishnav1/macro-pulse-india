@@ -186,7 +186,7 @@ export const ExchangeRateAdmin: React.FC<ExchangeRateAdminProps> = ({
 
       if (deleteError) throw deleteError;
 
-      // Insert new data in batches
+      // Upsert new data in batches (insert or update if exists)
       const batchSize = 1000;
       for (let i = 0; i < previewData.length; i += batchSize) {
         const batch = previewData.slice(i, i + batchSize).map(item => ({
@@ -197,11 +197,13 @@ export const ExchangeRateAdmin: React.FC<ExchangeRateAdminProps> = ({
           value: item.value
         }));
 
-        const { error: insertError } = await supabase
+        const { error: upsertError } = await supabase
           .from('indicator_series')
-          .insert(batch);
+          .upsert(batch, {
+            onConflict: 'indicator_slug,period_date,series_code'
+          });
 
-        if (insertError) throw insertError;
+        if (upsertError) throw upsertError;
       }
 
       toast.success(`Successfully uploaded ${previewData.length} exchange rate records`);
