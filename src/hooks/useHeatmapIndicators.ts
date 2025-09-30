@@ -39,6 +39,8 @@ export const useHeatmapIndicators = () => {
     } catch (err) {
       console.error('Error fetching heatmap indicators:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch indicators');
+      // Set empty array as fallback
+      setIndicators([]);
     } finally {
       setLoading(false);
     }

@@ -3,17 +3,14 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
 const Navigation = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
   const navItems = [
-    { label: "Dashboard", path: "/", icon: TrendingUp },
-    { label: "Indicators", path: "/indicators", icon: BarChart3 },
-    { label: "India Heat Map", path: "/india-heat-map", icon: Map },
-    { label: "Events", path: "/events", icon: Calendar },
-    { label: "About Economy", path: "/about", icon: Info },
+    { path: '/', label: 'Dashboard', icon: BarChart3 },
+    { path: '/indicators', label: 'Indicators', icon: TrendingUp },
+    { path: '/india-heat-map', label: 'India Heat Map', icon: Map },
   ];
 
   const handleSearch = (e: React.FormEvent) => {

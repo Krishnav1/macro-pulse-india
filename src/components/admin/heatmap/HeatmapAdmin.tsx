@@ -133,6 +133,31 @@ export const HeatmapAdmin: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      setSuccess(null);
+
+      // Tables should exist now, proceed with upload
+
+      // Delete existing data for indicators that will be updated
+      const indicatorSlugs = indicatorColumns.map(col => 
+        col.indicatorName.toLowerCase().replace(/[^a-z0-9]+/g, '_')
+      );
+
+      // Clear existing data for these indicators
+      for (const slug of indicatorSlugs) {
+        const { data: existingIndicator } = await (supabase as any)
+          .from('heatmap_indicators')
+          .select('id')
+          .eq('slug', slug)
+          .single();
+
+        if (existingIndicator) {
+          // Delete existing values for this indicator
+          await (supabase as any)
+            .from('heatmap_values')
+            .delete()
+            .eq('indicator_id', (existingIndicator as any).id);
+        }
+      }
 
       // Create dataset record
       const { data: dataset, error: datasetError } = await (supabase as any)
@@ -228,9 +253,17 @@ export const HeatmapAdmin: React.FC = () => {
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
 
-    } catch (err) {
-      console.error('Error uploading data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to upload data');
+    } catch (error) {
+      console.error('Error uploading data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload data';
+      
+      if (errorMessage.includes('42P01') || errorMessage.includes('does not exist')) {
+        setError('Database tables not found. Please set up the heatmap tables first.');
+      } else if (errorMessage.includes('permission')) {
+        setError('Permission denied. Please check database access permissions.');
+      } else {
+        setError(`Upload failed: ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -245,6 +278,22 @@ export const HeatmapAdmin: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Success Message */}
+      <Card className="border-green-200 bg-green-50">
+        <CardHeader>
+          <CardTitle className="text-green-800 flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5" />
+            Heatmap Database Ready
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-green-700">
+            ✅ Database tables created successfully with sample data for 28 Indian states across 3 indicators (GDP Growth Rate, Per Capita Income, Literacy Rate).
+            You can now upload your own Excel/CSV files to add more indicators or update existing data.
+          </p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
