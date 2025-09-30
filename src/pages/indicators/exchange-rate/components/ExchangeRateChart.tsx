@@ -259,17 +259,19 @@ export const ExchangeRateChart = ({ timeframe, setTimeframe }: ExchangeRateChart
             <Calendar className="h-5 w-5" />
             INR Exchange Rate
           </div>
-          <div className="flex gap-2">
-            <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '1y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('1y')}>1Y</button>
-            <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '3y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('3y')}>3Y</button>
-            <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '5y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('5y')}>5Y</button>
-            <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '10y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('10y')}>10Y</button>
-            <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('all')}>MAX</button>
-          </div>
         </CardTitle>
         
-        {/* Events Toggle */}
-        <div className="flex gap-2 mt-2 flex-wrap">
+        {/* Year Filter */}
+        <div className="flex gap-2 mt-3">
+          <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '1y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('1y')}>1Y</button>
+          <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '3y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('3y')}>3Y</button>
+          <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '5y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('5y')}>5Y</button>
+          <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '10y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('10y')}>10Y</button>
+          <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('all')}>MAX</button>
+        </div>
+        
+        {/* Events Toggle - Below Year Filter */}
+        <div className="flex gap-2 mt-3 flex-wrap">
           <div className="flex gap-2 items-center">
             <button
               className={`px-3 py-1 text-sm rounded-md border transition-colors ${
@@ -305,7 +307,8 @@ export const ExchangeRateChart = ({ timeframe, setTimeframe }: ExchangeRateChart
             )}
           </div>
         </div>
-        <CardDescription>
+        
+        <CardDescription className="mt-2">
           INR exchange rate trends with major economic events highlighted
         </CardDescription>
       </CardHeader>

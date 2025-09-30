@@ -320,16 +320,16 @@ export const ExchangeRateAdmin: React.FC<ExchangeRateAdminProps> = ({
       </div>
 
       {/* Indicator Info */}
-      <Card>
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <CardHeader>
-          <CardTitle>{indicator.name}</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-blue-900">{indicator.name}</CardTitle>
+          <CardDescription className="text-blue-700">
             {indicator.slug} • {indicator.category || 'Uncategorized'}
             {indicator.unit && ` • ${indicator.unit}`}
             {indicator.frequency && ` • ${indicator.frequency}`}
           </CardDescription>
           {indicator.definition && (
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-sm text-blue-600 mt-2">
               {indicator.definition}
             </p>
           )}
@@ -405,19 +405,19 @@ export const ExchangeRateAdmin: React.FC<ExchangeRateAdminProps> = ({
                     </div>
                   </div>
                   
-                  <div className="max-h-60 overflow-y-auto border rounded-lg">
+                  <div className="max-h-60 overflow-y-auto border rounded-lg bg-white">
                     <div className="space-y-1 p-2">
                       {previewData.slice(0, 10).map((entry: any, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded">
+                        <div key={index} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded">
                           <div className="flex items-center space-x-4">
-                            <span className="text-xs text-muted-foreground">{entry.period_label}</span>
-                            <span className="font-semibold">{entry.currency}</span>
-                            <span className="text-sm">₹{entry.value.toFixed(4)}</span>
+                            <span className="text-xs font-medium text-gray-700">{entry.period_label}</span>
+                            <span className="font-bold text-blue-600">{entry.currency}</span>
+                            <span className="text-sm font-semibold text-gray-900">₹{entry.value.toFixed(4)}</span>
                           </div>
                         </div>
                       ))}
                       {previewData.length > 10 && (
-                        <div className="text-center text-sm text-muted-foreground p-2">
+                        <div className="text-center text-sm text-gray-600 font-medium p-2">
                           ... and {previewData.length - 10} more records
                         </div>
                       )}
@@ -428,22 +428,22 @@ export const ExchangeRateAdmin: React.FC<ExchangeRateAdminProps> = ({
 
               {/* Current Data Display */}
               <div className="mt-6 space-y-2">
-                <h4 className="text-sm font-medium">
+                <h4 className="text-sm font-semibold text-gray-900">
                   Current Data ({Math.min(seriesData.length, 10)} of {seriesData.length} entries shown)
                 </h4>
-                <div className="max-h-60 overflow-y-auto border rounded-lg">
+                <div className="max-h-60 overflow-y-auto border rounded-lg bg-white">
                   {seriesData.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground">
+                    <div className="p-4 text-center text-gray-600 font-medium">
                       No exchange rate data yet. Upload data using the button above.
                     </div>
                   ) : (
                     <div className="space-y-1 p-2">
                       {seriesData.slice(0, 10).map((entry: any, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded">
+                        <div key={index} className="flex items-center justify-between p-3 bg-green-50 border border-green-100 rounded">
                           <div className="flex items-center space-x-4">
-                            <span className="text-xs text-muted-foreground">{entry.period_label}</span>
-                            <span className="font-semibold">{entry.series_code}</span>
-                            <span className="text-sm">₹{entry.value.toFixed(4)}</span>
+                            <span className="text-xs font-medium text-gray-700">{entry.period_label}</span>
+                            <span className="font-bold text-green-600">{entry.series_code}</span>
+                            <span className="text-sm font-semibold text-gray-900">₹{entry.value.toFixed(4)}</span>
                           </div>
                         </div>
                       ))}

@@ -29,8 +29,12 @@ export const HeatmapAdminNew: React.FC = () => {
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
   const [indicatorColumns, setIndicatorColumns] = useState<IndicatorColumn[]>([]);
   const [showPreview, setShowPreview] = useState(false);
-  const [datasetName, setDatasetName] = useState('');
-  const [datasetNotes, setDatasetNotes] = useState('');
+  const [uploadSummary, setUploadSummary] = useState<{
+    indicators: number;
+    states: number;
+    years: number;
+    totalRecords: number;
+  } | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -188,8 +192,8 @@ export const HeatmapAdminNew: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    if (!parsedData.length || !datasetName.trim()) {
-      setError('Please provide a dataset name and ensure data is parsed');
+    if (!parsedData.length) {
+      setError('Please upload and parse data first');
       return;
     }
 
@@ -197,6 +201,7 @@ export const HeatmapAdminNew: React.FC = () => {
       setLoading(true);
       setError(null);
       setSuccess(null);
+      setUploadSummary(null);
 
       // Delete existing data for indicators that will be updated
       const indicatorSlugs = indicatorColumns.map(col => 
@@ -237,19 +242,6 @@ export const HeatmapAdminNew: React.FC = () => {
         }
       }
 
-      // Create dataset record
-      const { data: dataset, error: datasetError } = await (supabase as any)
-        .from('heatmap_datasets')
-        .insert({
-          name: datasetName.trim(),
-          notes: datasetNotes.trim() || null,
-          uploaded_by: 'admin',
-        })
-        .select()
-        .single();
-
-      if (datasetError) throw datasetError;
-
       // Process indicators and values
       const indicatorMap = new Map<string, string>(); // indicatorName -> indicator_id
 
@@ -257,13 +249,13 @@ export const HeatmapAdminNew: React.FC = () => {
       for (const col of indicatorColumns) {
         const slug = col.indicatorName.toLowerCase().replace(/[^a-z0-9]+/g, '_');
         
-        const { data: newIndicator, error: indicatorError } = await (supabase as any)
+        const { data: newIndicator, error: indicatorError} = await (supabase as any)
           .from('heatmap_indicators')
           .insert({
             slug,
             name: col.indicatorName,
             unit: col.unit,
-            description: `Uploaded from dataset: ${datasetName}`,
+            description: `State-wise ${col.indicatorName} data`,
           })
           .select('id')
           .single();
@@ -274,7 +266,13 @@ export const HeatmapAdminNew: React.FC = () => {
 
       // Prepare values for bulk insert
       const valuesToInsert: any[] = [];
+      const uniqueStates = new Set<string>();
+      const uniqueYears = new Set<string>();
+      
       parsedData.forEach(row => {
+        uniqueStates.add(row.stateName);
+        uniqueYears.add(row.year);
+        
         Object.entries(row.indicators).forEach(([indicatorName, value]) => {
           const indicatorId = indicatorMap.get(indicatorName);
           if (indicatorId && value && value.trim() !== '') {
@@ -282,19 +280,16 @@ export const HeatmapAdminNew: React.FC = () => {
             const cleanValue = value.replace(/,/g, '').trim();
             const numericValue = parseFloat(cleanValue);
             
-            // Only insert if we have a valid number and it's not zero (skip empty cells)
-            if (!isNaN(numericValue) && isFinite(numericValue) && numericValue !== 0) {
+            // Only insert if we have a valid number
+            if (!isNaN(numericValue) && isFinite(numericValue)) {
               valuesToInsert.push({
                 indicator_id: indicatorId,
                 state_name: row.stateName,
                 year_label: row.year,
                 value: numericValue,
-                source: datasetName,
-                dataset_id: (dataset as any).id,
+                source: 'Admin Upload',
+                dataset_id: null,
               });
-              console.log(`Inserting: ${row.stateName} ${row.year} ${indicatorName} = ${numericValue}`);
-            } else {
-              console.warn(`Skipping invalid value: ${row.stateName} ${row.year} ${indicatorName} = "${value}"`);
             }
           }
         });
@@ -313,14 +308,20 @@ export const HeatmapAdminNew: React.FC = () => {
         if (valuesError) throw valuesError;
       }
 
-      setSuccess(`Successfully uploaded ${valuesToInsert.length} data points for ${indicatorColumns.length} indicators`);
+      // Set upload summary
+      setUploadSummary({
+        indicators: indicatorColumns.length,
+        states: uniqueStates.size,
+        years: uniqueYears.size,
+        totalRecords: valuesToInsert.length
+      });
+      
+      setSuccess(`Successfully uploaded ${valuesToInsert.length} data points!`);
       
       // Reset form
       setFile(null);
       setParsedData([]);
       setIndicatorColumns([]);
-      setDatasetName('');
-      setDatasetNotes('');
       setShowPreview(false);
       
       // Reset file input
@@ -415,44 +416,42 @@ export const HeatmapAdminNew: React.FC = () => {
 
           {showPreview && (
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="dataset-name">Dataset Name *</Label>
-                <Input
-                  id="dataset-name"
-                  value={datasetName}
-                  onChange={(e) => setDatasetName(e.target.value)}
-                  placeholder="e.g., State Economic Indicators 2024-25"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="dataset-notes">Notes (Optional)</Label>
-                <Textarea
-                  id="dataset-notes"
-                  value={datasetNotes}
-                  onChange={(e) => setDatasetNotes(e.target.value)}
-                  placeholder="Additional notes about this dataset..."
-                  className="mt-1"
-                />
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Preview:</h4>
-                <p className="text-sm text-gray-600 mb-2">
-                  Found {parsedData.length} rows with {indicatorColumns.length} indicators
-                </p>
-                <div className="text-xs space-y-1">
-                  <div><strong>Indicators:</strong> {indicatorColumns.map(col => `${col.indicatorName} (${col.unit})`).join(', ')}</div>
-                  <div><strong>Years:</strong> {Array.from(new Set(parsedData.map(row => row.year))).join(', ')}</div>
-                  <div><strong>States:</strong> {Array.from(new Set(parsedData.map(row => row.stateName))).slice(0, 5).join(', ')}{parsedData.length > 5 ? '...' : ''}</div>
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5" />
+                  Data Preview
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="bg-white p-3 rounded border border-blue-100">
+                    <div className="text-gray-600 text-xs mb-1">Total Rows</div>
+                    <div className="text-2xl font-bold text-blue-600">{parsedData.length}</div>
+                  </div>
+                  <div className="bg-white p-3 rounded border border-blue-100">
+                    <div className="text-gray-600 text-xs mb-1">Indicators</div>
+                    <div className="text-2xl font-bold text-green-600">{indicatorColumns.length}</div>
+                  </div>
+                  <div className="bg-white p-3 rounded border border-blue-100">
+                    <div className="text-gray-600 text-xs mb-1">Years</div>
+                    <div className="text-lg font-bold text-purple-600">
+                      {Array.from(new Set(parsedData.map(row => row.year))).join(', ')}
+                    </div>
+                  </div>
+                  <div className="bg-white p-3 rounded border border-blue-100">
+                    <div className="text-gray-600 text-xs mb-1">States</div>
+                    <div className="text-lg font-bold text-orange-600">
+                      {Array.from(new Set(parsedData.map(row => row.stateName))).length}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-gray-700">
+                  <strong>Indicators:</strong> {indicatorColumns.map(col => `${col.indicatorName} (${col.unit})`).join(', ')}
                 </div>
               </div>
 
               <Button
                 onClick={handleUpload}
-                disabled={loading || !datasetName.trim()}
-                className="w-full"
+                disabled={loading}
+                className="w-full bg-green-600 hover:bg-green-700"
               >
                 {loading ? (
                   <>
@@ -466,6 +465,33 @@ export const HeatmapAdminNew: React.FC = () => {
                   </>
                 )}
               </Button>
+            </div>
+          )}
+          
+          {uploadSummary && (
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+              <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                Upload Summary
+              </h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-white p-3 rounded border border-green-100">
+                  <div className="text-gray-600 text-xs">Indicators Created</div>
+                  <div className="text-xl font-bold text-green-600">{uploadSummary.indicators}</div>
+                </div>
+                <div className="bg-white p-3 rounded border border-green-100">
+                  <div className="text-gray-600 text-xs">States Covered</div>
+                  <div className="text-xl font-bold text-blue-600">{uploadSummary.states}</div>
+                </div>
+                <div className="bg-white p-3 rounded border border-green-100">
+                  <div className="text-gray-600 text-xs">Years Included</div>
+                  <div className="text-xl font-bold text-purple-600">{uploadSummary.years}</div>
+                </div>
+                <div className="bg-white p-3 rounded border border-green-100">
+                  <div className="text-gray-600 text-xs">Total Records</div>
+                  <div className="text-xl font-bold text-orange-600">{uploadSummary.totalRecords}</div>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

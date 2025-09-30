@@ -156,45 +156,45 @@ export const ExchangeRateMetrics = ({ currency = 'USD' }: ExchangeRateMetricsPro
         </CardContent>
       </Card>
 
-      {/* Period Statistics Card */}
+      {/* Latest Metrics Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <DollarSign className="h-4 w-4" />
-            Period Statistics
+            Latest Metrics
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {loading ? (
             <div className="text-center py-4 text-muted-foreground">
-              Loading statistics...
+              Loading metrics...
             </div>
           ) : (
             <>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Month High:</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-green-600">
                   ₹{metrics.monthHigh ? metrics.monthHigh.toFixed(4) : '--'}
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Month Low:</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-red-600">
                   ₹{metrics.monthLow ? metrics.monthLow.toFixed(4) : '--'}
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Month Range:</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-blue-600">
                   {metrics.monthHigh && metrics.monthLow ? 
                     `₹${(metrics.monthHigh - metrics.monthLow).toFixed(4)}` : 
                     '--'
                   }
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Volatility:</span>
-                <span className="font-semibold">
+                <span className="font-semibold text-purple-600">
                   {metrics.monthHigh && metrics.monthLow && metrics.currentRate ? 
                     `${(((metrics.monthHigh - metrics.monthLow) / metrics.currentRate) * 100).toFixed(2)}%` : 
                     '--'
@@ -203,6 +203,19 @@ export const ExchangeRateMetrics = ({ currency = 'USD' }: ExchangeRateMetricsPro
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+      
+      {/* View Full Insights Button */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <CardContent className="p-4">
+          <button 
+            onClick={() => window.location.href = '/indicators/exchange-rate/insights'}
+            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <DollarSign className="h-5 w-5" />
+            View Full Insights
+          </button>
         </CardContent>
       </Card>
     </>
