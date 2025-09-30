@@ -107,43 +107,13 @@ export const IIPInsights = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Key Insights
-          {adminInsights && adminInsights.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFullInsights(!showFullInsights)}
-              className="h-8"
-            >
-              {showFullInsights ? (
-                <>
-                  <EyeOff className="h-3 w-3 mr-1" />
-                  Auto Insights
-                </>
-              ) : (
-                <>
-                  <Eye className="h-3 w-3 mr-1" />
-                  View Full Insights
-                </>
-              )}
-            </Button>
-          )}
-        </CardTitle>
+        <CardTitle>Key Insights</CardTitle>
         <CardDescription>
-          {showFullInsights ? 'Expert analysis and market insights' : 'AI-powered analysis of industrial production trends'}
+          AI-powered analysis of industrial production trends
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {showFullInsights && adminInsights && adminInsights.length > 0 ? (
-          <div className="space-y-4">
-            {adminInsights.map((insight, index) => (
-              <div key={insight.id} className="p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm leading-relaxed">{insight.content}</p>
-              </div>
-            ))}
-          </div>
-        ) : insights.length > 0 ? (
+        {insights.length > 0 ? (
           <div className="space-y-4">
             {insights.map((insight, index) => {
               if (!insight) return null;

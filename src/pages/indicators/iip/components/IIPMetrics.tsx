@@ -1,15 +1,20 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Minus, BarChart3, Eye } from 'lucide-react';
 import { useIipSeries } from '@/hooks/useIipSeries';
 import { useIipComponents } from '@/hooks/useIipComponents';
+import { useIndicatorInsights } from '@/hooks/useIndicatorInsights';
 import { format } from 'date-fns';
 
 export const IIPMetrics = () => {
+  const [showFullInsights, setShowFullInsights] = useState(false);
   const { data: seriesData, loading } = useIipSeries({ limit: 12 });
   const { breakdown: componentData, loading: componentsLoading } = useIipComponents({ 
     classification: 'sectoral' 
   });
+  const { insights: adminInsights, loading: insightsLoading } = useIndicatorInsights('iip');
 
   if (loading) {
     return (
@@ -61,43 +66,74 @@ export const IIPMetrics = () => {
         </CardHeader>
         <CardContent>
           {latest ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-center p-3 bg-muted/30 rounded-lg">
-                <div className="text-2xl font-bold">
-                  {latest.growth_yoy ? latest.growth_yoy.toFixed(2) : '--'}%
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  YoY Growth
-                </div>
-              </div>
-              
-              <div className="text-center p-3 bg-muted/30 rounded-lg">
-                <div className={`text-lg font-bold ${
-                  lastChange > 0 ? 'text-green-500' : lastChange < 0 ? 'text-red-500' : 'text-muted-foreground'
+            <div className="space-y-4">
+              {/* Main Metric - YoY Growth */}
+              <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                <div className={`text-3xl font-bold ${
+                  (latest.growth_yoy || 0) > 0 ? 'text-green-600' : 
+                  (latest.growth_yoy || 0) < 0 ? 'text-red-600' : 'text-muted-foreground'
                 }`}>
-                  {lastChange > 0 ? '+' : ''}{lastChange.toFixed(2)}%
+                  {latest.growth_yoy ? 
+                    `${latest.growth_yoy > 0 ? '+' : ''}${latest.growth_yoy.toFixed(2)}%` : 
+                    '--'
+                  }
+                </div>
+                <div className="text-sm text-muted-foreground mt-1 font-medium">
+                  Year-on-Year Growth
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Last Change
+                  {format(new Date(latest.date), 'MMMM yyyy')}
                 </div>
               </div>
-              
-              <div className="text-center p-3 bg-muted/30 rounded-lg">
-                <div className="text-lg font-bold text-foreground">
-                  {latest.index_value ? latest.index_value.toFixed(1) : '--'}
+
+              {/* Secondary Metrics Grid */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <div className="text-lg font-bold text-foreground">
+                    {latest.index_value ? latest.index_value.toFixed(1) : '--'}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Index Value
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  IIP Index
+                
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <div className={`text-lg font-bold ${
+                    (latest.growth_mom || 0) > 0 ? 'text-green-500' : 
+                    (latest.growth_mom || 0) < 0 ? 'text-red-500' : 'text-muted-foreground'
+                  }`}>
+                    {latest.growth_mom ? 
+                      `${latest.growth_mom > 0 ? '+' : ''}${latest.growth_mom.toFixed(2)}%` : 
+                      '--'
+                    }
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    MoM Growth
+                  </div>
+                </div>
+
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <div className={`text-lg font-bold ${
+                    lastChange > 0 ? 'text-green-500' : lastChange < 0 ? 'text-red-500' : 'text-muted-foreground'
+                  }`}>
+                    {lastChange > 0 ? '+' : ''}{lastChange.toFixed(2)}%
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Last Change
+                  </div>
                 </div>
               </div>
-              
-              <div className="text-center p-3 bg-muted/30 rounded-lg">
-                <div className="text-lg font-bold text-foreground">
-                  {latest.growth_mom ? latest.growth_mom.toFixed(2) : '--'}%
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  MoM Growth
-                </div>
+
+              {/* Performance Indicator */}
+              <div className="flex items-center justify-center gap-2 p-2 bg-muted/20 rounded-lg">
+                <div className={`w-2 h-2 rounded-full ${
+                  (latest.growth_yoy || 0) > 2 ? 'bg-green-500' :
+                  (latest.growth_yoy || 0) > 0 ? 'bg-yellow-500' : 'bg-red-500'
+                }`} />
+                <span className="text-xs text-muted-foreground">
+                  {(latest.growth_yoy || 0) > 2 ? 'Strong Growth' :
+                   (latest.growth_yoy || 0) > 0 ? 'Moderate Growth' : 'Contraction'}
+                </span>
               </div>
             </div>
           ) : (
@@ -143,6 +179,52 @@ export const IIPMetrics = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* View Full Insight Button */}
+      {adminInsights && adminInsights.length > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => setShowFullInsights(!showFullInsights)}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              View Full Insight
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Full Insights Modal/Expanded View */}
+      {showFullInsights && adminInsights && adminInsights.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              Full Market Insights
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowFullInsights(false)}
+              >
+                ×
+              </Button>
+            </CardTitle>
+            <CardDescription>
+              Expert analysis and market insights for Industrial Production
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {adminInsights.map((insight, index) => (
+                <div key={insight.id} className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm leading-relaxed">{insight.content}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 };

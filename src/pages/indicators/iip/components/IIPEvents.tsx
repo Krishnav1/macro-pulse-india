@@ -1,39 +1,48 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, AlertCircle, TrendingUp, Zap } from 'lucide-react';
 import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
-import { Calendar, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { useMemo } from 'react';
 
 interface IIPEventsProps {
   timeframe: string;
 }
 
 export const IIPEvents = ({ timeframe }: IIPEventsProps) => {
-  const getDateRange = () => {
+  // Calculate date range based on timeframe
+  const dateRange = useMemo(() => {
     const now = new Date();
-    const ranges = {
-      '1y': new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString().split('T')[0],
-      '2y': new Date(now.getFullYear() - 2, now.getMonth(), now.getDate()).toISOString().split('T')[0],
-      '5y': new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()).toISOString().split('T')[0],
-      'all': undefined
+    let startDate = new Date(2000, 0, 1); // Default to all data
+    switch (timeframe) {
+      case '1y':
+        startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        break;
+      case '5y':
+        startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate());
+        break;
+      case '10y':
+        startDate = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate());
+        break;
+    }
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: now.toISOString().split('T')[0]
     };
-    return ranges[timeframe as keyof typeof ranges];
-  };
+  }, [timeframe]);
 
-  const { data: events, loading } = useIndicatorEvents({
+  // Fetch IIP events for the current timeframe
+  const { data: eventsData, loading } = useIndicatorEvents({
     indicatorSlug: 'iip',
-    startDate: getDateRange()
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate
   });
 
+  const events = eventsData || [];
+
   const getImpactIcon = (impact: string) => {
-    switch (impact?.toLowerCase()) {
-      case 'high':
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
-      case 'medium':
-        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-      case 'low':
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
-      default:
-        return <Calendar className="h-4 w-4 text-gray-600" />;
-    }
+    if (impact === 'high') return <AlertCircle className="h-4 w-4" />;
+    if (impact === 'medium') return <TrendingUp className="h-4 w-4" />;
+    return <Zap className="h-4 w-4" />;
   };
 
   const getImpactColor = (impact: string) => {
@@ -65,62 +74,59 @@ export const IIPEvents = ({ timeframe }: IIPEventsProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Economic Events</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          Key Economic Events
+        </CardTitle>
         <CardDescription>
-          Key events affecting industrial production
+          Major events that impacted industrial production
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {events && events.length > 0 ? (
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {events.map((event, index) => (
-              <div
-                key={index}
-                className={`p-3 border-l-4 rounded-r-lg ${getImpactColor(event.impact)}`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5">
-                    {getImpactIcon(event.impact)}
+        {loading ? (
+          <div className="text-center py-4 text-muted-foreground">Loading events...</div>
+        ) : events.length === 0 ? (
+          <div className="text-center py-4 text-muted-foreground">No events recorded for this timeframe</div>
+        ) : (
+          <div className="space-y-4">
+            {events.map((event) => (
+              <div key={event.id} className="p-3 bg-muted/30 rounded-lg">
+                {/* Date first, then impact at the right end of same row */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold text-sm text-muted-foreground">
+                    {new Date(event.date).toLocaleDateString('en-GB', { 
+                      day: 'numeric', 
+                      month: 'short', 
+                      year: 'numeric' 
+                    })}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-sm">{event.title}</h4>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        event.impact?.toLowerCase() === 'low'
-                          ? 'bg-green-100 text-green-800'
-                          : event.impact?.toLowerCase() === 'high'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {event.impact}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {event.description}
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>
-                        {new Date(event.date).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </span>
-                      {event.tag && (
-                        <span className="px-2 py-0.5 bg-muted rounded">
-                          {event.tag}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  <div className={`w-3 h-3 rounded-full ${
+                    event.impact === 'high' ? 'bg-destructive' : 
+                    event.impact === 'medium' ? 'bg-warning' : 'bg-success'
+                  }`} />
                 </div>
+                
+                {/* Title and tag in same row */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {getImpactIcon(event.impact)}
+                    <span className="font-medium text-sm">{event.title}</span>
+                  </div>
+                  {event.tag && (
+                    <Badge variant="secondary" className="text-xs">
+                      {event.tag}
+                    </Badge>
+                  )}
+                </div>
+                
+                {/* Description below */}
+                {event.description && (
+                  <div className="text-sm text-muted-foreground">
+                    {event.description}
+                  </div>
+                )}
               </div>
             ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>No events found for the selected time period</p>
           </div>
         )}
       </CardContent>

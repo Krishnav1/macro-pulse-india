@@ -16,10 +16,11 @@ interface IIPChartProps {
 }
 
 export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith }: IIPChartProps) => {
-  const [comparisonScrollIndex, setComparisonScrollIndex] = useState(0);
   const [dataType, setDataType] = useState<'index' | 'growth'>('growth');
   const [selectedComparisons, setSelectedComparisons] = useState<string[]>([]);
+  const [comparisonScrollIndex, setComparisonScrollIndex] = useState(0);
   const [showComparisonError, setShowComparisonError] = useState(false);
+  const [showEvents, setShowEvents] = useState(true);
 
   // Define component mappings for each classification
   const sectoralComponents = [
@@ -241,11 +242,43 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
             <Calendar className="h-5 w-5" />
             Index of Industrial Production
           </div>
-          <div className="flex gap-2">
-            <Button variant={timeframe === '1y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('1y')}>1Y</Button>
-            <Button variant={timeframe === '5y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('5y')}>5Y</Button>
-            <Button variant={timeframe === '10y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('10y')}>10Y</Button>
-            <Button variant={timeframe === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('all')}>MAX</Button>
+          <div className="flex items-center gap-4">
+            {/* Year Filter Buttons */}
+            <div className="flex gap-2">
+              <Button variant={timeframe === '1y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('1y')}>1Y</Button>
+              <Button variant={timeframe === '5y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('5y')}>5Y</Button>
+              <Button variant={timeframe === '10y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('10y')}>10Y</Button>
+              <Button variant={timeframe === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('all')}>MAX</Button>
+            </div>
+            {/* Index/Growth Toggle */}
+            <div className="flex gap-1 border rounded-md p-1">
+              <Button
+                variant={dataType === 'index' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDataType('index')}
+                className="h-7 px-3"
+              >
+                Index
+              </Button>
+              <Button
+                variant={dataType === 'growth' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setDataType('growth')}
+                className="h-7 px-3"
+              >
+                Growth Rate
+              </Button>
+            </div>
+            
+            {/* Events Toggle */}
+            <Button
+              variant={showEvents ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowEvents(!showEvents)}
+              className="h-7 px-3"
+            >
+              📅 Events
+            </Button>
           </div>
         </CardTitle>
         <CardDescription>
@@ -253,23 +286,6 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Data Type Toggle - Moved below year filters */}
-        <div className="flex justify-center gap-2 mb-6">
-          <Button
-            variant={dataType === 'index' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDataType('index')}
-          >
-            Index
-          </Button>
-          <Button
-            variant={dataType === 'growth' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDataType('growth')}
-          >
-            Growth Rate
-          </Button>
-        </div>
         <div className="h-80">
           {(loading || componentLoading || eventsLoading) ? (
             <div className="flex items-center justify-center h-full">
@@ -330,8 +346,8 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
                   );
                 })}
 
-                {/* Event Markers */}
-                {eventsData?.map((event, index) => (
+                {/* Event Markers - Only show when toggle is enabled */}
+                {showEvents && eventsData?.map((event, index) => (
                   <ReferenceDot
                     key={`event-${event.id || index}`}
                     x={event.date}
@@ -354,9 +370,8 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
           Data is based on Base: 2011-12 = 100
         </div>
         
-        {/* Classification and Compare Options - Reorganized */}
-        <div className="mt-6 pt-4 border-t space-y-4">
-          {/* Classification and Compare in same row */}
+        {/* Classification and Components in same row */}
+        <div className="mt-6 pt-4 border-t">
           <div className="flex items-center justify-between">
             {/* Classification Toggle - Left side */}
             <div className="flex items-center gap-3">
@@ -386,10 +401,9 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
               </div>
             </div>
 
-            {/* Compare With Options - Right side */}
-            <div className="flex items-center gap-3">
-              <h4 className="text-sm font-medium text-muted-foreground">Compare with:</h4>
-              <div className="flex gap-1">
+            {/* Components with navigation - Right side */}
+            {compareWith !== 'none' && (
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -399,6 +413,19 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
                 >
                   <ChevronLeft className="h-3 w-3" />
                 </Button>
+                <div className="flex gap-1">
+                  {visibleComparisons.map((comparison) => (
+                    <Button
+                      key={comparison.id}
+                      variant={selectedComparisons.includes(comparison.id) ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => toggleComparison(comparison.id)}
+                      className="text-xs h-7"
+                    >
+                      {comparison.name}
+                    </Button>
+                  ))}
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -409,31 +436,16 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
                   <ChevronRight className="h-3 w-3" />
                 </Button>
               </div>
-            </div>
+            )}
           </div>
-          
-          {/* Comparison Indicators - Clickable */}
-          <div className="flex gap-2 justify-center flex-wrap">
-            {visibleComparisons.map((comparison) => (
-              <Button
-                key={comparison.id}
-                variant={selectedComparisons.includes(comparison.id) ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs h-8"
-                onClick={() => toggleComparison(comparison.id)}
-              >
-                {comparison.name}
-              </Button>
-            ))}
-          </div>
-          
-          {/* Error Message */}
-          {showComparisonError && (
-            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600 text-center">
-              Cannot select multiple classifications when comparing different IIP categories. Please select only one classification for comparisons.
-            </div>
-          )}
         </div>
+        
+        {/* Error Message */}
+        {showComparisonError && (
+          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600 text-center">
+            Cannot select multiple classifications when comparing different IIP categories. Please select only one classification for comparisons.
+          </div>
+        )}
       </CardContent>
     </Card>
   );
