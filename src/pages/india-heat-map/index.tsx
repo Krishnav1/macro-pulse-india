@@ -200,8 +200,8 @@ export default function IndiaHeatMapPage() {
 
           {/* Map Area */}
           <div className="lg:col-span-3">
-            <Card className="h-[600px]">
-              <CardContent className="p-0 h-full">
+            <Card className="h-[600px] flex flex-col">
+              <CardContent className="p-0 flex-1 relative">
                 {loading && (
                   <div className="flex items-center justify-center h-full">
                     <div className="flex items-center gap-2">
@@ -237,7 +237,7 @@ export default function IndiaHeatMapPage() {
                 )}
 
                 {!loading && !valuesError && selectedIndicatorId && selectedYear && (
-                  <div className="h-full">
+                  <div className="absolute inset-0">
                     <IndiaHeatmapMap
                       stateValueMap={stateValueMap}
                       stats={stats}
