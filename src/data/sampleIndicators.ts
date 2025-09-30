@@ -120,14 +120,14 @@ export const dashboardIndicators: IndicatorData[] = [
     source: 'MOSPI'
   },
   {
-    id: 'merchandise_imports',
-    name: 'Merchandise Imports',
-    value: '$45.2B',
-    change: 1.8,
-    category: 'Trade',
-    sparklineData: generateSparklineData(45.2, 0.16),
-    unit: 'Monthly',
-    source: 'DGFT'
+    id: 'inr_exchange_rate',
+    name: 'INR Exchange Rate',
+    value: '₹87.52/USD',
+    change: 0.4,
+    category: 'Currency',
+    sparklineData: generateSparklineData(87.52, 0.02),
+    unit: 'INR per USD',
+    source: 'RBI'
   }
 ];
 

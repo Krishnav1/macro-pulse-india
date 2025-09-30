@@ -12,6 +12,7 @@ import { CPIInflationAdmin } from './CPIInflationAdmin';
 import { IIPInflationAdmin } from './IIPInflationAdmin';
 import { ForexReservesAdmin } from './ForexReservesAdmin';
 import { GdpAdmin } from './GdpAdmin';
+import { ExchangeRateAdmin } from './ExchangeRateAdmin';
 import EventsManagement from './EventsManagement';
 import InsightsManagement from './InsightsManagement';
 import ComparisonsManagement from './ComparisonsManagement';
@@ -269,6 +270,16 @@ export const IndicatorDataManager: React.FC<IndicatorDataManagerProps> = ({
   if (normalizedSlug === 'real-gdp-growth' || normalizedSlug === 'gdp-growth') {
     return (
       <GdpAdmin
+        indicator={indicator}
+        onBack={onBack}
+        onEditIndicator={onEditIndicator}
+      />
+    );
+  }
+
+  if (normalizedSlug === 'inr-exchange-rate' || normalizedSlug === 'exchange-rate') {
+    return (
+      <ExchangeRateAdmin
         indicator={indicator}
         onBack={onBack}
         onEditIndicator={onEditIndicator}

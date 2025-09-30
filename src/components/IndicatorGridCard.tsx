@@ -17,6 +17,8 @@ const IndicatorGridCard = ({ indicator }: IndicatorGridCardProps) => {
       navigate('/indicators/iip');
     } else if (indicator.id === 'repo_rate') {
       navigate('/indicators/repo-rate');
+    } else if (indicator.id === 'inr_exchange_rate') {
+      navigate('/indicators/exchange-rate');
     } else {
       navigate(`/indicators/${indicator.id}`);
     }

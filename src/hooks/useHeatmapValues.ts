@@ -69,8 +69,19 @@ export const useHeatmapValues = (indicatorId?: string, yearLabel?: string) => {
       // Create state-value mapping for easy lookup
       const stateMap: StateValueMap = {};
       valuesData.forEach((item: any) => {
-        // Convert string values to numbers
-        const numericValue = item.value ? parseFloat(item.value) : null;
+        // Convert string values to numbers - handle both string and number types
+        let numericValue: number | null = null;
+        if (item.value !== null && item.value !== undefined) {
+          // If it's already a number, use it directly
+          if (typeof item.value === 'number') {
+            numericValue = item.value;
+          } else {
+            // If it's a string, remove commas and parse
+            const cleanedValue = String(item.value).replace(/,/g, '');
+            const parsed = parseFloat(cleanedValue);
+            numericValue = isNaN(parsed) ? null : parsed;
+          }
+        }
         stateMap[item.state_name] = numericValue;
       });
       console.log('State value map created:', Object.keys(stateMap).length, 'states');
@@ -79,8 +90,17 @@ export const useHeatmapValues = (indicatorId?: string, yearLabel?: string) => {
       // Calculate statistics
       const numericValues = valuesData
         .map((item: any) => {
-          const val = item.value ? parseFloat(item.value) : null;
-          return val;
+          if (item.value === null || item.value === undefined) return null;
+          
+          // Handle both number and string types
+          if (typeof item.value === 'number') {
+            return item.value;
+          }
+          
+          // Clean string values (remove commas) and parse
+          const cleanedValue = String(item.value).replace(/,/g, '');
+          const parsed = parseFloat(cleanedValue);
+          return isNaN(parsed) ? null : parsed;
         })
         .filter((val: any): val is number => val !== null && !isNaN(val) && isFinite(val));
 
