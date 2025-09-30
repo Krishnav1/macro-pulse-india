@@ -64,6 +64,14 @@ export const IndiaHeatmapMap: React.FC<IndiaHeatmapMapProps> = ({
   const geoLayerRef = useRef<L.GeoJSON | null>(null);
   const { geoData, loading: geoLoading, error: geoError } = useIndiaStatesGeo();
 
+  console.log('IndiaHeatmapMap render:', {
+    stateValueMap: Object.keys(stateValueMap).length,
+    stats,
+    geoData: !!geoData,
+    geoLoading,
+    geoError
+  });
+
   // Initialize map
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
@@ -214,19 +222,19 @@ export const IndiaHeatmapMap: React.FC<IndiaHeatmapMapProps> = ({
       <div ref={mapRef} className="h-full w-full rounded-lg" />
       
       {/* Custom CSS for tooltips */}
-      <style jsx>{`
-        :global(.custom-tooltip) {
+      <style>{`
+        .custom-tooltip {
           background: white !important;
           border: 1px solid #d1d5db !important;
           border-radius: 6px !important;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
         }
         
-        :global(.custom-tooltip .leaflet-tooltip-content) {
+        .custom-tooltip .leaflet-tooltip-content {
           margin: 0 !important;
         }
         
-        :global(.leaflet-container) {
+        .leaflet-container {
           background: #f8fafc !important;
         }
       `}</style>

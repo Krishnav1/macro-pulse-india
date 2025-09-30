@@ -42,25 +42,20 @@ export const HeatmapControls: React.FC<HeatmapControlsProps> = ({
       {/* Indicator Selection */}
       <div className="space-y-2">
         <Label htmlFor="indicator-select">Select Indicator</Label>
-        <Select
+        <select
+          id="indicator-select"
           value={selectedIndicatorId}
-          onValueChange={onIndicatorChange}
+          onChange={(e) => onIndicatorChange(e.target.value)}
           disabled={loading || indicators.length === 0}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
         >
-          <SelectTrigger id="indicator-select">
-            <SelectValue placeholder="Choose an indicator..." />
-          </SelectTrigger>
-          <SelectContent>
-            {indicators.map((indicator) => (
-              <SelectItem key={indicator.id} value={indicator.id}>
-                <div>
-                  <div className="font-medium">{indicator.name}</div>
-                  <div className="text-xs text-gray-500">Unit: {indicator.unit}</div>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <option value="">Choose an indicator...</option>
+          {indicators.map((indicator) => (
+            <option key={indicator.id} value={indicator.id}>
+              {indicator.name} ({indicator.unit})
+            </option>
+          ))}
+        </select>
         
         {selectedIndicator?.description && (
           <p className="text-xs text-gray-600 mt-1">
@@ -72,22 +67,20 @@ export const HeatmapControls: React.FC<HeatmapControlsProps> = ({
       {/* Year Selection */}
       <div className="space-y-2">
         <Label htmlFor="year-select">Select Year</Label>
-        <Select
+        <select
+          id="year-select"
           value={selectedYear}
-          onValueChange={onYearChange}
+          onChange={(e) => onYearChange(e.target.value)}
           disabled={loading || years.length === 0}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
         >
-          <SelectTrigger id="year-select">
-            <SelectValue placeholder="Choose a year..." />
-          </SelectTrigger>
-          <SelectContent>
-            {years.map((year) => (
-              <SelectItem key={year} value={year}>
-                {year}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <option value="">Choose a year...</option>
+          {years.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Year Slider for Quick Navigation */}

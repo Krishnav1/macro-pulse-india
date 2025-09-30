@@ -245,13 +245,30 @@ export default function IndiaHeatMapPage() {
                 )}
 
                 {!loading && !valuesError && selectedIndicatorId && selectedYear && (
-                  <IndiaHeatmapMap
-                    stateValueMap={stateValueMap}
-                    stats={stats}
-                    onStateClick={handleStateClick}
-                    selectedIndicator={selectedIndicator}
-                    selectedYear={selectedYear}
-                  />
+                  <div className="h-full">
+                    <IndiaHeatmapMap
+                      stateValueMap={stateValueMap}
+                      stats={stats}
+                      onStateClick={handleStateClick}
+                      selectedIndicator={selectedIndicator}
+                      selectedYear={selectedYear}
+                    />
+                  </div>
+                )}
+
+                {/* Show message when no indicator/year selected */}
+                {!loading && !valuesError && (!selectedIndicatorId || !selectedYear) && (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <Map className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Select Indicator and Year
+                      </h3>
+                      <p className="text-gray-600">
+                        Choose an indicator and year from the controls to view the heatmap.
+                      </p>
+                    </div>
+                  </div>
                 )}
 
                 {/* Debug Info */}
