@@ -7,6 +7,10 @@ import { HeatmapIndicator } from '../../hooks/useHeatmapIndicators';
 // Set your Mapbox access token
 mapboxgl.accessToken = 'pk.eyJ1Ijoia3Jpc2huYXYxMjM0IiwiYSI6ImNtZzZ3MGhqbDBmeXEyaXNkcDl1eXViemwifQ.Rx_NZ--KlzsdUxjPmCFWZg';
 
+// Disable Mapbox telemetry to avoid ad blocker issues
+(mapboxgl as any).prewarm = () => {};
+(mapboxgl as any).clearPrewarmedResources = () => {};
+
 interface IndiaHeatmapMapboxProps {
   stateValueMap: StateValueMap;
   stats: {
@@ -87,7 +91,8 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
       
       // Load GeoJSON data dynamically
       try {
-        const response = await fetch('/src/data/india-states.geojson');
+        // Use absolute path from public directory or import.meta.url
+        const response = await fetch(new URL('../../data/india-states.geojson', import.meta.url).href);
         const indiaStatesGeoJSON = await response.json();
         
         // Add India states source
