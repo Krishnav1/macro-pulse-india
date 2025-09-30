@@ -42,6 +42,7 @@ export default function IndiaHeatMapPage() {
         }
       } else if (indicators.length > 0 && !selectedIndicatorId) {
         // Auto-select first indicator if none selected
+        console.log('Auto-selecting first indicator:', indicators[0]);
         setSelectedIndicatorId(indicators[0].id);
       }
 
@@ -51,6 +52,7 @@ export default function IndiaHeatMapPage() {
         }
       } else if (years.length > 0 && !selectedYear) {
         // Auto-select latest year if none selected
+        console.log('Auto-selecting first year:', years[0]);
         setSelectedYear(years[0]);
       }
     }, 100); // 100ms throttle
@@ -242,7 +244,7 @@ export default function IndiaHeatMapPage() {
                   </div>
                 )}
 
-                {!loading && !valuesError && hasData && (
+                {!loading && !valuesError && selectedIndicatorId && selectedYear && (
                   <IndiaHeatmapMap
                     stateValueMap={stateValueMap}
                     stats={stats}
@@ -250,6 +252,18 @@ export default function IndiaHeatMapPage() {
                     selectedIndicator={selectedIndicator}
                     selectedYear={selectedYear}
                   />
+                )}
+
+                {/* Debug Info */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="absolute top-2 right-2 bg-black bg-opacity-75 text-white p-2 text-xs rounded">
+                    <div>Indicators: {indicators.length}</div>
+                    <div>Selected ID: {selectedIndicatorId}</div>
+                    <div>Selected Year: {selectedYear}</div>
+                    <div>State Values: {Object.keys(stateValueMap).length}</div>
+                    <div>Loading: {loading.toString()}</div>
+                    <div>Error: {valuesError || 'none'}</div>
+                  </div>
                 )}
               </CardContent>
             </Card>

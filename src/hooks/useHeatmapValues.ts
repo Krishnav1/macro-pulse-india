@@ -63,18 +63,25 @@ export const useHeatmapValues = (indicatorId?: string, yearLabel?: string) => {
       }
 
       const valuesData = (data as any) || [];
+      console.log('Fetched heatmap values:', valuesData.length, 'records for indicator:', indicatorId, 'year:', yearLabel);
       setValues(valuesData);
 
       // Create state-value mapping for easy lookup
       const stateMap: StateValueMap = {};
       valuesData.forEach((item: any) => {
-        stateMap[item.state_name] = item.value;
+        // Convert string values to numbers
+        const numericValue = item.value ? parseFloat(item.value) : null;
+        stateMap[item.state_name] = numericValue;
       });
+      console.log('State value map created:', Object.keys(stateMap).length, 'states');
       setStateValueMap(stateMap);
 
       // Calculate statistics
       const numericValues = valuesData
-        .map((item: any) => item.value)
+        .map((item: any) => {
+          const val = item.value ? parseFloat(item.value) : null;
+          return val;
+        })
         .filter((val: any): val is number => val !== null && !isNaN(val));
 
       if (numericValues.length > 0) {
