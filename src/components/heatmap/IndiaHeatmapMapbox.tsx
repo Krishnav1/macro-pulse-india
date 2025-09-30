@@ -238,26 +238,26 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
       <div ref={mapContainer} className="h-full w-full rounded-lg" />
       
       {/* Legend */}
-      <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-3">
-        <div className="text-xs font-semibold mb-2">Legend</div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs text-gray-600">Low</span>
+      <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-xl border-2 border-gray-300 p-4">
+        <div className="text-sm font-bold mb-3 text-gray-900">Legend</div>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs font-semibold text-gray-900">Low</span>
           <div className="flex gap-0.5">
             {['#eff6ff', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af'].map((color, i) => (
               <div
                 key={i}
-                className="w-4 h-3 border border-gray-200"
+                className="w-5 h-4 border border-gray-400"
                 style={{ backgroundColor: color }}
               />
             ))}
           </div>
-          <span className="text-xs text-gray-600">High</span>
+          <span className="text-xs font-semibold text-gray-900">High</span>
         </div>
         {stats && (
-          <div className="text-xs text-gray-600 space-y-1">
-            <div>Min: {stats.min.toFixed(2)}</div>
-            <div>Max: {stats.max.toFixed(2)}</div>
-            <div>States: {stats.count}</div>
+          <div className="text-xs font-medium text-gray-900 space-y-1 bg-gray-50 p-2 rounded">
+            <div>Min: <span className="font-bold">{stats.min.toFixed(2)}</span></div>
+            <div>Max: <span className="font-bold">{stats.max.toFixed(2)}</span></div>
+            <div>States: <span className="font-bold">{stats.count}</span></div>
           </div>
         )}
       </div>

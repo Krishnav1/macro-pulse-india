@@ -119,22 +119,30 @@ export const ExchangeRateAdmin: React.FC<ExchangeRateAdminProps> = ({
 
     jsonData.forEach((row: any) => {
       const month = row['Month'] || row['month'];
-      if (!month) return;
+      
+      // Skip if month is not a string or is empty
+      if (!month || typeof month !== 'string' || month.trim() === '') {
+        return;
+      }
 
       // Parse each currency
       ['EUR', 'GBP', 'JPY', 'USD'].forEach((currency) => {
         const value = row[currency];
         if (value !== undefined && value !== null && value !== '') {
-          // Convert month format (Aug-25) to date (2025-08-01)
-          const periodDate = convertMonthToDate(month);
-          
-          parsed.push({
-            period_date: periodDate,
-            period_label: month,
-            series_code: currency,
-            value: parseFloat(String(value).replace(/,/g, '')),
-            currency: currency
-          });
+          try {
+            // Convert month format (Aug-25) to date (2025-08-01)
+            const periodDate = convertMonthToDate(month);
+            
+            parsed.push({
+              period_date: periodDate,
+              period_label: month,
+              series_code: currency,
+              value: parseFloat(String(value).replace(/,/g, '')),
+              currency: currency
+            });
+          } catch (error) {
+            console.warn(`Skipping row with invalid month format: ${month}`);
+          }
         }
       });
     });
@@ -144,7 +152,16 @@ export const ExchangeRateAdmin: React.FC<ExchangeRateAdminProps> = ({
 
   const convertMonthToDate = (monthStr: string): string => {
     // Convert "Aug-25" to "2025-08-01"
-    const [monthAbbr, yearShort] = monthStr.split('-');
+    if (!monthStr || typeof monthStr !== 'string') {
+      throw new Error('Invalid month string');
+    }
+    
+    const parts = monthStr.trim().split('-');
+    if (parts.length !== 2) {
+      throw new Error('Invalid month format');
+    }
+    
+    const [monthAbbr, yearShort] = parts;
     const monthMap: { [key: string]: string } = {
       'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
       'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',

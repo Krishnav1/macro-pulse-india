@@ -139,15 +139,17 @@ export default function IndiaHeatMapPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800 shadow-lg">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-3">
-            <Map className="h-8 w-8 text-white" />
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 border-b-4 border-blue-800 shadow-2xl">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+              <Map className="h-10 w-10 text-white" />
+            </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">India Heat Map</h1>
-              <p className="text-blue-100 mt-1">
+              <h1 className="text-4xl font-bold text-white drop-shadow-lg">India Heat Map</h1>
+              <p className="text-blue-50 mt-2 text-lg font-medium">
                 Interactive state-wise visualization of economic indicators
               </p>
             </div>
@@ -159,11 +161,11 @@ export default function IndiaHeatMapPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Controls Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="shadow-lg border-gray-200">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b">
-                <CardTitle className="text-gray-900">Controls</CardTitle>
+            <Card className="shadow-2xl border-2 border-blue-200 bg-white">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 border-b-2 border-blue-700">
+                <CardTitle className="text-white text-xl font-bold">Controls</CardTitle>
               </CardHeader>
-              <CardContent className="bg-white">
+              <CardContent className="bg-gradient-to-b from-white to-gray-50 p-6">
                 <HeatmapControls
                   indicators={indicators}
                   selectedIndicatorId={selectedIndicatorId}
@@ -183,11 +185,11 @@ export default function IndiaHeatMapPage() {
 
             {/* Legend */}
             {hasData && stats && selectedIndicator && (
-              <Card className="mt-4 shadow-lg border-gray-200">
-                <CardHeader className="bg-gradient-to-r from-green-50 to-green-100 border-b">
-                  <CardTitle className="text-gray-900">Legend</CardTitle>
+              <Card className="mt-4 shadow-2xl border-2 border-green-200 bg-white">
+                <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 border-b-2 border-green-700">
+                  <CardTitle className="text-white text-xl font-bold">Legend</CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white">
+                <CardContent className="bg-gradient-to-b from-white to-gray-50 p-6">
                   <HeatmapLegend
                     stats={stats}
                     unit={selectedIndicator.unit}
@@ -200,8 +202,8 @@ export default function IndiaHeatMapPage() {
 
           {/* Map Area */}
           <div className="lg:col-span-3">
-            <Card className="h-[600px] flex flex-col shadow-xl border-gray-200">
-              <CardContent className="p-0 flex-1 relative bg-white">
+            <Card className="h-[600px] flex flex-col shadow-2xl border-2 border-blue-200 bg-white">
+              <CardContent className="p-0 flex-1 relative bg-gradient-to-br from-blue-50/30 to-indigo-50/30">
                 {loading && (
                   <div className="flex items-center justify-center h-full">
                     <div className="flex items-center gap-2">
