@@ -1,9 +1,9 @@
-Year,State Name,GDP Growth Rate [%],Per Capita Income [INR],Unemployment Rate [%],Literacy Rate [%],Population Density [per sq km]
-2023-24,Andhra Pradesh,7.2,185000,4.2,67.4,308
-2023-24,Arunachal Pradesh,8.5,210000,2.1,65.4,17
-2023-24,Assam,6.8,95000,7.9,72.2,398
-2023-24,Bihar,5.2,45000,5.1,61.8,1106
-2023-24,Chhattisgarh,7.1,98000,3.4,70.3,189
+Year,State Name,Market Borrowing of State Governments Gross Amount [INR Crore],GDP Growth Rate [%],Per Capita Income [INR],Unemployment Rate [%],Literacy Rate [%],Population Density [per sq km]
+2023-24,Andhra Pradesh,78205,7.2,185000,4.2,67.4,308
+2023-24,Arunachal Pradesh,1010,8.5,210000,2.1,65.4,17
+2023-24,Assam,19000,6.8,95000,7.9,72.2,398
+2023-24,Bihar,47546,5.2,45000,5.1,61.8,1106
+2023-24,Chhattisgarh,24500,7.1,98000,3.4,70.3,189
 2023-24,Goa,8.9,458000,2.8,88.7,394
 2023-24,Gujarat,9.2,215000,1.6,78.0,308
 2023-24,Haryana,7.8,285000,4.6,75.6,573

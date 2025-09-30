@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IndicatorSearch } from './IndicatorSearch';
 import { IndicatorForm } from './IndicatorForm';
 import { IndicatorDataManager } from './IndicatorDataManager';
-import { HeatmapAdmin } from './heatmap/HeatmapAdmin';
+import { HeatmapAdminNew as HeatmapAdmin } from './heatmap/HeatmapAdminNew';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Map, BarChart3, ArrowLeft } from 'lucide-react';
