@@ -36,7 +36,7 @@ const Navigation = () => {
           </NavLink>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="flex items-center space-x-4 md:space-x-8">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -46,8 +46,8 @@ const Navigation = () => {
                 }
                 end={item.path === "/"}
               >
-                <item.icon className="h-4 w-4 mr-2 inline" />
-                {item.label}
+                <item.icon className="h-4 w-4 mr-1 md:mr-2 inline" />
+                <span className="text-sm md:text-base">{item.label}</span>
               </NavLink>
             ))}
           </div>

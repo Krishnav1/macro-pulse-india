@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useHeatmapYears = (indicatorId?: string) => {
   const [years, setYears] = useState<string[]>([]);
@@ -20,7 +20,7 @@ export const useHeatmapYears = (indicatorId?: string) => {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await (supabase as any)
         .from('heatmap_values')
         .select('year_label')
         .eq('indicator_id', indicatorId)
@@ -31,17 +31,17 @@ export const useHeatmapYears = (indicatorId?: string) => {
       }
 
       // Get unique years and sort them properly (fiscal year format)
-      const uniqueYears = Array.from(new Set(data?.map(item => item.year_label) || []));
+      const uniqueYears = Array.from(new Set((data as any)?.map((item: any) => item.year_label) || []));
       
       // Sort fiscal years properly (e.g., 2023-24, 2022-23, etc.)
-      const sortedYears = uniqueYears.sort((a, b) => {
+      const sortedYears = uniqueYears.sort((a: any, b: any) => {
         // Extract starting year from fiscal year format (e.g., "2023-24" -> 2023)
         const yearA = parseInt(a.split('-')[0]);
         const yearB = parseInt(b.split('-')[0]);
         return yearB - yearA; // Descending order (latest first)
       });
 
-      setYears(sortedYears);
+      setYears(sortedYears as string[]);
     } catch (err) {
       console.error('Error fetching heatmap years:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch years');

@@ -3,7 +3,7 @@ import { X, TrendingUp, BarChart3, Calendar, MapPin } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { HeatmapIndicator } from '../../hooks/useHeatmapIndicators';
 
 interface StateData {
@@ -42,7 +42,7 @@ export const StateDetailsDrawer: React.FC<StateDetailsDrawerProps> = ({
       setError(null);
 
       // Fetch all indicators and their values for this state
-      const { data: valuesData, error: valuesError } = await supabase
+      const { data: valuesData, error: valuesError } = await (supabase as any)
         .from('heatmap_values')
         .select(`
           year_label,

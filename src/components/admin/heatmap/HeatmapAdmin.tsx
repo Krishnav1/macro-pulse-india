@@ -6,7 +6,7 @@ import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Alert, AlertDescription } from '../../ui/alert';
 import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 
 interface ParsedData {
@@ -135,7 +135,7 @@ export const HeatmapAdmin: React.FC = () => {
       setError(null);
 
       // Create dataset record
-      const { data: dataset, error: datasetError } = await supabase
+      const { data: dataset, error: datasetError } = await (supabase as any)
         .from('heatmap_datasets')
         .insert({
           name: datasetName.trim(),
@@ -154,7 +154,7 @@ export const HeatmapAdmin: React.FC = () => {
       for (const col of indicatorColumns) {
         const slug = col.indicatorName.toLowerCase().replace(/[^a-z0-9]+/g, '_');
         
-        const { data: existingIndicator } = await supabase
+        const { data: existingIndicator } = await (supabase as any)
           .from('heatmap_indicators')
           .select('id')
           .eq('slug', slug)
@@ -163,9 +163,9 @@ export const HeatmapAdmin: React.FC = () => {
         let indicatorId: string;
 
         if (existingIndicator) {
-          indicatorId = existingIndicator.id;
+          indicatorId = (existingIndicator as any).id;
         } else {
-          const { data: newIndicator, error: indicatorError } = await supabase
+          const { data: newIndicator, error: indicatorError } = await (supabase as any)
             .from('heatmap_indicators')
             .insert({
               slug,
@@ -177,7 +177,7 @@ export const HeatmapAdmin: React.FC = () => {
             .single();
 
           if (indicatorError) throw indicatorError;
-          indicatorId = newIndicator.id;
+          indicatorId = (newIndicator as any).id;
         }
 
         indicatorMap.set(col.columnName, indicatorId);
@@ -205,7 +205,7 @@ export const HeatmapAdmin: React.FC = () => {
       const batchSize = 1000;
       for (let i = 0; i < valuesToInsert.length; i += batchSize) {
         const batch = valuesToInsert.slice(i, i + batchSize);
-        const { error: valuesError } = await supabase
+        const { error: valuesError } = await (supabase as any)
           .from('heatmap_values')
           .upsert(batch, {
             onConflict: 'indicator_id,state_name,year_label',

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface HeatmapIndicator {
   id: string;
@@ -26,7 +26,7 @@ export const useHeatmapIndicators = () => {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await (supabase as any)
         .from('heatmap_indicators')
         .select('*')
         .order('name', { ascending: true });

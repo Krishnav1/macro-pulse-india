@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface HeatmapValue {
   id: string;
@@ -45,7 +45,7 @@ export const useHeatmapValues = (indicatorId?: string, yearLabel?: string) => {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await (supabase as any)
         .from('heatmap_values')
         .select('*')
         .eq('indicator_id', indicatorId)
@@ -56,20 +56,20 @@ export const useHeatmapValues = (indicatorId?: string, yearLabel?: string) => {
         throw fetchError;
       }
 
-      const valuesData = data || [];
+      const valuesData = (data as any) || [];
       setValues(valuesData);
 
       // Create state-value mapping for easy lookup
       const stateMap: StateValueMap = {};
-      valuesData.forEach(item => {
+      valuesData.forEach((item: any) => {
         stateMap[item.state_name] = item.value;
       });
       setStateValueMap(stateMap);
 
       // Calculate statistics
       const numericValues = valuesData
-        .map(item => item.value)
-        .filter((val): val is number => val !== null && !isNaN(val));
+        .map((item: any) => item.value)
+        .filter((val: any): val is number => val !== null && !isNaN(val));
 
       if (numericValues.length > 0) {
         const min = Math.min(...numericValues);
