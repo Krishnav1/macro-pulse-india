@@ -82,20 +82,25 @@ export const useHeatmapValues = (indicatorId?: string, yearLabel?: string) => {
           const val = item.value ? parseFloat(item.value) : null;
           return val;
         })
-        .filter((val: any): val is number => val !== null && !isNaN(val));
+        .filter((val: any): val is number => val !== null && !isNaN(val) && isFinite(val));
+
+      console.log('Numeric values for stats:', numericValues.length, 'out of', valuesData.length);
 
       if (numericValues.length > 0) {
         const min = Math.min(...numericValues);
         const max = Math.max(...numericValues);
         const mean = numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length;
         
-        setStats({
+        const statsObj = {
           min,
           max,
           mean,
           count: numericValues.length,
-        });
+        };
+        console.log('Stats calculated:', statsObj);
+        setStats(statsObj);
       } else {
+        console.log('No valid numeric values found, setting stats to null');
         setStats(null);
       }
     } catch (err) {

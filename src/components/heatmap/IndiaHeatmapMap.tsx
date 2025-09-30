@@ -104,7 +104,10 @@ export const IndiaHeatmapMap: React.FC<IndiaHeatmapMapProps> = ({
 
   // Update choropleth layer
   useEffect(() => {
-    if (!mapInstanceRef.current || !geoData || !stats) return;
+    if (!mapInstanceRef.current || !geoData) return;
+    
+    // If no stats, create default stats for empty map
+    const defaultStats = stats || { min: 0, max: 1, mean: 0.5, count: 0 };
 
     // Remove existing layer
     if (geoLayerRef.current) {
@@ -126,7 +129,7 @@ export const IndiaHeatmapMap: React.FC<IndiaHeatmapMapProps> = ({
 
         const stateName = feature.properties.name;
         const value = stateValueMap[stateName];
-        const fillColor = getColor(value, stats.min, stats.max);
+        const fillColor = getColor(value, defaultStats.min, defaultStats.max);
 
         return {
           fillColor,

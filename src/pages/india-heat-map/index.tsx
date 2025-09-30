@@ -29,7 +29,7 @@ export default function IndiaHeatMapPage() {
     selectedYear
   );
 
-  // URL sync with throttling
+  // URL sync with throttling - simplified without auto-selection
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       const indicatorParam = searchParams.get('indicator');
@@ -40,20 +40,12 @@ export default function IndiaHeatMapPage() {
         if (indicator && indicator.id !== selectedIndicatorId) {
           setSelectedIndicatorId(indicator.id);
         }
-      } else if (indicators.length > 0 && !selectedIndicatorId) {
-        // Auto-select first indicator if none selected
-        console.log('Auto-selecting first indicator:', indicators[0]);
-        setSelectedIndicatorId(indicators[0].id);
       }
 
       if (yearParam && years.length > 0) {
         if (years.includes(yearParam) && yearParam !== selectedYear) {
           setSelectedYear(yearParam);
         }
-      } else if (years.length > 0 && !selectedYear) {
-        // Auto-select latest year if none selected
-        console.log('Auto-selecting first year:', years[0]);
-        setSelectedYear(years[0]);
       }
     }, 100); // 100ms throttle
 

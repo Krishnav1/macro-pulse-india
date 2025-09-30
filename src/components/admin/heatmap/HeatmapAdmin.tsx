@@ -142,6 +142,8 @@ export const HeatmapAdmin: React.FC = () => {
         col.indicatorName.toLowerCase().replace(/[^a-z0-9]+/g, '_')
       );
 
+      console.log('Clearing existing data for indicators:', indicatorSlugs);
+
       // Clear existing data for these indicators
       for (const slug of indicatorSlugs) {
         const { data: existingIndicator } = await (supabase as any)
@@ -151,11 +153,26 @@ export const HeatmapAdmin: React.FC = () => {
           .single();
 
         if (existingIndicator) {
+          console.log('Deleting existing data for indicator:', slug);
           // Delete existing values for this indicator
-          await (supabase as any)
+          const { error: deleteError } = await (supabase as any)
             .from('heatmap_values')
             .delete()
             .eq('indicator_id', (existingIndicator as any).id);
+          
+          if (deleteError) {
+            console.error('Error deleting existing values:', deleteError);
+          }
+
+          // Also delete the indicator itself to recreate it fresh
+          const { error: deleteIndicatorError } = await (supabase as any)
+            .from('heatmap_indicators')
+            .delete()
+            .eq('id', (existingIndicator as any).id);
+          
+          if (deleteIndicatorError) {
+            console.error('Error deleting existing indicator:', deleteIndicatorError);
+          }
         }
       }
 
@@ -278,18 +295,19 @@ export const HeatmapAdmin: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Success Message */}
-      <Card className="border-green-200 bg-green-50">
+      {/* Instructions */}
+      <Card className="border-blue-200 bg-blue-50">
         <CardHeader>
-          <CardTitle className="text-green-800 flex items-center gap-2">
+          <CardTitle className="text-blue-800 flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5" />
-            Heatmap Database Ready
+            Heatmap Data Upload
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-green-700">
-            ✅ Database tables created successfully with sample data for 28 Indian states across 3 indicators (GDP Growth Rate, Per Capita Income, Literacy Rate).
-            You can now upload your own Excel/CSV files to add more indicators or update existing data.
+          <p className="text-blue-700">
+            📊 Upload your Excel/CSV files with state-wise data. The system will automatically replace existing data for the same indicators.
+            <br />
+            <strong>Format:</strong> First column should be "State Name", followed by indicator columns with years as headers.
           </p>
         </CardContent>
       </Card>
