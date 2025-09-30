@@ -139,17 +139,17 @@ export default function IndiaHeatMapPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 border-b-4 border-blue-800 shadow-2xl">
+      <div className="bg-gradient-to-r from-indigo-900 via-purple-900 to-pink-900 border-b-4 border-indigo-700 shadow-2xl">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
-              <Map className="h-10 w-10 text-white" />
+            <div className="p-3 bg-white/10 rounded-xl backdrop-blur-md border border-white/20">
+              <Map className="h-12 w-12 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-white drop-shadow-lg">India Heat Map</h1>
-              <p className="text-blue-50 mt-2 text-lg font-medium">
+              <h1 className="text-5xl font-bold text-white drop-shadow-2xl">India Heat Map</h1>
+              <p className="text-indigo-100 mt-2 text-xl font-medium">
                 Interactive state-wise visualization of economic indicators
               </p>
             </div>
@@ -161,11 +161,11 @@ export default function IndiaHeatMapPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Controls Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="shadow-2xl border-2 border-blue-200 bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 border-b-2 border-blue-700">
+            <Card className="shadow-2xl border border-gray-600 bg-gray-800/90 backdrop-blur-sm">
+              <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 border-b border-gray-600">
                 <CardTitle className="text-white text-xl font-bold">Controls</CardTitle>
               </CardHeader>
-              <CardContent className="bg-gradient-to-b from-white to-gray-50 p-6">
+              <CardContent className="bg-gray-800/50 p-6 text-white">
                 <HeatmapControls
                   indicators={indicators}
                   selectedIndicatorId={selectedIndicatorId}
@@ -185,11 +185,11 @@ export default function IndiaHeatMapPage() {
 
             {/* Legend */}
             {hasData && stats && selectedIndicator && (
-              <Card className="mt-4 shadow-2xl border-2 border-green-200 bg-white">
-                <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 border-b-2 border-green-700">
-                  <CardTitle className="text-white text-xl font-bold">Legend</CardTitle>
+              <Card className="mt-4 shadow-2xl border border-gray-600 bg-gray-800/90 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 border-b border-gray-600">
+                  <CardTitle className="text-white text-xl font-bold">Statistics</CardTitle>
                 </CardHeader>
-                <CardContent className="bg-gradient-to-b from-white to-gray-50 p-6">
+                <CardContent className="bg-gray-800/50 p-6 text-white">
                   <HeatmapLegend
                     stats={stats}
                     unit={selectedIndicator.unit}
@@ -202,42 +202,40 @@ export default function IndiaHeatMapPage() {
 
           {/* Map Area */}
           <div className="lg:col-span-3">
-            <Card className="h-[600px] flex flex-col shadow-2xl border-2 border-blue-200 bg-white">
-              <CardContent className="p-0 flex-1 relative bg-gradient-to-br from-blue-50/30 to-indigo-50/30">
+            <Card className="h-[600px] flex flex-col shadow-2xl border border-gray-600 bg-gray-800/90 backdrop-blur-sm">
+              <CardContent className="p-0 flex-1 relative bg-gradient-to-br from-gray-900/50 to-slate-900/50">
                 {loading && (
                   <div className="flex items-center justify-center h-full">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      <span>Loading map data...</span>
+                    <div className="flex items-center gap-2 text-white">
+                      <Loader2 className="h-6 w-6 animate-spin text-indigo-400" />
+                      <span className="text-lg font-medium">Loading map data...</span>
                     </div>
                   </div>
                 )}
 
                 {valuesError && (
-                  <div className="flex items-center justify-center h-full p-4">
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Error loading map data: {valuesError}
+                  <div className="flex items-center justify-center h-full">
+                    <Alert className="max-w-md bg-red-900/50 border-red-600 text-white">
+                      <AlertCircle className="h-4 w-4 text-red-400" />
+                      <AlertDescription className="text-red-100">
+                        {valuesError}
                       </AlertDescription>
                     </Alert>
                   </div>
                 )}
-
                 {!loading && !valuesError && indicators.length === 0 && (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <Map className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No Data Available
+                      <h3 className="text-lg font-medium text-white mb-2">
+                        No Indicators Available
                       </h3>
-                      <p className="text-gray-600">
+                      <p className="text-gray-300">
                         Upload heatmap data through the admin panel to get started.
                       </p>
                     </div>
                   </div>
                 )}
-
                 {!loading && !valuesError && selectedIndicatorId && selectedYear && (
                   <div className="absolute inset-0">
                     <IndiaHeatmapMapbox

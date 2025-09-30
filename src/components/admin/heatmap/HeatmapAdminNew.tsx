@@ -67,7 +67,30 @@ export const HeatmapAdminNew: React.FC = () => {
         throw new Error('CSV must have at least a header row and one data row');
       }
 
-      const headers = lines[0].split(',').map(h => h.trim());
+      // Parse CSV properly handling quoted values
+      const parseCSVLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        
+        result.push(current.trim());
+        return result;
+      };
+
+      const headers = parseCSVLine(lines[0]);
       
       // Expected format: Year, State Name, Indicator1 [Unit], Indicator2 [Unit], ...
       if (!headers[0].toLowerCase().includes('year')) {
@@ -117,9 +140,9 @@ export const HeatmapAdminNew: React.FC = () => {
           continue;
         }
         
-        const values = line.split(',').map(v => v.trim());
+        const values = parseCSVLine(line);
         if (values.length !== headers.length) {
-          console.warn(`Row ${i + 1} has ${values.length} values but expected ${headers.length}`);
+          console.warn(`Row ${i + 1} has ${values.length} values but expected ${headers.length}. Values: [${values.join(', ')}]`);
           continue;
         }
 

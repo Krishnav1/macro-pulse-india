@@ -41,13 +41,13 @@ export const HeatmapControls: React.FC<HeatmapControlsProps> = ({
     <div className="space-y-6">
       {/* Indicator Selection */}
       <div className="space-y-2">
-        <Label htmlFor="indicator-select">Select Indicator</Label>
+        <Label htmlFor="indicator-select" className="text-white font-semibold">Select Indicator</Label>
         <select
           id="indicator-select"
           value={selectedIndicatorId}
           onChange={(e) => onIndicatorChange(e.target.value)}
           disabled={loading || indicators.length === 0}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          className="w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-gray-700 text-white"
         >
           <option value="">Choose an indicator...</option>
           {indicators.map((indicator) => (
@@ -58,7 +58,7 @@ export const HeatmapControls: React.FC<HeatmapControlsProps> = ({
         </select>
         
         {selectedIndicator?.description && (
-          <p className="text-xs text-gray-600 mt-1">
+          <p className="text-xs text-gray-300 mt-1">
             {selectedIndicator.description}
           </p>
         )}
@@ -66,13 +66,13 @@ export const HeatmapControls: React.FC<HeatmapControlsProps> = ({
 
       {/* Year Selection */}
       <div className="space-y-2">
-        <Label htmlFor="year-select">Select Year</Label>
+        <Label htmlFor="year-select" className="text-white font-semibold">Select Year</Label>
         <select
           id="year-select"
           value={selectedYear}
           onChange={(e) => onYearChange(e.target.value)}
           disabled={loading || years.length === 0}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          className="w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-gray-700 text-white"
         >
           <option value="">Choose a year...</option>
           {years.map((year) => (
@@ -86,7 +86,7 @@ export const HeatmapControls: React.FC<HeatmapControlsProps> = ({
       {/* Year Slider for Quick Navigation */}
       {years.length > 1 && selectedYear && (
         <div className="space-y-2">
-          <Label>Year Navigation</Label>
+          <Label className="text-white font-semibold">Year Navigation</Label>
           <div className="px-2">
             <input
               type="range"
@@ -99,10 +99,10 @@ export const HeatmapControls: React.FC<HeatmapControlsProps> = ({
                   onYearChange(years[index]);
                 }
               }}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider accent-indigo-500"
               disabled={loading || isAnimating}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-gray-300 mt-1">
               <span>{years[years.length - 1]}</span>
               <span>{years[0]}</span>
             </div>
