@@ -3,7 +3,6 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { StateValueMap } from '../../hooks/useHeatmapValues';
 import { HeatmapIndicator } from '../../hooks/useHeatmapIndicators';
-import indiaStatesGeoJSON from '../../data/india-states.geojson';
 
 // Set your Mapbox access token
 mapboxgl.accessToken = 'pk.eyJ1Ijoia3Jpc2huYXYxMjM0IiwiYSI6ImNtZzZ3MGhqbDBmeXEyaXNkcDl1eXViemwifQ.Rx_NZ--KlzsdUxjPmCFWZg';
@@ -66,6 +65,7 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [geoDataLoaded, setGeoDataLoaded] = useState(false);
 
   const defaultStats = stats || { min: 0, max: 1, mean: 0.5, count: 0 };
 
@@ -82,62 +82,72 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
       maxZoom: 8,
     });
 
-    map.current.on('load', () => {
+    map.current.on('load', async () => {
       setMapLoaded(true);
       
-      // Add India states source
-      if (map.current) {
-        map.current.addSource('india-states', {
-          type: 'geojson',
-          data: indiaStatesGeoJSON as any
-        });
+      // Load GeoJSON data dynamically
+      try {
+        const response = await fetch('/src/data/india-states.geojson');
+        const indiaStatesGeoJSON = await response.json();
+        
+        // Add India states source
+        if (map.current) {
+          map.current.addSource('india-states', {
+            type: 'geojson',
+            data: indiaStatesGeoJSON
+          });
+          
+          setGeoDataLoaded(true);
 
-        // Add fill layer
-        map.current.addLayer({
-          id: 'states-fill',
-          type: 'fill',
-          source: 'india-states',
-          paint: {
-            'fill-color': '#e5e7eb',
-            'fill-opacity': 0.8
-          }
-        });
-
-        // Add border layer
-        map.current.addLayer({
-          id: 'states-border',
-          type: 'line',
-          source: 'india-states',
-          paint: {
-            'line-color': '#374151',
-            'line-width': 2
-          }
-        });
-
-        // Add hover effect
-        map.current.on('mousemove', 'states-fill', (e) => {
-          if (map.current) {
-            map.current.getCanvas().style.cursor = 'pointer';
-          }
-        });
-
-        map.current.on('mouseleave', 'states-fill', () => {
-          if (map.current) {
-            map.current.getCanvas().style.cursor = '';
-          }
-        });
-
-        // Add click handler
-        map.current.on('click', 'states-fill', (e) => {
-          if (e.features && e.features[0]) {
-            const geoStateName = e.features[0].properties?.[STATE_NAME_PROPERTY];
-            // Convert GeoJSON name to database name for click handler
-            const dbStateName = REVERSE_STATE_MAPPING[geoStateName] || geoStateName;
-            if (dbStateName) {
-              onStateClick(dbStateName);
+          // Add fill layer
+          map.current.addLayer({
+            id: 'states-fill',
+            type: 'fill',
+            source: 'india-states',
+            paint: {
+              'fill-color': '#e5e7eb',
+              'fill-opacity': 0.8
             }
-          }
-        });
+          });
+
+          // Add border layer
+          map.current.addLayer({
+            id: 'states-border',
+            type: 'line',
+            source: 'india-states',
+            paint: {
+              'line-color': '#374151',
+              'line-width': 2
+            }
+          });
+
+          // Add hover effect
+          map.current.on('mousemove', 'states-fill', (e) => {
+            if (map.current) {
+              map.current.getCanvas().style.cursor = 'pointer';
+            }
+          });
+
+          map.current.on('mouseleave', 'states-fill', () => {
+            if (map.current) {
+              map.current.getCanvas().style.cursor = '';
+            }
+          });
+
+          // Add click handler
+          map.current.on('click', 'states-fill', (e) => {
+            if (e.features && e.features[0]) {
+              const geoStateName = e.features[0].properties?.[STATE_NAME_PROPERTY];
+              // Convert GeoJSON name to database name for click handler
+              const dbStateName = REVERSE_STATE_MAPPING[geoStateName] || geoStateName;
+              if (dbStateName) {
+                onStateClick(dbStateName);
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error loading GeoJSON:', error);
       }
     });
 
@@ -151,7 +161,7 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
 
   // Update colors when data changes
   useEffect(() => {
-    if (!map.current || !mapLoaded) return;
+    if (!map.current || !mapLoaded || !geoDataLoaded) return;
 
     // Create color expression for Mapbox
     const colorExpression: any = ['match', ['get', STATE_NAME_PROPERTY]];
@@ -216,7 +226,7 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
       }
       popup.remove();
     };
-  }, [stateValueMap, stats, selectedIndicator, selectedYear, mapLoaded]);
+  }, [stateValueMap, stats, selectedIndicator, selectedYear, mapLoaded, geoDataLoaded]);
 
   return (
     <div className="relative h-full w-full">
@@ -248,11 +258,13 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
       </div>
 
       {/* Loading indicator */}
-      {!mapLoaded && (
+      {(!mapLoaded || !geoDataLoaded) && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">Loading map...</p>
+            <p className="text-sm text-gray-600">
+              {!mapLoaded ? 'Initializing map...' : 'Loading India boundaries...'}
+            </p>
           </div>
         </div>
       )}
