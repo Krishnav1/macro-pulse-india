@@ -248,14 +248,24 @@ export const HeatmapAdminNew: React.FC = () => {
         Object.entries(row.indicators).forEach(([indicatorName, value]) => {
           const indicatorId = indicatorMap.get(indicatorName);
           if (indicatorId && value && value.trim() !== '') {
-            valuesToInsert.push({
-              indicator_id: indicatorId,
-              state_name: row.stateName,
-              year_label: row.year,
-              value: parseFloat(value) || null,
-              source: datasetName,
-              dataset_id: (dataset as any).id,
-            });
+            // Clean and parse the value - remove commas and convert to number
+            const cleanValue = value.replace(/,/g, '').trim();
+            const numericValue = parseFloat(cleanValue);
+            
+            // Only insert if we have a valid number
+            if (!isNaN(numericValue) && isFinite(numericValue)) {
+              valuesToInsert.push({
+                indicator_id: indicatorId,
+                state_name: row.stateName,
+                year_label: row.year,
+                value: numericValue,
+                source: datasetName,
+                dataset_id: (dataset as any).id,
+              });
+              console.log(`Inserting: ${row.stateName} ${row.year} ${indicatorName} = ${numericValue}`);
+            } else {
+              console.warn(`Skipping invalid value: ${row.stateName} ${row.year} ${indicatorName} = "${value}"`);
+            }
           }
         });
       });
