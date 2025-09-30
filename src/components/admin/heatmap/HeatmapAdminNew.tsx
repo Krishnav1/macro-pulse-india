@@ -252,8 +252,8 @@ export const HeatmapAdminNew: React.FC = () => {
             const cleanValue = value.replace(/,/g, '').trim();
             const numericValue = parseFloat(cleanValue);
             
-            // Only insert if we have a valid number
-            if (!isNaN(numericValue) && isFinite(numericValue)) {
+            // Only insert if we have a valid number and it's not zero (skip empty cells)
+            if (!isNaN(numericValue) && isFinite(numericValue) && numericValue !== 0) {
               valuesToInsert.push({
                 indicator_id: indicatorId,
                 state_name: row.stateName,
