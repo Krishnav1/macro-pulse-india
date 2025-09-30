@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ExchangeRateChart } from './components/ExchangeRateChart';
 import { ExchangeRateMetrics } from './components/ExchangeRateMetrics';
 import { ExchangeRateInsights } from './components/ExchangeRateInsights';
 import { ExchangeRateEvents } from './components/ExchangeRateEvents';
 
 const ExchangeRatePage = () => {
+  const navigate = useNavigate();
   const [timeframe, setTimeframe] = useState('all');
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
 
@@ -25,6 +27,14 @@ const ExchangeRatePage = () => {
           {/* Details Section */}
           <div className="space-y-4">
             <ExchangeRateMetrics currency={selectedCurrency} />
+            
+            {/* View Full Insight Button */}
+            <button 
+              onClick={() => navigate('/indicators/exchange-rate/insights')}
+              className="w-full px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg text-sm font-medium transition-colors"
+            >
+              View Full Insight
+            </button>
           </div>
         </div>
 

@@ -124,7 +124,17 @@ export const ExchangeRateAdmin: React.FC<ExchangeRateAdminProps> = ({
       // Parse each currency
       ['EUR', 'GBP', 'JPY', 'USD'].forEach((currency) => {
         const value = row[currency];
-        if (value !== undefined && value !== null && value !== '') {
+        // Skip if value is null, undefined, empty string, or non-numeric
+        if (value === undefined || value === null || value === '' || value === 'null' || value === 'NULL') {
+          return;
+        }
+        
+        // Try to parse the value
+        const cleanedValue = String(value).replace(/,/g, '').trim();
+        const numericValue = parseFloat(cleanedValue);
+        
+        // Only add if it's a valid number
+        if (!isNaN(numericValue) && isFinite(numericValue)) {
           // Convert month format (Aug-25) to date (2025-08-01)
           const periodDate = convertMonthToDate(month);
           
@@ -132,7 +142,7 @@ export const ExchangeRateAdmin: React.FC<ExchangeRateAdminProps> = ({
             period_date: periodDate,
             period_label: month,
             series_code: currency,
-            value: parseFloat(String(value).replace(/,/g, '')),
+            value: numericValue,
             currency: currency
           });
         }
