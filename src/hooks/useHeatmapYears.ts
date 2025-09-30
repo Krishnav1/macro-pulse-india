@@ -27,6 +27,12 @@ export const useHeatmapYears = (indicatorId?: string) => {
         .order('year_label', { ascending: false });
 
       if (fetchError) {
+        console.error('Supabase error:', fetchError);
+        if (fetchError.code === '42P01') {
+          throw new Error('Heatmap tables not found. Please set up the database first.');
+        } else if (fetchError.code === '42501') {
+          throw new Error('Permission denied. Please check database access policies.');
+        }
         throw fetchError;
       }
 

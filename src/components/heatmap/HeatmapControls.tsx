@@ -202,7 +202,7 @@ export const HeatmapControls: React.FC<HeatmapControlsProps> = ({
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .slider::-webkit-slider-thumb {
           appearance: none;
           height: 16px;

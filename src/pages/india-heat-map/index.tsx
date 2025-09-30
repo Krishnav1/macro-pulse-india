@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { IndiaHeatmapMap } from '../../components/heatmap/IndiaHeatmapMap';
-import { HeatmapControls } from '../../components/heatmap/HeatmapControls';
-import { StateDetailsDrawer } from '../../components/heatmap/StateDetailsDrawer';
-import { HeatmapLegend } from '../../components/heatmap/HeatmapLegend';
-import { useHeatmapIndicators } from '../../hooks/useHeatmapIndicators';
-import { useHeatmapYears } from '../../hooks/useHeatmapYears';
-import { useHeatmapValues } from '../../hooks/useHeatmapValues';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Alert, AlertDescription } from '../../components/ui/alert';
+import { IndiaHeatmapMap } from '@/components/heatmap/IndiaHeatmapMap';
+import { HeatmapControls } from '@/components/heatmap/HeatmapControls';
+import { StateDetailsDrawer } from '@/components/heatmap/StateDetailsDrawer';
+import { HeatmapLegend } from '@/components/heatmap/HeatmapLegend';
+import { useHeatmapIndicators } from '@/hooks/useHeatmapIndicators';
+import { useHeatmapYears } from '@/hooks/useHeatmapYears';
+import { useHeatmapValues } from '@/hooks/useHeatmapValues';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Map, AlertCircle } from 'lucide-react';
 
 export default function IndiaHeatMapPage() {
@@ -29,29 +29,33 @@ export default function IndiaHeatMapPage() {
     selectedYear
   );
 
-  // URL sync
+  // URL sync with throttling
   useEffect(() => {
-    const indicatorParam = searchParams.get('indicator');
-    const yearParam = searchParams.get('year');
+    const timeoutId = setTimeout(() => {
+      const indicatorParam = searchParams.get('indicator');
+      const yearParam = searchParams.get('year');
 
-    if (indicatorParam && indicators.length > 0) {
-      const indicator = indicators.find(ind => ind.slug === indicatorParam);
-      if (indicator) {
-        setSelectedIndicatorId(indicator.id);
+      if (indicatorParam && indicators.length > 0) {
+        const indicator = indicators.find(ind => ind.slug === indicatorParam);
+        if (indicator && indicator.id !== selectedIndicatorId) {
+          setSelectedIndicatorId(indicator.id);
+        }
+      } else if (indicators.length > 0 && !selectedIndicatorId) {
+        // Auto-select first indicator if none selected
+        setSelectedIndicatorId(indicators[0].id);
       }
-    } else if (indicators.length > 0 && !selectedIndicatorId) {
-      // Auto-select first indicator if none selected
-      setSelectedIndicatorId(indicators[0].id);
-    }
 
-    if (yearParam && years.length > 0) {
-      if (years.includes(yearParam)) {
-        setSelectedYear(yearParam);
+      if (yearParam && years.length > 0) {
+        if (years.includes(yearParam) && yearParam !== selectedYear) {
+          setSelectedYear(yearParam);
+        }
+      } else if (years.length > 0 && !selectedYear) {
+        // Auto-select latest year if none selected
+        setSelectedYear(years[0]);
       }
-    } else if (years.length > 0 && !selectedYear) {
-      // Auto-select latest year if none selected
-      setSelectedYear(years[0]);
-    }
+    }, 100); // 100ms throttle
+
+    return () => clearTimeout(timeoutId);
   }, [indicators, years, searchParams, selectedIndicatorId, selectedYear]);
 
   // Update URL when selections change
@@ -119,8 +123,23 @@ export default function IndiaHeatMapPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             Error loading indicators: {indicatorsError}
+            <br />
+            <span className="text-sm mt-2 block">
+              This might be due to database permissions. Please check the Supabase configuration.
+            </span>
           </AlertDescription>
         </Alert>
+      </div>
+    );
+  }
+
+  if (loading && indicators.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading heatmap data...</p>
+        </div>
       </div>
     );
   }
