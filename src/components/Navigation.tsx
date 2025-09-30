@@ -1,4 +1,4 @@
-import { Search, TrendingUp, BarChart3, Calendar, Info } from "lucide-react";
+import { Search, TrendingUp, BarChart3, Calendar, Info, Map } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ const Navigation = () => {
   const navItems = [
     { label: "Dashboard", path: "/", icon: TrendingUp },
     { label: "Indicators", path: "/indicators", icon: BarChart3 },
+    { label: "India Heat Map", path: "/india-heat-map", icon: Map },
     { label: "Events", path: "/events", icon: Calendar },
     { label: "About Economy", path: "/about", icon: Info },
   ];

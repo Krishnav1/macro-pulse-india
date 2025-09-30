@@ -22,6 +22,7 @@ const RealGdpGrowthInsights = lazy(() => import('./pages/indicators/real_gdp_gro
 const ForexReservesInsights = lazy(() => import('./pages/indicators/forex_reserves/insights'));
 const RepoRatePage = lazy(() => import('./pages/indicators/repo_rate'));
 const RepoRateInsights = lazy(() => import('./pages/indicators/repo_rate/insights'));
+const IndiaHeatMap = lazy(() => import('./pages/india-heat-map'));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/indicators" element={<Indicators />} />
+              <Route path="/india-heat-map" element={<IndiaHeatMap />} />
               <Route path="/indicators/cpi" element={<CPIPage />} />
               <Route path="/indicators/cpi/insights" element={<CPIFullInsight />} />
               <Route path="/indicators/iip" element={<IIPPage />} />

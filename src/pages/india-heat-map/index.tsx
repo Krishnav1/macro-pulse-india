@@ -1,0 +1,273 @@
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { IndiaHeatmapMap } from '../../components/heatmap/IndiaHeatmapMap';
+import { HeatmapControls } from '../../components/heatmap/HeatmapControls';
+import { StateDetailsDrawer } from '../../components/heatmap/StateDetailsDrawer';
+import { HeatmapLegend } from '../../components/heatmap/HeatmapLegend';
+import { useHeatmapIndicators } from '../../hooks/useHeatmapIndicators';
+import { useHeatmapYears } from '../../hooks/useHeatmapYears';
+import { useHeatmapValues } from '../../hooks/useHeatmapValues';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Alert, AlertDescription } from '../../components/ui/alert';
+import { Loader2, Map, AlertCircle } from 'lucide-react';
+
+export default function IndiaHeatMapPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // State management
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedState, setSelectedState] = useState<string | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [animationSpeed, setAnimationSpeed] = useState(1000);
+
+  // Data hooks
+  const { indicators, loading: indicatorsLoading, error: indicatorsError } = useHeatmapIndicators();
+  const { years, loading: yearsLoading } = useHeatmapYears(selectedIndicatorId);
+  const { stateValueMap, stats, loading: valuesLoading, error: valuesError } = useHeatmapValues(
+    selectedIndicatorId,
+    selectedYear
+  );
+
+  // URL sync
+  useEffect(() => {
+    const indicatorParam = searchParams.get('indicator');
+    const yearParam = searchParams.get('year');
+
+    if (indicatorParam && indicators.length > 0) {
+      const indicator = indicators.find(ind => ind.slug === indicatorParam);
+      if (indicator) {
+        setSelectedIndicatorId(indicator.id);
+      }
+    } else if (indicators.length > 0 && !selectedIndicatorId) {
+      // Auto-select first indicator if none selected
+      setSelectedIndicatorId(indicators[0].id);
+    }
+
+    if (yearParam && years.length > 0) {
+      if (years.includes(yearParam)) {
+        setSelectedYear(yearParam);
+      }
+    } else if (years.length > 0 && !selectedYear) {
+      // Auto-select latest year if none selected
+      setSelectedYear(years[0]);
+    }
+  }, [indicators, years, searchParams, selectedIndicatorId, selectedYear]);
+
+  // Update URL when selections change
+  useEffect(() => {
+    if (selectedIndicatorId && selectedYear) {
+      const indicator = indicators.find(ind => ind.id === selectedIndicatorId);
+      if (indicator) {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('indicator', indicator.slug);
+        newParams.set('year', selectedYear);
+        setSearchParams(newParams, { replace: true });
+      }
+    }
+  }, [selectedIndicatorId, selectedYear, indicators, searchParams, setSearchParams]);
+
+  const handleIndicatorChange = (indicatorId: string) => {
+    setSelectedIndicatorId(indicatorId);
+    setSelectedYear(''); // Reset year when indicator changes
+    setSelectedState(null); // Close drawer
+  };
+
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+  };
+
+  const handleStateClick = (stateName: string) => {
+    setSelectedState(stateName);
+  };
+
+  const handleCloseDrawer = () => {
+    setSelectedState(null);
+  };
+
+  const startAnimation = () => {
+    if (years.length <= 1) return;
+    
+    setIsAnimating(true);
+    let currentIndex = 0;
+    
+    const animate = () => {
+      if (currentIndex < years.length) {
+        setSelectedYear(years[currentIndex]);
+        currentIndex++;
+        setTimeout(animate, animationSpeed);
+      } else {
+        setIsAnimating(false);
+      }
+    };
+    
+    animate();
+  };
+
+  const stopAnimation = () => {
+    setIsAnimating(false);
+  };
+
+  const selectedIndicator = indicators.find(ind => ind.id === selectedIndicatorId);
+  const loading = indicatorsLoading || yearsLoading || valuesLoading;
+  const hasData = selectedIndicatorId && selectedYear && Object.keys(stateValueMap).length > 0;
+
+  if (indicatorsError) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Error loading indicators: {indicatorsError}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center gap-3">
+            <Map className="h-8 w-8 text-blue-600" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">India Heat Map</h1>
+              <p className="text-gray-600 mt-1">
+                Interactive state-wise visualization of economic indicators
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Controls Sidebar */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Controls</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <HeatmapControls
+                  indicators={indicators}
+                  selectedIndicatorId={selectedIndicatorId}
+                  onIndicatorChange={handleIndicatorChange}
+                  years={years}
+                  selectedYear={selectedYear}
+                  onYearChange={handleYearChange}
+                  isAnimating={isAnimating}
+                  animationSpeed={animationSpeed}
+                  onAnimationSpeedChange={setAnimationSpeed}
+                  onStartAnimation={startAnimation}
+                  onStopAnimation={stopAnimation}
+                  loading={loading}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Legend */}
+            {hasData && stats && selectedIndicator && (
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle>Legend</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <HeatmapLegend
+                    stats={stats}
+                    unit={selectedIndicator.unit}
+                    indicatorName={selectedIndicator.name}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Map Area */}
+          <div className="lg:col-span-3">
+            <Card className="h-[600px]">
+              <CardContent className="p-0 h-full">
+                {loading && (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span>Loading map data...</span>
+                    </div>
+                  </div>
+                )}
+
+                {valuesError && (
+                  <div className="flex items-center justify-center h-full p-4">
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Error loading map data: {valuesError}
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+
+                {!loading && !valuesError && indicators.length === 0 && (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <Map className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No Data Available
+                      </h3>
+                      <p className="text-gray-600">
+                        Upload heatmap data through the admin panel to get started.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!loading && !valuesError && hasData && (
+                  <IndiaHeatmapMap
+                    stateValueMap={stateValueMap}
+                    stats={stats}
+                    onStateClick={handleStateClick}
+                    selectedIndicator={selectedIndicator}
+                    selectedYear={selectedYear}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Current Selection Info */}
+            {selectedIndicator && selectedYear && (
+              <Card className="mt-4">
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">{selectedIndicator.name}</h3>
+                      <p className="text-sm text-gray-600">
+                        Year: {selectedYear} • Unit: {selectedIndicator.unit}
+                      </p>
+                    </div>
+                    {stats && (
+                      <div className="text-right text-sm">
+                        <div>States with data: {stats.count}</div>
+                        <div>Range: {stats.min.toFixed(2)} - {stats.max.toFixed(2)}</div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* State Details Drawer */}
+      {selectedState && (
+        <StateDetailsDrawer
+          stateName={selectedState}
+          isOpen={!!selectedState}
+          onClose={handleCloseDrawer}
+        />
+      )}
+    </div>
+  );
+}
