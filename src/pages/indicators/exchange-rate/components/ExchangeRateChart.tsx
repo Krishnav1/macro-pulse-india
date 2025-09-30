@@ -267,6 +267,44 @@ export const ExchangeRateChart = ({ timeframe, setTimeframe }: ExchangeRateChart
             <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('all')}>MAX</button>
           </div>
         </CardTitle>
+        
+        {/* Events Toggle */}
+        <div className="flex gap-2 mt-2 flex-wrap">
+          <div className="flex gap-2 items-center">
+            <button
+              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                showEvents 
+                  ? 'bg-blue-500 text-white border-blue-500' 
+                  : 'bg-background text-foreground border-border hover:bg-accent'
+              }`}
+              onClick={() => setShowEvents(!showEvents)}
+            >
+              📅 Events
+            </button>
+            
+            {/* Impact Filters */}
+            {showEvents && (
+              <div className="flex gap-1">
+                {[{ key: 'high', label: 'High', color: '#ef4444' }, 
+                  { key: 'medium', label: 'Med', color: '#f59e0b' }, 
+                  { key: 'low', label: 'Low', color: '#22c55e' }].map(impact => (
+                  <button
+                    key={impact.key}
+                    className={`px-2 py-1 text-xs rounded border transition-colors ${
+                      selectedImpacts.includes(impact.key)
+                        ? 'text-white border-transparent'
+                        : 'bg-background text-foreground border-border hover:bg-accent'
+                    }`}
+                    style={selectedImpacts.includes(impact.key) ? { backgroundColor: impact.color } : {}}
+                    onClick={() => toggleImpact(impact.key)}
+                  >
+                    {impact.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
         <CardDescription>
           INR exchange rate trends with major economic events highlighted
         </CardDescription>
@@ -357,46 +395,8 @@ export const ExchangeRateChart = ({ timeframe, setTimeframe }: ExchangeRateChart
           </div>
         )}
         
-        {/* Event Toggle - Below Year Filter */}
-        <div className="mt-4 pt-4 border-t">
-          <div className="flex gap-2 items-center mb-4">
-            <button
-              className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                showEvents 
-                  ? 'bg-blue-500 text-white border-blue-500' 
-                  : 'bg-background text-foreground border-border hover:bg-accent'
-              }`}
-              onClick={() => setShowEvents(!showEvents)}
-            >
-              📅 Events
-            </button>
-            
-            {/* Impact Filters */}
-            {showEvents && (
-              <div className="flex gap-1">
-                {[{ key: 'high', label: 'High', color: '#ef4444' }, 
-                  { key: 'medium', label: 'Med', color: '#f59e0b' }, 
-                  { key: 'low', label: 'Low', color: '#22c55e' }].map(impact => (
-                  <button
-                    key={impact.key}
-                    className={`px-2 py-1 text-xs rounded border transition-colors ${
-                      selectedImpacts.includes(impact.key)
-                        ? 'text-white border-transparent'
-                        : 'bg-background text-foreground border-border hover:bg-accent'
-                    }`}
-                    style={selectedImpacts.includes(impact.key) ? { backgroundColor: impact.color } : {}}
-                    onClick={() => toggleImpact(impact.key)}
-                  >
-                    {impact.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        
         {/* Currency Selection */}
-        <div className="mt-2 pt-4 border-t">
+        <div className="mt-4 pt-4 border-t">
           <div className="flex items-center gap-3">
             <h4 className="text-sm font-medium text-muted-foreground">Select Currencies:</h4>
             <div className="flex gap-2">

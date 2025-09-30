@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { IndiaHeatmapMap } from '@/components/heatmap/IndiaHeatmapMap';
+import { IndiaHeatmapMapbox } from '@/components/heatmap/IndiaHeatmapMapbox';
 import { HeatmapControls } from '@/components/heatmap/HeatmapControls';
 import { StateDetailsDrawer } from '@/components/heatmap/StateDetailsDrawer';
 import { HeatmapLegend } from '@/components/heatmap/HeatmapLegend';
@@ -238,7 +238,7 @@ export default function IndiaHeatMapPage() {
 
                 {!loading && !valuesError && selectedIndicatorId && selectedYear && (
                   <div className="absolute inset-0">
-                    <IndiaHeatmapMap
+                    <IndiaHeatmapMapbox
                       stateValueMap={stateValueMap}
                       stats={stats}
                       onStateClick={handleStateClick}

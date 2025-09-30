@@ -221,8 +221,8 @@ export const IndiaHeatmapMap: React.FC<IndiaHeatmapMapProps> = ({
   }
 
   return (
-    <div className="relative h-full w-full z-0">
-      <div ref={mapRef} className="h-full w-full rounded-lg z-10" style={{ minHeight: '400px' }} />
+    <div className="relative h-full w-full">
+      <div ref={mapRef} className="h-full w-full rounded-lg" />
       
       {/* Custom CSS for tooltips */}
       <style>{`
@@ -231,7 +231,6 @@ export const IndiaHeatmapMap: React.FC<IndiaHeatmapMapProps> = ({
           border: 1px solid #d1d5db !important;
           border-radius: 6px !important;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-          z-index: 1000 !important;
         }
         
         .custom-tooltip .leaflet-tooltip-content {
@@ -240,21 +239,6 @@ export const IndiaHeatmapMap: React.FC<IndiaHeatmapMapProps> = ({
         
         .leaflet-container {
           background: #f8fafc !important;
-          height: 100% !important;
-          width: 100% !important;
-          z-index: 1 !important;
-        }
-        
-        .leaflet-pane {
-          z-index: 400 !important;
-        }
-        
-        .leaflet-tile-pane {
-          z-index: 200 !important;
-        }
-        
-        .leaflet-overlay-pane {
-          z-index: 400 !important;
         }
       `}</style>
     </div>
