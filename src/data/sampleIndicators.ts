@@ -110,14 +110,14 @@ export const dashboardIndicators: IndicatorData[] = [
     source: 'CMIE'
   },
   {
-    id: 'merchandise_exports',
-    name: 'Merchandise Exports',
-    value: '$41.6B',
-    change: 2.3,
-    category: 'Trade',
-    sparklineData: generateSparklineData(41.6, 0.18),
-    unit: 'Monthly',
-    source: 'DGFT'
+    id: 'iip',
+    name: 'Index of Industrial Production',
+    value: '1.52%',
+    change: -2.73,
+    category: 'Industrial',
+    sparklineData: generateSparklineData(1.52, 0.25),
+    unit: 'YoY Growth',
+    source: 'MOSPI'
   },
   {
     id: 'merchandise_imports',

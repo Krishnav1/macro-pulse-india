@@ -1,15 +1,20 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useIipSeries } from '@/hooks/useIipSeries';
 import { useIipComponents } from '@/hooks/useIipComponents';
-import { TrendingUp, TrendingDown, BarChart3, Factory } from 'lucide-react';
+import { useIndicatorInsights } from '@/hooks/useIndicatorInsights';
+import { TrendingUp, TrendingDown, BarChart3, Factory, Eye, EyeOff } from 'lucide-react';
 
 export const IIPInsights = () => {
+  const [showFullInsights, setShowFullInsights] = useState(false);
   const { data: seriesData, loading: seriesLoading } = useIipSeries({ limit: 12 });
   const { breakdown, loading: componentsLoading } = useIipComponents({
     classification: 'sectoral'
   });
+  const { insights: adminInsights, loading: insightsLoading } = useIndicatorInsights('iip');
 
-  if (seriesLoading || componentsLoading) {
+  if (seriesLoading || componentsLoading || insightsLoading) {
     return (
       <Card>
         <CardHeader>
@@ -102,13 +107,43 @@ export const IIPInsights = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Key Insights</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          Key Insights
+          {adminInsights && adminInsights.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFullInsights(!showFullInsights)}
+              className="h-8"
+            >
+              {showFullInsights ? (
+                <>
+                  <EyeOff className="h-3 w-3 mr-1" />
+                  Auto Insights
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3 w-3 mr-1" />
+                  View Full Insights
+                </>
+              )}
+            </Button>
+          )}
+        </CardTitle>
         <CardDescription>
-          AI-powered analysis of industrial production trends
+          {showFullInsights ? 'Expert analysis and market insights' : 'AI-powered analysis of industrial production trends'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {insights.length > 0 ? (
+        {showFullInsights && adminInsights && adminInsights.length > 0 ? (
+          <div className="space-y-4">
+            {adminInsights.map((insight, index) => (
+              <div key={insight.id} className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm leading-relaxed">{insight.content}</p>
+              </div>
+            ))}
+          </div>
+        ) : insights.length > 0 ? (
           <div className="space-y-4">
             {insights.map((insight, index) => {
               if (!insight) return null;

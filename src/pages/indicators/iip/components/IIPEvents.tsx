@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useIipEvents } from '@/hooks/useIipEvents';
+import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
 import { Calendar, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 
 interface IIPEventsProps {
@@ -18,7 +18,8 @@ export const IIPEvents = ({ timeframe }: IIPEventsProps) => {
     return ranges[timeframe as keyof typeof ranges];
   };
 
-  const { data: events, loading } = useIipEvents({
+  const { data: events, loading } = useIndicatorEvents({
+    indicatorSlug: 'iip',
     startDate: getDateRange()
   });
 

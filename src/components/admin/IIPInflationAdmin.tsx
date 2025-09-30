@@ -70,16 +70,18 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
         console.error('Error fetching IIP components:', componentsError);
       }
 
-      // Fetch IIP events (global for IIP)
+      // Fetch IIP events from unified system
       const { data: eventsData } = await supabase
-        .from('iip_events' as any)
+        .from('indicator_events')
         .select('*')
+        .eq('indicator_slug', 'iip')
         .order('date', { ascending: false });
 
-      // Fetch IIP insights
+      // Fetch IIP insights from unified system
       const { data: insightsData } = await supabase
-        .from('iip_insights' as any)
+        .from('indicator_insights')
         .select('*')
+        .eq('indicator_slug', 'iip')
         .order('order_index');
 
       // Fetch comparisons
@@ -279,7 +281,7 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
       for (const entry of seriesUpserts) {
         if (kind === 'index') {
           // Insert or update only index_value, preserve growth_yoy
-          const { error } = await supabase.rpc('upsert_series_index', {
+          const { error } = await (supabase as any).rpc('upsert_series_index', {
             p_date: entry.date,
             p_index_value: entry.index_value
           });
@@ -289,7 +291,7 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
           }
         } else {
           // Insert or update only growth_yoy, preserve index_value
-          const { error } = await supabase.rpc('upsert_series_growth', {
+          const { error } = await (supabase as any).rpc('upsert_series_growth', {
             p_date: entry.date,
             p_growth_yoy: entry.growth_yoy
           });
@@ -308,7 +310,7 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
       for (const entry of componentsUpserts) {
         if (kind === 'index') {
           // Insert or update only index_value, preserve growth_yoy
-          const { error } = await supabase.rpc('upsert_component_index', {
+          const { error } = await (supabase as any).rpc('upsert_component_index', {
             p_date: entry.date,
             p_classification_type: entry.classification_type,
             p_component_code: entry.component_code,
@@ -322,7 +324,7 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
           }
         } else {
           // Insert or update only growth_yoy, preserve index_value and weight
-          const { error } = await supabase.rpc('upsert_component_growth', {
+          const { error } = await (supabase as any).rpc('upsert_component_growth', {
             p_date: entry.date,
             p_classification_type: entry.classification_type,
             p_component_code: entry.component_code,
@@ -376,8 +378,14 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
   const handleAddEvent = async (event: { date: string; description: string; impact: 'low' | 'medium' | 'high' }) => {
     try {
       const { error } = await supabase
-        .from('iip_events' as any)
-        .insert([{ date: event.date, description: event.description, impact: event.impact, title: 'Event' }]);
+        .from('indicator_events')
+        .insert([{ 
+          indicator_slug: 'iip',
+          date: event.date, 
+          description: event.description, 
+          impact: event.impact, 
+          title: 'IIP Event' 
+        }]);
 
       if (error) throw error;
       toast.success('Event added successfully! Database updated.');
@@ -398,7 +406,7 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
         return;
       }
       const { error } = await supabase
-        .from('iip_events' as any)
+        .from('indicator_events')
         .delete()
         .eq('id', id);
 
@@ -415,8 +423,12 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
   const handleAddInsight = async (insight: { content: string; order_index: number }) => {
     try {
       const { error } = await supabase
-        .from('iip_insights' as any)
-        .insert([{ section: 'overview', title: 'Insight', text: insight.content, order_index: insight.order_index }]);
+        .from('indicator_insights')
+        .insert([{ 
+          indicator_slug: 'iip',
+          content: insight.content, 
+          order_index: insight.order_index 
+        }]);
 
       if (error) throw error;
       toast.success('Insight added successfully! Database updated.');
@@ -436,7 +448,7 @@ export const IIPInflationAdmin: React.FC<IIPInflationAdminProps> = ({
         return;
       }
       const { error } = await supabase
-        .from('iip_insights' as any)
+        .from('indicator_insights')
         .delete()
         .eq('id', id);
 

@@ -2,9 +2,10 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
 import { useIipSeries } from '@/hooks/useIipSeries';
 import { useIipComponents } from '@/hooks/useIipComponents';
+import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
 import { format } from 'date-fns';
 
 interface IIPChartProps {
@@ -70,6 +71,13 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
   const { data: componentData, loading: componentLoading } = useIipComponents({
     classification: compareWith === 'none' ? undefined : compareWith,
     startDate: dateRange.startDate
+  });
+
+  // Fetch events data
+  const { data: eventsData, loading: eventsLoading } = useIndicatorEvents({
+    indicatorSlug: 'iip',
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate
   });
 
   // Transform data for chart
@@ -168,6 +176,43 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
     return format(date, 'MMM yyyy');
   };
 
+  // Function to get Y position for event markers on the trend line
+  const getEventYPosition = (eventDate: string) => {
+    if (!chartData.length) return 0;
+    
+    // Try to find exact date match first
+    const exactMatch = chartData.find(item => item.date === eventDate);
+    if (exactMatch) {
+      return exactMatch.iip;
+    }
+    
+    // Try to find same month/year
+    const eventDateObj = new Date(eventDate);
+    const sameMonthYear = chartData.find(item => {
+      const itemDate = new Date(item.date);
+      return itemDate.getFullYear() === eventDateObj.getFullYear() && 
+             itemDate.getMonth() === eventDateObj.getMonth();
+    });
+    if (sameMonthYear) {
+      return sameMonthYear.iip;
+    }
+    
+    // Find closest date
+    const eventTime = eventDateObj.getTime();
+    let closestItem = chartData[0];
+    let minDiff = Math.abs(new Date(closestItem.date).getTime() - eventTime);
+    
+    for (const item of chartData) {
+      const diff = Math.abs(new Date(item.date).getTime() - eventTime);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestItem = item;
+      }
+    }
+    
+    return closestItem.iip;
+  };
+
   const scrollComparisons = (direction: 'left' | 'right') => {
     const maxIndex = Math.max(0, comparisonIndicators.length - 4);
     if (direction === 'left') {
@@ -208,8 +253,8 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Data Type Toggle - Placed directly below timeframe buttons */}
-        <div className="flex justify-center gap-2 mb-4">
+        {/* Data Type Toggle - Moved below year filters */}
+        <div className="flex justify-center gap-2 mb-6">
           <Button
             variant={dataType === 'index' ? 'default' : 'outline'}
             size="sm"
@@ -226,7 +271,7 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
           </Button>
         </div>
         <div className="h-80">
-          {(loading || componentLoading) ? (
+          {(loading || componentLoading || eventsLoading) ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-muted-foreground">Loading IIP data...</div>
             </div>
@@ -284,6 +329,19 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
                     />
                   );
                 })}
+
+                {/* Event Markers */}
+                {eventsData?.map((event, index) => (
+                  <ReferenceDot
+                    key={`event-${event.id || index}`}
+                    x={event.date}
+                    y={getEventYPosition(event.date)}
+                    r={6}
+                    fill={event.impact === 'high' ? '#ef4444' : event.impact === 'medium' ? '#f59e0b' : '#10b981'}
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -296,58 +354,61 @@ export const IIPChart = ({ timeframe, setTimeframe, compareWith, setCompareWith 
           Data is based on Base: 2011-12 = 100
         </div>
         
-        {/* Classification and Compare Options - More space */}
+        {/* Classification and Compare Options - Reorganized */}
         <div className="mt-6 pt-4 border-t space-y-4">
-          {/* Classification Toggle - Default to Sectoral like CPI */}
-          <div className="flex items-center justify-center gap-3">
-            <h4 className="text-sm font-medium text-muted-foreground">Classification:</h4>
-            <div className="flex gap-2">
-              <Button
-                variant={compareWith === 'none' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setCompareWith('none')}
-              >
-                General Index
-              </Button>
-              <Button
-                variant={compareWith === 'sectoral' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setCompareWith('sectoral')}
-              >
-                Sectoral
-              </Button>
-              <Button
-                variant={compareWith === 'use_based' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setCompareWith('use_based')}
-              >
-                Use-based
-              </Button>
+          {/* Classification and Compare in same row */}
+          <div className="flex items-center justify-between">
+            {/* Classification Toggle - Left side */}
+            <div className="flex items-center gap-3">
+              <h4 className="text-sm font-medium text-muted-foreground">Classification:</h4>
+              <div className="flex gap-2">
+                <Button
+                  variant={compareWith === 'none' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setCompareWith('none')}
+                >
+                  General Index
+                </Button>
+                <Button
+                  variant={compareWith === 'sectoral' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setCompareWith('sectoral')}
+                >
+                  Sectoral
+                </Button>
+                <Button
+                  variant={compareWith === 'use_based' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setCompareWith('use_based')}
+                >
+                  Use-based
+                </Button>
+              </div>
             </div>
-          </div>
 
-          {/* Compare With Options */}
-          <div className="flex items-center justify-center gap-3">
-            <h4 className="text-sm font-medium text-muted-foreground">Compare with:</h4>
-            <div className="flex gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scrollComparisons('left')}
-                disabled={comparisonScrollIndex === 0}
-                className="h-7 w-7 p-0"
-              >
-                <ChevronLeft className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => scrollComparisons('right')}
-                disabled={comparisonScrollIndex >= comparisonIndicators.length - 4}
-                className="h-7 w-7 p-0"
-              >
-                <ChevronRight className="h-3 w-3" />
-              </Button>
+            {/* Compare With Options - Right side */}
+            <div className="flex items-center gap-3">
+              <h4 className="text-sm font-medium text-muted-foreground">Compare with:</h4>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => scrollComparisons('left')}
+                  disabled={comparisonScrollIndex === 0}
+                  className="h-7 w-7 p-0"
+                >
+                  <ChevronLeft className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => scrollComparisons('right')}
+                  disabled={comparisonScrollIndex >= comparisonIndicators.length - 4}
+                  className="h-7 w-7 p-0"
+                >
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
           </div>
           
