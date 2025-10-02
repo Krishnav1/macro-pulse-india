@@ -120,29 +120,44 @@ export function InvestorBehaviorUpload() {
       const records = transformer.transform(parsedData);
 
       // Check if data already exists for this quarter
-      const { data: existingData } = await (supabase as any)
+      const { data: existingData, error: checkError } = await (supabase as any)
         .from('investor_behavior_data')
         .select('id')
         .eq('quarter_end_date', parsedData.quarter_end_date)
         .limit(1);
 
+      if (checkError) {
+        console.error('Error checking existing data:', checkError);
+      }
+
       if (existingData && existingData.length > 0) {
-        // Delete existing data
-        await (supabase as any)
+        // Delete existing data for this quarter
+        const { error: deleteError } = await (supabase as any)
           .from('investor_behavior_data')
           .delete()
           .eq('quarter_end_date', parsedData.quarter_end_date);
+
+        if (deleteError) {
+          console.error('Error deleting existing data:', deleteError);
+          throw new Error(`Failed to delete existing data: ${deleteError.message}`);
+        }
+
+        // Wait a moment to ensure deletion is complete
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
       // Insert new data in batches
-      const batchSize = 100;
+      const batchSize = 50;
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
         const { error: insertError } = await (supabase as any)
           .from('investor_behavior_data')
           .insert(batch);
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          throw new Error(`Failed to insert batch ${Math.floor(i/batchSize) + 1}: ${insertError.message}`);
+        }
       }
 
       // Update upload record
