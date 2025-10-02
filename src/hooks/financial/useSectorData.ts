@@ -1,7 +1,7 @@
 // Hook to fetch sector data (combines Supabase + Yahoo Finance)
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { SectorData, SectorHeatmapData } from '@/types/financial-markets.types';
 import { fetchSectorQuotes, SECTOR_SYMBOLS, isMarketHours } from '@/services/financial/yahooFinanceService';
 
@@ -47,19 +47,19 @@ export function useSectorData(useLiveData: boolean = true): UseSectorDataResult 
       const quotes = await fetchSectorQuotes();
       
       // Get latest Supabase data for PE/PB ratios
-      const { data: dbSectors } = await supabase
+      const { data: dbSectors } = await (supabase as any)
         .from('sector_data')
         .select('*')
         .order('date', { ascending: false })
         .limit(11);
 
-      const sectorMap = new Map(dbSectors?.map(s => [s.sector_slug, s]) || []);
+      const sectorMap = new Map(dbSectors?.map((s: any) => [s.sector_slug, s]) || []);
 
       const sectorData: SectorHeatmapData[] = [];
 
       for (const [slug, symbol] of Object.entries(SECTOR_SYMBOLS)) {
         const quote = quotes.get(symbol);
-        const dbData = sectorMap.get(slug);
+        const dbData = sectorMap.get(slug) as any;
 
         if (quote || dbData) {
           sectorData.push({
@@ -78,7 +78,7 @@ export function useSectorData(useLiveData: boolean = true): UseSectorDataResult 
     }
 
     async function fetchSupabaseData() {
-      const { data, error: dbError } = await supabase
+      const { data, error: dbError } = await (supabase as any)
         .from('sector_data')
         .select('*')
         .order('date', { ascending: false })
@@ -86,7 +86,7 @@ export function useSectorData(useLiveData: boolean = true): UseSectorDataResult 
 
       if (dbError) throw dbError;
 
-      const sectorData: SectorHeatmapData[] = (data || []).map(sector => ({
+      const sectorData: SectorHeatmapData[] = (data || []).map((sector: any) => ({
         sector_name: sector.sector_name,
         sector_slug: sector.sector_slug,
         change_percent: sector.change_percent ?? 0,

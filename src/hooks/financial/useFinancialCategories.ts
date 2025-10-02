@@ -1,7 +1,7 @@
 // Hook to fetch financial market categories
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { FinancialCategory } from '@/types/financial-markets.types';
 
 interface UseFinancialCategoriesResult {
@@ -18,7 +18,7 @@ export function useFinancialCategories(): UseFinancialCategoriesResult {
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const { data, error: dbError } = await supabase
+        const { data, error: dbError } = await (supabase as any)
           .from('financial_categories')
           .select('*')
           .eq('is_active', true)
