@@ -5,7 +5,7 @@
 
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
@@ -28,7 +28,7 @@ export function ActiveVsPassiveChart({ viewMode }: ActiveVsPassiveChartProps) {
     setError(null);
 
     try {
-      const { data: rawData, error: fetchError } = await supabase
+      const { data: rawData, error: fetchError } = await (supabase as any)
         .from('quarterly_aum_data')
         .select('quarter_end_date, quarter_label, fiscal_year, category_code, aum_crore')
         .eq('is_subtotal', false)
