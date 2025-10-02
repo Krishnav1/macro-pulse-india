@@ -48,21 +48,19 @@ export default function InvestorBehaviorPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
-      {/* Centered Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-xl md:text-2xl font-bold tracking-tight">
-          Investor Behavior Analysis
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Stickiness, holding patterns, and risk appetite insights
-        </p>
-      </div>
-
-      {/* Terminology Button - Top Right */}
-      <div className="flex justify-end">
+      {/* Header + Terminology in Single Row */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+            Investor Behavior Analysis
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Stickiness, holding patterns, and risk appetite insights
+          </p>
+        </div>
         <button
           onClick={() => setShowTerminology(!showTerminology)}
-          className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
         >
           <HelpCircle className="h-4 w-4" />
           <span>Terminology</span>
@@ -146,30 +144,32 @@ export default function InvestorBehaviorPage() {
             </Card>
           </div>
 
-          {/* Charts - Full Width */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Holding Period Distribution</CardTitle>
-              <CardDescription className="text-sm">
-                AUM distribution across holding periods by age group
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[500px]">
-              <HoldingPeriodDistribution />
-            </CardContent>
-          </Card>
+          {/* Charts - Side by Side */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Holding Period Distribution</CardTitle>
+                <CardDescription className="text-xs">
+                  AUM distribution across holding periods by age group
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-[450px]">
+                <HoldingPeriodDistribution />
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Risk Appetite Analysis</CardTitle>
-              <CardDescription className="text-sm">
-                Equity vs Non-Equity allocation by age group
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[500px]">
-              <RiskAppetiteChart />
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Risk Appetite Analysis</CardTitle>
+                <CardDescription className="text-xs">
+                  Equity vs Non-Equity allocation by age group
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-[450px]">
+                <RiskAppetiteChart />
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Quick Insights */}
           <Card className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">

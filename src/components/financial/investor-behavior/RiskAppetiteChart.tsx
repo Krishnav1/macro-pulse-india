@@ -65,37 +65,44 @@ export function RiskAppetiteChart() {
   };
 
   return (
-    <div className="h-full flex flex-col space-y-4">
-      <ResponsiveContainer width="100%" height="75%">
-        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 80, bottom: 80 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-          <XAxis 
-            dataKey="ageGroup" 
-            angle={-35}
-            textAnchor="end"
-            height={80}
-            tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-            label={{ value: 'Investor Type', position: 'insideBottom', offset: -10, fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600 }}
-          />
-          <YAxis 
-            tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-            label={{ value: 'AUM (₹ Crore)', angle: -90, position: 'insideLeft', offset: 10, fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600 }}
-            width={70}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ paddingTop: '10px' }} iconSize={12} />
-          <Bar dataKey="Equity" fill="#10b981" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="Non-Equity" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="h-full flex flex-col">
+      <div className="flex-1 min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} margin={{ top: 10, right: 20, left: 100, bottom: 70 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+            <XAxis 
+              dataKey="ageGroup" 
+              angle={-30}
+              textAnchor="end"
+              height={70}
+              interval={0}
+              tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+            />
+            <YAxis 
+              tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+              label={{ 
+                value: 'AUM (₹ Crore)', 
+                angle: -90, 
+                position: 'insideLeft',
+                style: { textAnchor: 'middle', fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 600 }
+              }}
+              width={90}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend wrapperStyle={{ paddingTop: '5px', fontSize: '11px' }} iconSize={10} />
+            <Bar dataKey="Equity" fill="#10b981" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Non-Equity" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
 
-      {/* Interpretation */}
-      <div className="bg-muted/50 rounded-lg p-3 text-sm flex-shrink-0">
-        <p className="font-semibold mb-1.5 text-xs">💼 How to Read:</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          <span className="text-green-600 font-medium">Green bars</span> show equity allocation (higher risk appetite). 
-          <span className="text-purple-600 font-medium"> Purple bars</span> show debt/hybrid allocation (conservative approach). 
-          Compare heights to identify risk-seeking vs risk-averse investor segments.
+      {/* Interpretation - Right below chart */}
+      <div className="bg-muted/50 rounded-lg p-2.5 mt-2 text-xs">
+        <p className="font-semibold mb-1">💼 How to Read:</p>
+        <p className="text-muted-foreground leading-snug">
+          <span className="text-green-600 font-medium">Green</span> = equity (high risk). 
+          <span className="text-purple-600 font-medium"> Purple</span> = debt/hybrid (conservative). 
+          Compare heights for risk appetite.
         </p>
       </div>
     </div>

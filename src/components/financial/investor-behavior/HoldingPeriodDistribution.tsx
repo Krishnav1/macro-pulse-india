@@ -65,45 +65,52 @@ export function HoldingPeriodDistribution() {
   };
 
   return (
-    <div className="h-full flex flex-col space-y-4">
-      <ResponsiveContainer width="100%" height="75%">
-        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 80, bottom: 80 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-          <XAxis 
-            dataKey="ageGroup" 
-            angle={-35}
-            textAnchor="end"
-            height={80}
-            tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-            label={{ value: 'Investor Type', position: 'insideBottom', offset: -10, fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600 }}
-          />
-          <YAxis 
-            tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
-            label={{ value: 'AUM (₹ Crore)', angle: -90, position: 'insideLeft', offset: 10, fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600 }}
-            width={70}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend 
-            wrapperStyle={{ paddingTop: '10px' }}
-            iconType="square"
-            iconSize={12}
-          />
-          <Bar dataKey="0-1 Month" stackId="a" fill="#ef4444" radius={[0, 0, 0, 0]} />
-          <Bar dataKey="1-3 Months" stackId="a" fill="#f97316" radius={[0, 0, 0, 0]} />
-          <Bar dataKey="3-6 Months" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
-          <Bar dataKey="6-12 Months" stackId="a" fill="#eab308" radius={[0, 0, 0, 0]} />
-          <Bar dataKey="12-24 Months" stackId="a" fill="#84cc16" radius={[0, 0, 0, 0]} />
-          <Bar dataKey=">24 Months" stackId="a" fill="#22c55e" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="h-full flex flex-col">
+      <div className="flex-1 min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} margin={{ top: 10, right: 20, left: 100, bottom: 70 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+            <XAxis 
+              dataKey="ageGroup" 
+              angle={-30}
+              textAnchor="end"
+              height={70}
+              interval={0}
+              tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+            />
+            <YAxis 
+              tick={{ fill: 'hsl(var(--foreground))', fontSize: 11 }}
+              label={{ 
+                value: 'AUM (₹ Crore)', 
+                angle: -90, 
+                position: 'insideLeft',
+                style: { textAnchor: 'middle', fill: 'hsl(var(--foreground))', fontSize: 12, fontWeight: 600 }
+              }}
+              width={90}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend 
+              wrapperStyle={{ paddingTop: '5px', fontSize: '11px' }}
+              iconType="square"
+              iconSize={10}
+            />
+            <Bar dataKey="0-1 Month" stackId="a" fill="#ef4444" />
+            <Bar dataKey="1-3 Months" stackId="a" fill="#f97316" />
+            <Bar dataKey="3-6 Months" stackId="a" fill="#f59e0b" />
+            <Bar dataKey="6-12 Months" stackId="a" fill="#eab308" />
+            <Bar dataKey="12-24 Months" stackId="a" fill="#84cc16" />
+            <Bar dataKey=">24 Months" stackId="a" fill="#22c55e" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
 
-      {/* Interpretation */}
-      <div className="bg-muted/50 rounded-lg p-3 text-sm flex-shrink-0">
-        <p className="font-semibold mb-1.5 text-xs">📊 How to Read:</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          <span className="text-green-600 font-medium">Green bars</span> show long-term committed investors. 
-          <span className="text-red-600 font-medium"> Red/Orange bars</span> indicate short-term holdings with potential redemption risk. 
-          Taller bars = larger investor base.
+      {/* Interpretation - Right below chart */}
+      <div className="bg-muted/50 rounded-lg p-2.5 mt-2 text-xs">
+        <p className="font-semibold mb-1">📊 How to Read:</p>
+        <p className="text-muted-foreground leading-snug">
+          <span className="text-green-600 font-medium">Green</span> = long-term investors. 
+          <span className="text-red-600 font-medium"> Red/Orange</span> = short-term (redemption risk). 
+          Taller bars = larger base.
         </p>
       </div>
     </div>
