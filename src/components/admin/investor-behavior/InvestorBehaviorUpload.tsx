@@ -119,6 +119,49 @@ export function InvestorBehaviorUpload() {
       const transformer = new InvestorBehaviorTransformer();
       const records = transformer.transform(parsedData);
 
+      // Remove TRUE duplicates (same quarter + age_group + asset_type)
+      // Note: Each age group should have 2 rows (EQUITY + NON-EQUITY)
+      const uniqueRecords = records.reduce((acc, record) => {
+        // Create unique key combining all three: quarter, age group, AND asset type
+        const key = `${record.quarter_end_date}_${record.age_group}_${record.asset_type}`;
+        
+        if (!acc.has(key)) {
+          acc.set(key, record);
+        } else {
+          // This is a TRUE duplicate (same age group + same asset type twice)
+          console.warn(`True duplicate found and removed: ${record.age_group} - ${record.asset_type}`);
+        }
+        return acc;
+      }, new Map());
+
+      const deduplicatedRecords = Array.from(uniqueRecords.values());
+
+      // Show warning only if true duplicates were found
+      if (deduplicatedRecords.length < records.length) {
+        const duplicateCount = records.length - deduplicatedRecords.length;
+        toast({
+          title: 'Duplicates Removed',
+          description: `Removed ${duplicateCount} duplicate row(s). Each age group should appear twice (EQUITY + NON-EQUITY).`,
+          variant: 'default'
+        });
+      }
+
+      // Validate: Each age group should have exactly 2 records (EQUITY + NON-EQUITY)
+      const ageGroupCounts = deduplicatedRecords.reduce((acc, record) => {
+        acc[record.age_group] = (acc[record.age_group] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const incompleteGroups = Object.entries(ageGroupCounts).filter(([_, count]) => count !== 2);
+      if (incompleteGroups.length > 0) {
+        console.warn('Incomplete age groups:', incompleteGroups);
+        toast({
+          title: 'Data Validation Warning',
+          description: `Some age groups don't have both EQUITY and NON-EQUITY data. Check: ${incompleteGroups.map(([group]) => group).join(', ')}`,
+          variant: 'default'
+        });
+      }
+
       // Check if data already exists for this specific quarter
       const { data: existingData, error: checkError } = await (supabase as any)
         .from('investor_behavior_data')
@@ -144,8 +187,8 @@ export function InvestorBehaviorUpload() {
       const batchSize = 50;
       let upsertedCount = 0;
       
-      for (let i = 0; i < records.length; i += batchSize) {
-        const batch = records.slice(i, i + batchSize);
+      for (let i = 0; i < deduplicatedRecords.length; i += batchSize) {
+        const batch = deduplicatedRecords.slice(i, i + batchSize);
         
         // Upsert: Insert new records or update existing ones
         const { error: upsertError } = await (supabase as any)
@@ -230,6 +273,7 @@ export function InvestorBehaviorUpload() {
                 <li>• Columns: Age Group, Asset Type, 0-1 Month, 1-3 Months, 3-6 Months, 6-12 Months, 12-24 Months, &gt; 24 Months</li>
                 <li>• Age Groups: Corporates, Banks/FIs, HNI, Retail, NRI</li>
                 <li>• Asset Types: EQUITY, NON-EQUITY</li>
+                <li>• <strong>Each age group needs 2 rows:</strong> one for EQUITY, one for NON-EQUITY (10 rows total)</li>
                 <li>• All AUM values in Rs. Crore</li>
               </ul>
             </div>
