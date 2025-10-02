@@ -126,21 +126,36 @@ export class QuarterlyAUMParser {
     const headerIndex = rawData.findIndex(row =>
       row.some(cell => 
         typeof cell === 'string' && 
-        cell.toLowerCase().includes('category of the scheme')
+        (cell.toLowerCase().includes('category of the scheme') ||
+         cell.toLowerCase().includes('category'))
       )
     );
     
     if (headerIndex === -1) {
-      throw new Error('Could not find data header row');
+      throw new Error(
+        'Could not find data header row. Expected a row with "Category of the Scheme" column.\n' +
+        'Please ensure your file has the correct header row.'
+      );
     }
     
     // Get all rows after header
     const dataRows = rawData.slice(headerIndex + 1);
     
     // Filter out empty rows
-    return dataRows.filter(row => 
+    const filteredRows = dataRows.filter(row => 
       row.some(cell => cell !== null && cell !== undefined && cell !== '')
     );
+    
+    if (filteredRows.length === 0) {
+      throw new Error(
+        'No data rows found after header row. Please ensure your file contains data rows with:\n' +
+        '- Category name in first column\n' +
+        '- AUM value in second column\n' +
+        '- AAUM value in third column (optional)'
+      );
+    }
+    
+    return filteredRows;
   }
 
   /**

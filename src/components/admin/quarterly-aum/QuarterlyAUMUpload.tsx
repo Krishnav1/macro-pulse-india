@@ -4,7 +4,7 @@
 // =====================================================
 
 import { useState } from 'react';
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Download } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -51,12 +51,22 @@ export function QuarterlyAUMUpload() {
   const handleParse = async () => {
     if (!file) return;
 
-    setIsProcessing(true);
     setUploadStatus('parsing');
     setErrorMessage('');
 
     try {
       const parsed = await QuarterlyAUMParser.parseFile(file);
+      
+      // Validate parsed data
+      if (!parsed.rows || parsed.rows.length === 0) {
+        throw new Error(
+          'No data rows found. Please ensure your file matches the template format:\n' +
+          '1. Header with "Quarter Ended: DD-MMM-YYYY"\n' +
+          '2. Column headers: "Category of the Scheme", "AUM (Rs. in Crore)", "AAUM (Rs. in Crore)"\n' +
+          '3. Data rows with category names and numeric AUM/AAUM values'
+        );
+      }
+      
       setParsedData(parsed);
       setUploadStatus('idle');
       
@@ -65,14 +75,14 @@ export function QuarterlyAUMUpload() {
         description: `Found ${parsed.rows.length} categories for ${parsed.quarter_label}`,
       });
     } catch (error: any) {
-      console.error('Parse error:', error);
-      setUploadStatus('error');
+      console.error('Error parsing file:', error);
       setErrorMessage(error.message || 'Failed to parse file');
+      setUploadStatus('error');
       
       toast({
         title: 'Parse Error',
-        description: error.message || 'Failed to parse file',
-        variant: 'destructive'
+        description: error.message || 'Failed to parse file. Please check the template format.',
+        variant: 'destructive',
       });
     } finally {
       setIsProcessing(false);
@@ -185,10 +195,43 @@ export function QuarterlyAUMUpload() {
         </CardTitle>
         <CardDescription>
           Upload Excel or CSV files containing quarterly AUM/AAUM data from 2011 onwards.
+          <br />
+          <strong>AUM</strong> = Assets Under Management <strong>AS OF quarter end date</strong> (current value on that date)
+          <br />
+          <strong>AAUM</strong> = Average AUM during the quarter (average of daily values)
+          <br />
           The system will automatically detect the format (aggregated or detailed).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Template Download */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h4 className="font-semibold text-blue-900 mb-1">Need a template?</h4>
+              <p className="text-sm text-blue-700 mb-3">
+                Download the sample template to see the expected data format. The file should contain:
+              </p>
+              <ul className="text-xs text-blue-600 space-y-1 mb-3">
+                <li>• Header with "Quarter Ended: DD-MMM-YYYY" (e.g., 30-Jun-2025)</li>
+                <li>• Column headers: "Category of the Scheme", "AUM (Rs. in Crore)", "AAUM (Rs. in Crore)"</li>
+                <li>• Category names (e.g., "Equity Scheme - Large Cap Fund")</li>
+                <li>• <strong>AUM values</strong> = Total assets <strong>AS OF quarter end date</strong> (snapshot value)</li>
+                <li>• <strong>AAUM values</strong> = Average assets during the quarter (optional)</li>
+                <li>• Optional "TOTAL" row at the end</li>
+              </ul>
+            </div>
+            <a
+              href="/templates/quarterly_aum_template.csv"
+              download="quarterly_aum_template.csv"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download Template</span>
+            </a>
+          </div>
+        </div>
+
         {/* File Upload */}
         <div className="space-y-4">
           <div className="flex items-center gap-4">
