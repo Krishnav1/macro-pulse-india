@@ -22,13 +22,16 @@ export interface AMCData {
 
 export class AMFIDataFetcher {
   private static readonly NAV_URL = 'https://portal.amfiindia.com/spages/NAVAll.txt';
+  // Use CORS proxy to avoid CORS issues
+  private static readonly CORS_PROXY = 'https://api.allorigins.win/raw?url=';
   
   /**
    * Fetch daily NAV data from AMFI
    */
   async fetchDailyNAV(): Promise<string> {
     try {
-      const response = await fetch(AMFIDataFetcher.NAV_URL);
+      const proxyUrl = AMFIDataFetcher.CORS_PROXY + encodeURIComponent(AMFIDataFetcher.NAV_URL);
+      const response = await fetch(proxyUrl);
       if (!response.ok) {
         throw new Error(`Failed to fetch AMFI data: ${response.statusText}`);
       }
