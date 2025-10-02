@@ -24,6 +24,8 @@ const RepoRatePage = lazy(() => import('./pages/indicators/repo_rate'));
 const RepoRateInsights = lazy(() => import('./pages/indicators/repo_rate/insights'));
 const ExchangeRatePage = lazy(() => import('./pages/indicators/exchange-rate'));
 const IndiaHeatMap = lazy(() => import('./pages/india-heat-map'));
+const FinancialMarketsPage = lazy(() => import('./pages/financial_markets/FinancialMarketsPage'));
+const SectoralHeatmapPage = lazy(() => import('./pages/financial_markets/equity/SectoralHeatmapPage'));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -57,6 +59,8 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/indicator/:slug" element={<Admin />} />
+              <Route path="/financial-markets" element={<FinancialMarketsPage />} />
+              <Route path="/financial-markets/equity-markets" element={<SectoralHeatmapPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

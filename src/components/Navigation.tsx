@@ -1,4 +1,4 @@
-import { Search, TrendingUp, BarChart3, Calendar, Info, Map } from "lucide-react";
+import { Search, TrendingUp, BarChart3, Calendar, Info, Map, LineChart } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ const Navigation = () => {
     { path: '/', label: 'Dashboard', icon: BarChart3 },
     { path: '/indicators', label: 'Indicators', icon: TrendingUp },
     { path: '/india-heat-map', label: 'India Heat Map', icon: Map },
+    { path: '/financial-markets', label: 'Financial Markets', icon: LineChart },
   ];
 
   const handleSearch = (e: React.FormEvent) => {
