@@ -22,24 +22,54 @@ export interface AMCData {
 
 export class AMFIDataFetcher {
   private static readonly NAV_URL = 'https://portal.amfiindia.com/spages/NAVAll.txt';
-  // Use CORS proxy to avoid CORS issues
-  private static readonly CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+  // Try multiple CORS proxies for reliability
+  private static readonly CORS_PROXIES = [
+    'https://corsproxy.io/?',
+    'https://api.allorigins.win/raw?url=',
+    'https://cors-anywhere.herokuapp.com/',
+  ];
   
   /**
    * Fetch daily NAV data from AMFI
    */
   async fetchDailyNAV(): Promise<string> {
-    try {
-      const proxyUrl = AMFIDataFetcher.CORS_PROXY + encodeURIComponent(AMFIDataFetcher.NAV_URL);
-      const response = await fetch(proxyUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch AMFI data: ${response.statusText}`);
+    let lastError: Error | null = null;
+    
+    // Try each CORS proxy
+    for (const proxy of AMFIDataFetcher.CORS_PROXIES) {
+      try {
+        console.log(`Trying proxy: ${proxy}`);
+        const proxyUrl = proxy + encodeURIComponent(AMFIDataFetcher.NAV_URL);
+        const response = await fetch(proxyUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'text/plain',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const text = await response.text();
+        
+        // Validate that we got actual NAV data
+        if (text.includes('Scheme Code') || text.includes('ISIN')) {
+          console.log(`✅ Successfully fetched data using ${proxy}`);
+          return text;
+        } else {
+          throw new Error('Invalid data format received');
+        }
+      } catch (error: any) {
+        console.warn(`Failed with proxy ${proxy}:`, error.message);
+        lastError = error;
+        continue;
       }
-      return await response.text();
-    } catch (error) {
-      console.error('Error fetching AMFI NAV data:', error);
-      throw error;
     }
+    
+    // If all proxies failed, throw the last error
+    console.error('All CORS proxies failed');
+    throw lastError || new Error('Failed to fetch AMFI data from all proxies');
   }
 
   /**

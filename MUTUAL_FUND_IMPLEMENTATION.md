@@ -53,7 +53,7 @@ Frontend Pages (3 Levels)
 - **Backend**: Supabase (PostgreSQL)
 - **Charts**: Recharts
 - **Data Source**: AMFI India (via CORS proxy)
-- **CORS Proxy**: allorigins.win
+- **CORS Proxies**: corsproxy.io (primary), allorigins.win, cors-anywhere (fallback)
 - **State Management**: React Query
 - **Routing**: React Router v6
 
@@ -438,8 +438,13 @@ const drawdown = riskCalculator.calculateMaxDrawdown(navHistory);
 ### Common Issues
 
 #### 1. CORS Error / Failed to Fetch
-**Problem**: `TypeError: Failed to fetch` when syncing AMFI data  
-**Solution**: ✅ **FIXED** - Now using CORS proxy (allorigins.win) to bypass browser CORS restrictions. Rebuild the app (`npm run build`) and the sync will work.
+**Problem**: `TypeError: Failed to fetch` or `ERR_QUIC_PROTOCOL_ERROR` when syncing AMFI data  
+**Solution**: ✅ **FIXED** - Now using multiple CORS proxies with automatic fallback:
+1. corsproxy.io (primary)
+2. allorigins.win (fallback)
+3. cors-anywhere.herokuapp.com (fallback)
+
+The system will automatically try each proxy until one works. Rebuild the app (`npm run build`) and refresh your browser.
 
 #### 2. No Data Showing on Frontend
 **Problem**: Tables are empty  
