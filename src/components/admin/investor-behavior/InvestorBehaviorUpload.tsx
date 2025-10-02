@@ -119,35 +119,42 @@ export function InvestorBehaviorUpload() {
       const transformer = new InvestorBehaviorTransformer();
       const records = transformer.transform(parsedData);
 
-      // Check if data already exists for this quarter
+      // Check if data already exists for this specific quarter
       const { data: existingData, error: checkError } = await (supabase as any)
         .from('investor_behavior_data')
-        .select('id')
-        .eq('quarter_end_date', parsedData.quarter_end_date)
-        .limit(1);
+        .select('id, age_group, asset_type')
+        .eq('quarter_end_date', parsedData.quarter_end_date);
 
       if (checkError) {
         console.error('Error checking existing data:', checkError);
       }
 
+      // If data exists for this quarter, delete ONLY this quarter's data
       if (existingData && existingData.length > 0) {
-        // Delete existing data for this quarter
+        toast({
+          title: 'Replacing Existing Data',
+          description: `Found ${existingData.length} existing records for ${parsedData.quarter_label}. Replacing...`,
+        });
+
+        // Delete only this quarter's data (not all data!)
         const { error: deleteError } = await (supabase as any)
           .from('investor_behavior_data')
           .delete()
           .eq('quarter_end_date', parsedData.quarter_end_date);
 
         if (deleteError) {
-          console.error('Error deleting existing data:', deleteError);
-          throw new Error(`Failed to delete existing data: ${deleteError.message}`);
+          console.error('Error deleting existing quarter data:', deleteError);
+          throw new Error(`Failed to delete existing quarter data: ${deleteError.message}`);
         }
 
-        // Wait a moment to ensure deletion is complete
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait to ensure deletion is complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      // Insert new data in batches
+      // Insert new data for this quarter in batches
       const batchSize = 50;
+      let insertedCount = 0;
+      
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
         const { error: insertError } = await (supabase as any)
@@ -158,7 +165,11 @@ export function InvestorBehaviorUpload() {
           console.error('Insert error:', insertError);
           throw new Error(`Failed to insert batch ${Math.floor(i/batchSize) + 1}: ${insertError.message}`);
         }
+        
+        insertedCount += batch.length;
       }
+
+      console.log(`Successfully inserted ${insertedCount} records for quarter ${parsedData.quarter_label}`);
 
       // Update upload record
       await (supabase as any)
