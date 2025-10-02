@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, PieChart, DollarSign, Globe, Rocket, BarChart3 } from 'lucide-react';
 import { MarketBreadthUpload } from './MarketBreadthUpload';
-import { MutualFundUpload } from './MutualFundUpload';
+import MutualFundDataAdmin from './MutualFundDataAdmin';
 import { FIIDIIUpload } from './FIIDIIUpload';
 import { IPOUpload } from './IPOUpload';
 import { SectorMetricsUpload } from './SectorMetricsUpload';
@@ -56,7 +56,7 @@ export function FinancialMarketsAdmin() {
         </TabsContent>
 
         <TabsContent value="mutual-funds">
-          <MutualFundUpload />
+          <MutualFundDataAdmin />
         </TabsContent>
 
         <TabsContent value="fii-dii">
