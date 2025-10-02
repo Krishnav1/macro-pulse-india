@@ -36,10 +36,7 @@ export class InvestorBehaviorParser {
 
     // Parse data rows
     const rows: InvestorBehaviorRow[] = [];
-    let totalAUM = 0;
     const ageGroupsSet = new Set<string>();
-    let equityTotal = 0;
-    let nonEquityTotal = 0;
 
     for (let i = dataStartRow; i < data.length; i++) {
       const row = data[i];
@@ -53,19 +50,7 @@ export class InvestorBehaviorParser {
       try {
         const parsedRow = this.parseRow(row);
         rows.push(parsedRow);
-        
-        const rowTotal = parsedRow.aum_0_1_month + parsedRow.aum_1_3_months + 
-                        parsedRow.aum_3_6_months + parsedRow.aum_6_12_months + 
-                        parsedRow.aum_12_24_months + parsedRow.aum_above_24_months;
-        
-        totalAUM += rowTotal;
         ageGroupsSet.add(parsedRow.age_group);
-        
-        if (parsedRow.asset_type === 'EQUITY') {
-          equityTotal += rowTotal;
-        } else {
-          nonEquityTotal += rowTotal;
-        }
       } catch (error) {
         console.warn(`Skipping row ${i + 1}:`, error);
       }
@@ -74,6 +59,25 @@ export class InvestorBehaviorParser {
     if (rows.length === 0) {
       throw new Error('No valid data rows found. Please check the file format.');
     }
+
+    // Calculate totals from parsed rows
+    let totalAUM = 0;
+    let equityTotal = 0;
+    let nonEquityTotal = 0;
+
+    rows.forEach(row => {
+      const rowTotal = row.aum_0_1_month + row.aum_1_3_months + 
+                      row.aum_3_6_months + row.aum_6_12_months + 
+                      row.aum_12_24_months + row.aum_above_24_months;
+      
+      totalAUM += rowTotal;
+      
+      if (row.asset_type === 'EQUITY') {
+        equityTotal += rowTotal;
+      } else {
+        nonEquityTotal += rowTotal;
+      }
+    });
 
     return {
       quarter_end_date: quarterEndDate,
@@ -189,12 +193,9 @@ export class InvestorBehaviorParser {
 
   /**
    * Parse a single data row
+   * Handles format with or without percentage columns
    */
   private static parseRow(row: any[]): InvestorBehaviorRow {
-    if (row.length < 8) {
-      throw new Error('Row has insufficient columns');
-    }
-
     // Normalize age group name
     let ageGroup = String(row[0] || '').trim();
     ageGroup = this.normalizeAgeGroup(ageGroup);
@@ -205,15 +206,50 @@ export class InvestorBehaviorParser {
       throw new Error(`Invalid asset type: ${assetType}`);
     }
 
+    // Find AUM columns (skip percentage columns)
+    // Format can be: Age Group, Asset Type, 0-1M, [% col], 1-3M, [% col], etc.
+    // Or simple: Age Group, Asset Type, 0-1M, 1-3M, 3-6M, etc.
+    
+    let colIndex = 2;
+    const aumValues: number[] = [];
+    
+    // Extract 6 AUM values (skip percentage columns if present)
+    while (aumValues.length < 6 && colIndex < row.length) {
+      const value = row[colIndex];
+      const valueStr = String(value || '').trim().toLowerCase();
+      
+      // Skip if it's a percentage column header or looks like a percentage
+      if (valueStr.includes('%') || valueStr.includes('category')) {
+        colIndex++;
+        continue;
+      }
+      
+      // Try to parse as number
+      try {
+        const numValue = this.parseNumeric(value);
+        aumValues.push(numValue);
+      } catch (e) {
+        // If parsing fails, might be a percentage column, skip it
+        colIndex++;
+        continue;
+      }
+      
+      colIndex++;
+    }
+
+    if (aumValues.length < 6) {
+      throw new Error(`Row has insufficient AUM columns (found ${aumValues.length}, need 6)`);
+    }
+
     return {
       age_group: ageGroup,
       asset_type: assetType as AssetType,
-      aum_0_1_month: this.parseNumeric(row[2]),
-      aum_1_3_months: this.parseNumeric(row[3]),
-      aum_3_6_months: this.parseNumeric(row[4]),
-      aum_6_12_months: this.parseNumeric(row[5]),
-      aum_12_24_months: this.parseNumeric(row[6]),
-      aum_above_24_months: this.parseNumeric(row[7])
+      aum_0_1_month: aumValues[0],
+      aum_1_3_months: aumValues[1],
+      aum_3_6_months: aumValues[2],
+      aum_6_12_months: aumValues[3],
+      aum_12_24_months: aumValues[4],
+      aum_above_24_months: aumValues[5]
     };
   }
 
