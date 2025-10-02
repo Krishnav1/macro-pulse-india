@@ -65,37 +65,38 @@ export function RiskAppetiteChart() {
   };
 
   return (
-    <div className="space-y-4">
-      <ResponsiveContainer width="100%" height={400}>
-        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+    <div className="h-full flex flex-col space-y-4">
+      <ResponsiveContainer width="100%" height="75%">
+        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 80, bottom: 80 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
           <XAxis 
             dataKey="ageGroup" 
-            angle={-45}
+            angle={-35}
             textAnchor="end"
-            height={100}
-            tick={{ fill: 'hsl(var(--foreground))' }}
+            height={80}
+            tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+            label={{ value: 'Investor Type', position: 'insideBottom', offset: -10, fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600 }}
           />
           <YAxis 
-            tick={{ fill: 'hsl(var(--foreground))' }}
-            label={{ value: 'AUM (₹ Crore)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--foreground))' }}
+            tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+            label={{ value: 'AUM (₹ Crore)', angle: -90, position: 'insideLeft', offset: 10, fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600 }}
+            width={70}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ paddingTop: '20px' }} />
+          <Legend wrapperStyle={{ paddingTop: '10px' }} iconSize={12} />
           <Bar dataKey="Equity" fill="#10b981" radius={[4, 4, 0, 0]} />
           <Bar dataKey="Non-Equity" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
 
       {/* Interpretation */}
-      <div className="bg-muted/50 rounded-lg p-4 text-sm">
-        <h4 className="font-semibold mb-2">💼 Interpretation:</h4>
-        <ul className="space-y-1 text-muted-foreground">
-          <li>• <span className="text-green-600 font-medium">Taller green bars</span> = higher equity allocation (aggressive risk appetite)</li>
-          <li>• <span className="text-purple-600 font-medium">Taller purple bars</span> = higher debt/hybrid allocation (conservative approach)</li>
-          <li>• Compare across age groups to identify risk-seeking vs risk-averse segments</li>
-          <li>• HNI and Retail typically show higher equity allocation than Corporates/Banks</li>
-        </ul>
+      <div className="bg-muted/50 rounded-lg p-3 text-sm flex-shrink-0">
+        <p className="font-semibold mb-1.5 text-xs">💼 How to Read:</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          <span className="text-green-600 font-medium">Green bars</span> show equity allocation (higher risk appetite). 
+          <span className="text-purple-600 font-medium"> Purple bars</span> show debt/hybrid allocation (conservative approach). 
+          Compare heights to identify risk-seeking vs risk-averse investor segments.
+        </p>
       </div>
     </div>
   );

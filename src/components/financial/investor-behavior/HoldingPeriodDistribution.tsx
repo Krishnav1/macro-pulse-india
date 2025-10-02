@@ -65,25 +65,28 @@ export function HoldingPeriodDistribution() {
   };
 
   return (
-    <div className="space-y-4">
-      <ResponsiveContainer width="100%" height={400}>
-        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+    <div className="h-full flex flex-col space-y-4">
+      <ResponsiveContainer width="100%" height="75%">
+        <BarChart data={chartData} margin={{ top: 20, right: 30, left: 80, bottom: 80 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
           <XAxis 
             dataKey="ageGroup" 
-            angle={-45}
+            angle={-35}
             textAnchor="end"
-            height={100}
-            tick={{ fill: 'hsl(var(--foreground))' }}
+            height={80}
+            tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+            label={{ value: 'Investor Type', position: 'insideBottom', offset: -10, fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600 }}
           />
           <YAxis 
-            tick={{ fill: 'hsl(var(--foreground))' }}
-            label={{ value: 'AUM (₹ Crore)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--foreground))' }}
+            tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
+            label={{ value: 'AUM (₹ Crore)', angle: -90, position: 'insideLeft', offset: 10, fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600 }}
+            width={70}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend 
-            wrapperStyle={{ paddingTop: '20px' }}
+            wrapperStyle={{ paddingTop: '10px' }}
             iconType="square"
+            iconSize={12}
           />
           <Bar dataKey="0-1 Month" stackId="a" fill="#ef4444" radius={[0, 0, 0, 0]} />
           <Bar dataKey="1-3 Months" stackId="a" fill="#f97316" radius={[0, 0, 0, 0]} />
@@ -95,14 +98,13 @@ export function HoldingPeriodDistribution() {
       </ResponsiveContainer>
 
       {/* Interpretation */}
-      <div className="bg-muted/50 rounded-lg p-4 text-sm">
-        <h4 className="font-semibold mb-2">📊 Interpretation:</h4>
-        <ul className="space-y-1 text-muted-foreground">
-          <li>• <span className="text-green-600 font-medium">Green bars</span> (long-term holdings) indicate sticky, committed investors</li>
-          <li>• <span className="text-red-600 font-medium">Red/Orange bars</span> (short-term holdings) suggest potential redemption pressure</li>
-          <li>• Taller bars = larger investor base; wider green sections = more stable investor behavior</li>
-          <li>• Compare across age groups to identify which segments are most/least sticky</li>
-        </ul>
+      <div className="bg-muted/50 rounded-lg p-3 text-sm flex-shrink-0">
+        <p className="font-semibold mb-1.5 text-xs">📊 How to Read:</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          <span className="text-green-600 font-medium">Green bars</span> show long-term committed investors. 
+          <span className="text-red-600 font-medium"> Red/Orange bars</span> indicate short-term holdings with potential redemption risk. 
+          Taller bars = larger investor base.
+        </p>
       </div>
     </div>
   );

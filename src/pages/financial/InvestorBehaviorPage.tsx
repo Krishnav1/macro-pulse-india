@@ -47,114 +47,129 @@ export default function InvestorBehaviorPage() {
   const [showTerminology, setShowTerminology] = useState(false);
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-4">
-      {/* Compact Header with Help */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-lg">
-            <Users className="h-5 w-5 md:h-6 md:w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Investor Behavior Analysis
-            </h1>
-            <p className="text-sm text-muted-foreground hidden md:block">
-              Stickiness, holding patterns, and risk appetite insights
-            </p>
-          </div>
-        </div>
+    <div className="container mx-auto p-4 md:p-6 space-y-6">
+      {/* Centered Header */}
+      <div className="text-center space-y-2">
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+          Investor Behavior Analysis
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Stickiness, holding patterns, and risk appetite insights
+        </p>
+      </div>
+
+      {/* Terminology Button - Top Right */}
+      <div className="flex justify-end">
         <button
           onClick={() => setShowTerminology(!showTerminology)}
           className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors"
         >
           <HelpCircle className="h-4 w-4" />
-          <span className="hidden md:inline">Terminology</span>
+          <span>Terminology</span>
         </button>
       </div>
 
-      {/* Terminology Panel */}
-      {showTerminology && (
-        <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-blue-600" />
-              Key Terminology
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {TERMINOLOGY.map((item, idx) => (
-                <div key={idx} className="bg-white dark:bg-gray-900 p-3 rounded-lg border border-blue-100 dark:border-blue-900">
-                  <h4 className="font-semibold text-blue-700 dark:text-blue-300 mb-1">{item.term}</h4>
-                  <p className="text-xs text-muted-foreground">{item.definition}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Key Metrics Cards */}
-      <StickinessMetricsCards />
-
-      {/* Tabbed Analysis Section */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
-          <TabsTrigger value="overview" className="text-xs md:text-sm">
-            <BarChart3 className="h-4 w-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Overview</span>
-            <span className="sm:hidden">Overview</span>
+      {/* Tabs - Right after header */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto">
+          <TabsTrigger value="overview" className="text-sm">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Overview
           </TabsTrigger>
-          <TabsTrigger value="behavior" className="text-xs md:text-sm">
-            <Layers className="h-4 w-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Behavior</span>
-            <span className="sm:hidden">Behavior</span>
+          <TabsTrigger value="behavior" className="text-sm">
+            <Layers className="h-4 w-4 mr-2" />
+            Behavior
           </TabsTrigger>
-          <TabsTrigger value="risk" className="text-xs md:text-sm">
-            <Target className="h-4 w-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Risk Profile</span>
-            <span className="sm:hidden">Risk</span>
+          <TabsTrigger value="risk" className="text-sm">
+            <Target className="h-4 w-4 mr-2" />
+            Risk Profile
           </TabsTrigger>
-          <TabsTrigger value="trends" className="text-xs md:text-sm">
-            <TrendingUp className="h-4 w-4 mr-1 md:mr-2" />
-            <span className="hidden sm:inline">Trends</span>
-            <span className="sm:hidden">Trends</span>
+          <TabsTrigger value="trends" className="text-sm">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Trends
           </TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab - Side by Side Charts */}
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid lg:grid-cols-2 gap-4">
-            <Card className="border-l-4 border-l-blue-500">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-blue-600" />
-                  Holding Period Distribution
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  AUM distribution across holding periods by age group
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <HoldingPeriodDistribution />
+        {/* Terminology Panel */}
+        {showTerminology && (
+          <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-blue-600" />
+                Key Terminology
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {TERMINOLOGY.map((item, idx) => (
+                  <div key={idx} className="bg-white dark:bg-gray-900 p-3 rounded-lg border border-blue-100 dark:border-blue-900">
+                    <h4 className="font-semibold text-blue-700 dark:text-blue-300 mb-1">{item.term}</h4>
+                    <p className="text-xs text-muted-foreground">{item.definition}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* KPIs - Single Row, Compact */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card className="border-blue-200">
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground mb-1">Avg Holding Period</div>
+                <div className="text-2xl font-bold text-blue-600">21.1 months</div>
+                <div className="text-xs text-muted-foreground mt-1">Weighted average</div>
               </CardContent>
             </Card>
-
-            <Card className="border-l-4 border-l-green-500">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Target className="h-5 w-5 text-green-600" />
-                  Risk Appetite Analysis
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Equity vs Non-Equity allocation by age group
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RiskAppetiteChart />
+            <Card className="border-green-200">
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground mb-1">Long-term Holdings</div>
+                <div className="text-2xl font-bold text-green-600">46.7%</div>
+                <div className="text-xs text-muted-foreground mt-1">AUM &gt;24 months</div>
+              </CardContent>
+            </Card>
+            <Card className="border-orange-200">
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground mb-1">Short-term Holdings</div>
+                <div className="text-2xl font-bold text-orange-600">19.1%</div>
+                <div className="text-xs text-muted-foreground mt-1">AUM 0-3 months</div>
+              </CardContent>
+            </Card>
+            <Card className="border-purple-200">
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground mb-1">Total AUM</div>
+                <div className="text-2xl font-bold text-purple-600">₹48.74L Cr</div>
+                <div className="text-xs text-muted-foreground mt-1">As of Jun 2025</div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Charts - Full Width */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Holding Period Distribution</CardTitle>
+              <CardDescription className="text-sm">
+                AUM distribution across holding periods by age group
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[500px]">
+              <HoldingPeriodDistribution />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Risk Appetite Analysis</CardTitle>
+              <CardDescription className="text-sm">
+                Equity vs Non-Equity allocation by age group
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[500px]">
+              <RiskAppetiteChart />
+            </CardContent>
+          </Card>
 
           {/* Quick Insights */}
           <Card className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
@@ -184,18 +199,15 @@ export default function InvestorBehaviorPage() {
         </TabsContent>
 
         {/* Behavior Tab - Heatmap Focus */}
-        <TabsContent value="behavior" className="space-y-4">
-          <Card className="border-l-4 border-l-purple-500">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Layers className="h-5 w-5 text-purple-600" />
-                Liquidity Preference Heatmap
-              </CardTitle>
-              <CardDescription className="text-xs">
+        <TabsContent value="behavior" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Liquidity Preference Heatmap</CardTitle>
+              <CardDescription className="text-sm">
                 Percentage allocation across holding periods - darker colors indicate higher concentration
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="h-[500px]">
               <LiquidityPreferenceHeatmap />
             </CardContent>
           </Card>
@@ -229,38 +241,30 @@ export default function InvestorBehaviorPage() {
         </TabsContent>
 
         {/* Risk Tab - Risk Analysis */}
-        <TabsContent value="risk" className="space-y-4">
-          <div className="grid lg:grid-cols-2 gap-4">
-            <Card className="border-l-4 border-l-green-500">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Target className="h-5 w-5 text-green-600" />
-                  Equity vs Non-Equity
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Asset allocation revealing risk tolerance
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RiskAppetiteChart />
-              </CardContent>
-            </Card>
+        <TabsContent value="risk" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Equity vs Non-Equity Allocation</CardTitle>
+              <CardDescription className="text-sm">
+                Asset allocation revealing risk tolerance by investor type
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[500px]">
+              <RiskAppetiteChart />
+            </CardContent>
+          </Card>
 
-            <Card className="border-l-4 border-l-blue-500">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-blue-600" />
-                  Holding Distribution
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Holding periods by investor type
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <HoldingPeriodDistribution />
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Holding Period Distribution</CardTitle>
+              <CardDescription className="text-sm">
+                Holding periods by investor type
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[500px]">
+              <HoldingPeriodDistribution />
+            </CardContent>
+          </Card>
 
           {/* Risk Interpretation */}
           <Card className="bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-green-200 dark:border-green-800">
@@ -302,33 +306,27 @@ export default function InvestorBehaviorPage() {
         </TabsContent>
 
         {/* Trends Tab - Time Series */}
-        <TabsContent value="trends" className="space-y-4">
-          <Card className="border-l-4 border-l-orange-500">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-orange-600" />
-                Holding Period Evolution
-              </CardTitle>
-              <CardDescription className="text-xs">
-                How investor behavior changes over time
+        <TabsContent value="trends" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Holding Period Evolution Over Time</CardTitle>
+              <CardDescription className="text-sm">
+                How investor behavior changes across quarters
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="h-[500px]">
               <HoldingPeriodTrendChart />
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-indigo-500">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Activity className="h-5 w-5 text-indigo-600" />
-                Age Group Growth Trends
-              </CardTitle>
-              <CardDescription className="text-xs">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Age Group Composition Trends</CardTitle>
+              <CardDescription className="text-sm">
                 Growth trajectory of different investor segments
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="h-[500px]">
               <AgeGroupCompositionChart />
             </CardContent>
           </Card>
