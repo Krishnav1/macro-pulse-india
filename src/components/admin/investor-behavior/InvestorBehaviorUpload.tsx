@@ -122,54 +122,48 @@ export function InvestorBehaviorUpload() {
       // Check if data already exists for this specific quarter
       const { data: existingData, error: checkError } = await (supabase as any)
         .from('investor_behavior_data')
-        .select('id, age_group, asset_type')
-        .eq('quarter_end_date', parsedData.quarter_end_date);
+        .select('id')
+        .eq('quarter_end_date', parsedData.quarter_end_date)
+        .limit(1);
 
       if (checkError) {
         console.error('Error checking existing data:', checkError);
       }
 
-      // If data exists for this quarter, delete ONLY this quarter's data
-      if (existingData && existingData.length > 0) {
+      const isReplacing = existingData && existingData.length > 0;
+
+      if (isReplacing) {
         toast({
           title: 'Replacing Existing Data',
-          description: `Found ${existingData.length} existing records for ${parsedData.quarter_label}. Replacing...`,
+          description: `Updating data for ${parsedData.quarter_label}...`,
         });
-
-        // Delete only this quarter's data (not all data!)
-        const { error: deleteError } = await (supabase as any)
-          .from('investor_behavior_data')
-          .delete()
-          .eq('quarter_end_date', parsedData.quarter_end_date);
-
-        if (deleteError) {
-          console.error('Error deleting existing quarter data:', deleteError);
-          throw new Error(`Failed to delete existing quarter data: ${deleteError.message}`);
-        }
-
-        // Wait to ensure deletion is complete
-        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      // Insert new data for this quarter in batches
+      // Use UPSERT (insert with ON CONFLICT DO UPDATE) for reliable replacement
+      // This is atomic and handles the unique constraint properly
       const batchSize = 50;
-      let insertedCount = 0;
+      let upsertedCount = 0;
       
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
-        const { error: insertError } = await (supabase as any)
+        
+        // Upsert: Insert new records or update existing ones
+        const { error: upsertError } = await (supabase as any)
           .from('investor_behavior_data')
-          .insert(batch);
+          .upsert(batch, {
+            onConflict: 'quarter_end_date,age_group,asset_type',
+            ignoreDuplicates: false
+          });
 
-        if (insertError) {
-          console.error('Insert error:', insertError);
-          throw new Error(`Failed to insert batch ${Math.floor(i/batchSize) + 1}: ${insertError.message}`);
+        if (upsertError) {
+          console.error('Upsert error:', upsertError);
+          throw new Error(`Failed to upsert batch ${Math.floor(i/batchSize) + 1}: ${upsertError.message}`);
         }
         
-        insertedCount += batch.length;
+        upsertedCount += batch.length;
       }
 
-      console.log(`Successfully inserted ${insertedCount} records for quarter ${parsedData.quarter_label}`);
+      console.log(`Successfully ${isReplacing ? 'updated' : 'inserted'} ${upsertedCount} records for quarter ${parsedData.quarter_label}`);
 
       // Update upload record
       await (supabase as any)
@@ -183,8 +177,8 @@ export function InvestorBehaviorUpload() {
       setUploadStatus('success');
       
       toast({
-        title: 'Upload Successful',
-        description: `Successfully uploaded ${records.length} records for ${parsedData.quarter_label}`,
+        title: isReplacing ? 'Data Updated Successfully' : 'Upload Successful',
+        description: `Successfully ${isReplacing ? 'updated' : 'uploaded'} ${upsertedCount} records for ${parsedData.quarter_label}`,
       });
 
       // Reset after 3 seconds
