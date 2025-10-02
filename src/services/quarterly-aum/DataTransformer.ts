@@ -33,12 +33,18 @@ export class QuarterlyAUMTransformer {
     const records: Omit<QuarterlyAUMData, 'id' | 'created_at' | 'updated_at'>[] = [];
 
     for (const row of parsedFile.rows) {
-      // Find matching category mapping
+      // Find matching category mapping (creates automatic mapping if not found)
       const mapping = this.findCategoryMapping(row.category_name, parsedFile.data_format_version);
 
       if (!mapping) {
-        console.warn(`No mapping found for category: ${row.category_name}`);
+        // This should never happen now since we create automatic mappings
+        console.warn(`Could not create mapping for category: ${row.category_name}`);
         continue;
+      }
+
+      // Log if using automatic mapping
+      if (mapping.id.startsWith('auto_')) {
+        console.log(`Using automatic mapping for: ${row.category_name} → ${mapping.parent_category}`);
       }
 
       // Determine scheme type from hierarchy
@@ -86,23 +92,73 @@ export class QuarterlyAUMTransformer {
 
   /**
    * Find category mapping based on category name and format version
+   * If no mapping found, creates a default mapping automatically
    */
   private findCategoryMapping(categoryName: string, formatVersion: 'aggregated' | 'detailed'): CategoryMapping | null {
     const cleanName = categoryName.trim().toLowerCase();
 
+    // Try to find existing mapping
+    let mapping: CategoryMapping | undefined;
+    
     if (formatVersion === 'aggregated') {
       // Match against old_category_name
-      return this.categoryMappings.find(m => 
+      mapping = this.categoryMappings.find(m => 
         m.old_category_name?.toLowerCase().includes(cleanName) ||
         cleanName.includes(m.old_category_name?.toLowerCase() || '')
-      ) || null;
+      );
     } else {
       // Match against new_category_name
-      return this.categoryMappings.find(m => 
+      mapping = this.categoryMappings.find(m => 
         m.new_category_name?.toLowerCase() === cleanName ||
         cleanName.includes(m.new_category_name?.toLowerCase() || '')
-      ) || null;
+      );
     }
+
+    // If mapping found, return it
+    if (mapping) return mapping;
+
+    // If no mapping found, create automatic mapping based on category name
+    return this.createAutomaticMapping(categoryName);
+  }
+
+  /**
+   * Create automatic mapping for unmapped categories
+   */
+  private createAutomaticMapping(categoryName: string): CategoryMapping {
+    const cleanName = categoryName.trim();
+    const lowerName = cleanName.toLowerCase();
+
+    // Determine parent category based on keywords
+    let parentCategory: 'Equity' | 'Debt' | 'Hybrid' | 'Other' = 'Other';
+    
+    if (lowerName.includes('equity') || lowerName.includes('elss')) {
+      parentCategory = 'Equity';
+    } else if (lowerName.includes('debt') || lowerName.includes('liquid') || 
+               lowerName.includes('gilt') || lowerName.includes('duration')) {
+      parentCategory = 'Debt';
+    } else if (lowerName.includes('hybrid') || lowerName.includes('balanced')) {
+      parentCategory = 'Hybrid';
+    }
+
+    // Create slug from category name
+    const categoryCode = cleanName
+      .replace(/[^a-zA-Z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .toUpperCase();
+
+    return {
+      id: `auto_${Date.now()}`,
+      old_category_name: cleanName,
+      old_category_code: null,
+      new_category_name: cleanName,
+      new_category_code: null,
+      new_category_hierarchy: null,
+      unified_category_code: categoryCode,
+      unified_category_name: cleanName,
+      parent_category: parentCategory,
+      mapping_type: 'one_to_one',
+      is_active: true
+    };
   }
 
   /**
