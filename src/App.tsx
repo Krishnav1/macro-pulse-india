@@ -29,6 +29,7 @@ const SectoralHeatmapPage = lazy(() => import('./pages/financial_markets/equity/
 const MutualFundsPage = lazy(() => import('./pages/financial/MutualFundsPage'));
 const AMCDetailPage = lazy(() => import('./pages/financial/AMCDetailPage'));
 const SchemeDetailPage = lazy(() => import('./pages/financial/SchemeDetailPage'));
+const IndustryTrendsPage = lazy(() => import('./pages/financial/IndustryTrendsPage'));
 const CurrencyMarketsPage = lazy(() => import('./pages/financial/CurrencyMarketsPage'));
 const FIIDIIActivityPage = lazy(() => import('./pages/financial/FIIDIIActivityPage'));
 const IPOMarketsPage = lazy(() => import('./pages/financial/IPOMarketsPage'));
@@ -70,6 +71,7 @@ const App = () => (
               <Route path="/financial-markets/mutual-funds" element={<MutualFundsPage />} />
               <Route path="/financial-markets/mutual-funds/amc/:amcCode" element={<AMCDetailPage />} />
               <Route path="/financial-markets/mutual-funds/scheme/:schemeCode" element={<SchemeDetailPage />} />
+              <Route path="/financial-markets/industry-trends" element={<IndustryTrendsPage />} />
               <Route path="/financial-markets/currency-markets" element={<CurrencyMarketsPage />} />
               <Route path="/financial-markets/fii-dii-activity" element={<FIIDIIActivityPage />} />
               <Route path="/financial-markets/ipo-markets" element={<IPOMarketsPage />} />

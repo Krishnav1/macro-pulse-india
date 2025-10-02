@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, PieChart, DollarSign, Globe, Rocket, BarChart3 } from 'lucide-react';
+import { TrendingUp, PieChart, DollarSign, Globe, Rocket, BarChart3, Building2, LineChart } from 'lucide-react';
 import { MarketBreadthUpload } from './MarketBreadthUpload';
 import MutualFundDataAdmin from './MutualFundDataAdmin';
+import AMCDataAdmin from './AMCDataAdmin';
 import { FIIDIIUpload } from './FIIDIIUpload';
 import { IPOUpload } from './IPOUpload';
 import { SectorMetricsUpload } from './SectorMetricsUpload';
+import { QuarterlyAUMAdmin } from './QuarterlyAUMAdmin';
 
 export function FinancialMarketsAdmin() {
   return (
@@ -27,8 +29,12 @@ export function FinancialMarketsAdmin() {
       </Card>
 
       {/* Data Upload Tabs */}
-      <Tabs defaultValue="market-breadth" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs defaultValue="quarterly-aum" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="quarterly-aum" className="flex items-center gap-2">
+            <LineChart className="h-4 w-4" />
+            <span className="hidden sm:inline">Quarterly AUM</span>
+          </TabsTrigger>
           <TabsTrigger value="market-breadth" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             <span className="hidden sm:inline">Market Breadth</span>
@@ -36,6 +42,10 @@ export function FinancialMarketsAdmin() {
           <TabsTrigger value="mutual-funds" className="flex items-center gap-2">
             <PieChart className="h-4 w-4" />
             <span className="hidden sm:inline">Mutual Funds</span>
+          </TabsTrigger>
+          <TabsTrigger value="amc-data" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">AMC Data</span>
           </TabsTrigger>
           <TabsTrigger value="fii-dii" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
@@ -51,12 +61,20 @@ export function FinancialMarketsAdmin() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="quarterly-aum">
+          <QuarterlyAUMAdmin />
+        </TabsContent>
+
         <TabsContent value="market-breadth">
           <MarketBreadthUpload />
         </TabsContent>
 
         <TabsContent value="mutual-funds">
           <MutualFundDataAdmin />
+        </TabsContent>
+
+        <TabsContent value="amc-data">
+          <AMCDataAdmin />
         </TabsContent>
 
         <TabsContent value="fii-dii">
