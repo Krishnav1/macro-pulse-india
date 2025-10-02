@@ -23,6 +23,7 @@ export interface AMCData {
 export class AMFIDataFetcher {
   // Use Supabase Edge Function (no CORS issues!)
   private static readonly EDGE_FUNCTION_URL = 'https://fhcddkfgqhwwfvqymqow.supabase.co/functions/v1/fetch-amfi-data';
+  private static readonly ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2Rka2ZncWh3d2Z2cXltcW93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MjEwMjksImV4cCI6MjA3MTE5NzAyOX0.UbdT92SMYYRCgqFWVx1c9TZ7yUqTAiNdg2tN3yQNgRQ';
   
   /**
    * Fetch daily NAV data from AMFI via Supabase Edge Function
@@ -35,6 +36,8 @@ export class AMFIDataFetcher {
         method: 'GET',
         headers: {
           'Content-Type': 'text/plain',
+          'Authorization': `Bearer ${AMFIDataFetcher.ANON_KEY}`,
+          'apikey': AMFIDataFetcher.ANON_KEY,
         },
       });
       
