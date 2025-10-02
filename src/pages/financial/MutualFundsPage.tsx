@@ -71,17 +71,19 @@ export default function MutualFundsPage() {
     }
   };
 
-  // Calculate metrics
-  const totalAUM = amcs.reduce((sum, amc) => sum + parseFloat(amc.total_aum.toString()), 0);
+  // Calculate metrics with null checks
+  const totalAUM = amcs.reduce((sum, amc) => sum + (parseFloat(amc.total_aum?.toString() || '0') || 0), 0);
   const totalSchemes = schemes.length;
-  const avgNAV = schemes.reduce((sum, s) => sum + (s.current_nav || 0), 0) / (schemes.length || 1);
-  const topScheme = schemes[0];
+  const avgNAV = schemes.length > 0 
+    ? schemes.reduce((sum, s) => sum + (s.current_nav || 0), 0) / schemes.length 
+    : 0;
+  const topScheme = schemes[0] || null;
 
-  // Prepare chart data
+  // Prepare chart data with null checks
   const amcChartData = amcs.slice(0, 10).map(amc => ({
-    name: amc.amc_name.replace(' Mutual Fund', ''),
-    aum: parseFloat(amc.total_aum.toString()) / 1000, // Convert to thousands of crores
-    schemes: amc.num_schemes,
+    name: (amc.amc_name || 'Unknown').replace(' Mutual Fund', ''),
+    aum: (parseFloat(amc.total_aum?.toString() || '0') || 0) / 1000, // Convert to thousands of crores
+    schemes: amc.num_schemes || 0,
   }));
 
   const categoryData = schemes.reduce((acc: any, scheme) => {
@@ -115,6 +117,43 @@ export default function MutualFundsPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading mutual fund data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no data
+  if (!loading && amcs.length === 0 && schemes.length === 0) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="border-b border-border bg-card/50 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Mutual Funds & AMC</h1>
+                <p className="text-muted-foreground mt-1">Comprehensive analysis of Indian mutual fund industry</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <Card className="dashboard-card">
+            <CardContent className="py-12">
+              <div className="text-center">
+                <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">No Data Available</h3>
+                <p className="text-muted-foreground mb-6">
+                  Mutual fund data hasn't been synced yet. Please sync AMFI data from the admin panel.
+                </p>
+                <Link to="/admin">
+                  <button className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                    Go to Admin Panel
+                  </button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -315,7 +354,7 @@ export default function MutualFundsPage() {
                           </td>
                           <td className="py-3 px-4 text-right text-muted-foreground">{amc.num_schemes}</td>
                           <td className="py-3 px-4 text-right text-muted-foreground">
-                            ₹{(parseFloat(amc.total_aum.toString()) / amc.num_schemes).toFixed(0)}
+                            ₹{amc.num_schemes > 0 ? ((parseFloat(amc.total_aum?.toString() || '0') || 0) / amc.num_schemes).toFixed(0) : '0'}
                           </td>
                         </tr>
                       ))}
@@ -395,7 +434,7 @@ export default function MutualFundsPage() {
                           </td>
                           <td className="py-3 px-4 text-right text-muted-foreground">-</td>
                           <td className="py-3 px-4 text-right text-muted-foreground">-</td>
-                          <td className="py-3 px-4 text-right text-muted-foreground">{scheme.expense_ratio.toFixed(2)}%</td>
+                          <td className="py-3 px-4 text-right text-muted-foreground">{scheme.expense_ratio ? scheme.expense_ratio.toFixed(2) : '0.00'}%</td>
                           <td className="py-3 px-4">
                             <span className={`text-xs font-medium ${
                               scheme.risk_grade === 'Very High' ? 'text-destructive' :
@@ -438,7 +477,7 @@ export default function MutualFundsPage() {
                   <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
                     <h4 className="font-semibold text-primary mb-2">Market Concentration</h4>
                     <p className="text-sm text-muted-foreground">
-                      Top 3 AMCs (SBI, ICICI, HDFC) control {((amcs.slice(0, 3).reduce((sum, amc) => sum + parseFloat(amc.total_aum.toString()), 0) / totalAUM) * 100).toFixed(1)}% 
+                      Top 3 AMCs control {totalAUM > 0 ? ((amcs.slice(0, 3).reduce((sum, amc) => sum + (parseFloat(amc.total_aum?.toString() || '0') || 0), 0) / totalAUM) * 100).toFixed(1) : '0'}% 
                       of total industry AUM, showing significant market concentration.
                     </p>
                   </div>
@@ -454,7 +493,7 @@ export default function MutualFundsPage() {
                   <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
                     <h4 className="font-semibold text-purple-500 mb-2">Expense Ratio Impact</h4>
                     <p className="text-sm text-muted-foreground">
-                      Direct plans show lower expense ratios (avg {(schemes.reduce((sum, s) => sum + s.expense_ratio, 0) / schemes.length).toFixed(2)}%), 
+                      Direct plans show lower expense ratios (avg {schemes.length > 0 ? (schemes.reduce((sum, s) => sum + (s.expense_ratio || 0), 0) / schemes.length).toFixed(2) : '0.00'}%), 
                       leading to better long-term wealth creation.
                     </p>
                   </div>

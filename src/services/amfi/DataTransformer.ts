@@ -51,6 +51,7 @@ export class DataTransformer {
       scheme_type: scheme.schemeType || 'Open Ended',
       current_nav: scheme.nav,
       nav_date: scheme.date,
+      amc_name_raw: scheme.amcName, // Store raw AMC name for matching
     }));
   }
 
@@ -139,12 +140,27 @@ export class DataTransformer {
     amcMap: Map<string, number>
   ): Promise<{ success: boolean; count: number; error?: string }> {
     try {
-      // Add AMC IDs to schemes
+      // Get AMC name to ID mapping
+      const { data: amcData } = await (supabase as any)
+        .from('mutual_fund_amcs')
+        .select('id, amc_name, amc_code');
+      
+      const amcNameMap = new Map<string, number>();
+      for (const amc of amcData || []) {
+        amcNameMap.set(this.cleanAMCName(amc.amc_name), amc.id);
+        amcNameMap.set(amc.amc_code, amc.id);
+      }
+
+      // Add AMC IDs to schemes by matching AMC name
       const schemesWithAMC = schemes.map(scheme => {
-        const amcId = amcMap.get(scheme.scheme_code.substring(0, 6)); // Approximate AMC lookup
+        const cleanedAMCName = this.cleanAMCName((scheme as any).amc_name_raw || '');
+        const amcId = amcNameMap.get(cleanedAMCName) || amcMap.get((scheme as any).amc_name_raw || '');
+        
+        const { amc_name_raw, ...schemeData } = scheme as any;
+        
         return {
-          ...scheme,
-          amc_id: amcId,
+          ...schemeData,
+          amc_id: amcId || null,
         };
       });
 
