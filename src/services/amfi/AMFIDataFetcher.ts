@@ -21,55 +21,70 @@ export interface AMCData {
 }
 
 export class AMFIDataFetcher {
-  private static readonly NAV_URL = 'https://portal.amfiindia.com/spages/NAVAll.txt';
-  // Try multiple CORS proxies for reliability
-  private static readonly CORS_PROXIES = [
-    'https://corsproxy.io/?',
-    'https://api.allorigins.win/raw?url=',
-    'https://cors-anywhere.herokuapp.com/',
-  ];
+  // Use Supabase Edge Function (no CORS issues!)
+  private static readonly EDGE_FUNCTION_URL = 'https://fhcddkfgqhwwfvqymqow.supabase.co/functions/v1/fetch-amfi-data';
   
   /**
-   * Fetch daily NAV data from AMFI
+   * Fetch daily NAV data from AMFI via Supabase Edge Function
    */
   async fetchDailyNAV(): Promise<string> {
-    let lastError: Error | null = null;
-    
-    // Try each CORS proxy
-    for (const proxy of AMFIDataFetcher.CORS_PROXIES) {
-      try {
-        console.log(`Trying proxy: ${proxy}`);
-        const proxyUrl = proxy + encodeURIComponent(AMFIDataFetcher.NAV_URL);
-        const response = await fetch(proxyUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'text/plain',
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const text = await response.text();
-        
-        // Validate that we got actual NAV data
-        if (text.includes('Scheme Code') || text.includes('ISIN')) {
-          console.log(`✅ Successfully fetched data using ${proxy}`);
-          return text;
-        } else {
-          throw new Error('Invalid data format received');
-        }
-      } catch (error: any) {
-        console.warn(`Failed with proxy ${proxy}:`, error.message);
-        lastError = error;
-        continue;
+    try {
+      console.log('📥 Fetching AMFI data via Supabase Edge Function...');
+      
+      const response = await fetch(AMFIDataFetcher.EDGE_FUNCTION_URL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Edge Function returned ${response.status}: ${errorText}`);
       }
+      
+      const text = await response.text();
+      
+      // Validate that we got actual NAV data
+      if (!text || text.length < 1000) {
+        throw new Error('Invalid or empty data received');
+      }
+      
+      if (!text.includes('Scheme Code') && !text.includes('ISIN')) {
+        throw new Error('Data format validation failed');
+      }
+      
+      console.log(`✅ Successfully fetched ${text.length} bytes from AMFI`);
+      return text;
+      
+    } catch (error: any) {
+      console.error('❌ Error fetching AMFI NAV data:', error);
+      throw error;
     }
-    
-    // If all proxies failed, throw the last error
-    console.error('All CORS proxies failed');
-    throw lastError || new Error('Failed to fetch AMFI data from all proxies');
+  }
+
+  /**
+   * Parse NAV data from uploaded file
+   */
+  async parseUploadedFile(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        if (!text || text.length < 1000) {
+          reject(new Error('File is empty or too small'));
+          return;
+        }
+        resolve(text);
+      };
+      
+      reader.onerror = () => {
+        reject(new Error('Failed to read file'));
+      };
+      
+      reader.readAsText(file);
+    });
   }
 
   /**

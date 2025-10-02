@@ -1,20 +1,24 @@
 // Mutual Fund Data Admin Component
 // Manages AMFI data sync and manual uploads
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RefreshCw, Download, Upload, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { RefreshCw, Download, Upload, CheckCircle, XCircle, Clock, AlertCircle, FileText } from 'lucide-react';
 import { amfiSyncService } from '@/services/amfi/AMFISyncService';
+import { amfiDataFetcher } from '@/services/amfi/AMFIDataFetcher';
 import { toast } from 'sonner';
 
 export default function MutualFundDataAdmin() {
   const [syncing, setSyncing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [lastSync, setLastSync] = useState<any>(null);
   const [syncHistory, setSyncHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadSyncStatus();
@@ -57,6 +61,86 @@ export default function MutualFundDataAdmin() {
     } finally {
       setSyncing(false);
     }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      toast.info('Reading file...');
+
+      // Read and validate file
+      const rawData = await amfiDataFetcher.parseUploadedFile(file);
+      
+      // Show preview
+      const lines = rawData.split('\n');
+      const preview = lines.slice(0, 10).join('\n');
+      setUploadPreview(preview);
+
+      toast.success('File loaded successfully! Click "Process Upload" to continue.');
+      
+    } catch (error: any) {
+      console.error('File upload error:', error);
+      toast.error(`Failed to read file: ${error.message}`);
+      setUploadPreview(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleProcessUpload = async () => {
+    if (!uploadPreview) {
+      toast.error('No file loaded');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      toast.info('Processing uploaded data...');
+
+      // Get full file content from input
+      const file = fileInputRef.current?.files?.[0];
+      if (!file) throw new Error('File not found');
+
+      const rawData = await amfiDataFetcher.parseUploadedFile(file);
+      
+      // Parse the data
+      const schemes = amfiDataFetcher.parseNAVData(rawData);
+      const amcData = amfiDataFetcher.groupByAMC(schemes);
+
+      toast.info(`Parsed ${schemes.length} schemes from ${amcData.length} AMCs. Uploading to database...`);
+
+      // Use the sync service to process (reuse existing logic)
+      const { dataTransformer } = await import('@/services/amfi/DataTransformer');
+      
+      // Transform and upload
+      const transformedAMCs = dataTransformer.transformAMCs(amcData);
+      const amcResult = await dataTransformer.upsertAMCs(transformedAMCs);
+
+      if (!amcResult.success) {
+        throw new Error(`AMC upsert failed: ${amcResult.error}`);
+      }
+
+      toast.success(`Upload completed! Processed ${schemes.length} schemes from ${amcData.length} AMCs`);
+      
+      // Clear preview and reload status
+      setUploadPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      await loadSyncStatus();
+
+    } catch (error: any) {
+      console.error('Upload processing error:', error);
+      toast.error(`Failed to process upload: ${error.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const downloadAMFIFile = () => {
+    window.open('https://portal.amfiindia.com/spages/NAVAll.txt', '_blank');
+    toast.info('Opening AMFI NAV file in new tab. Save it and upload here.');
   };
 
   const downloadTemplate = (type: string) => {
@@ -229,6 +313,94 @@ export default function MutualFundDataAdmin() {
 
         {/* Manual Upload Tab */}
         <TabsContent value="manual-upload" className="space-y-6">
+          {/* AMFI NAV File Upload */}
+          <Card className="dashboard-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Upload AMFI NAV File
+              </CardTitle>
+              <CardDescription>
+                Download NAVAll.txt from AMFI and upload it here for processing
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Instructions */}
+              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                <h4 className="font-semibold text-primary mb-2">📋 How to Upload</h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                  <li>Click "Download AMFI File" to open the official AMFI NAV page</li>
+                  <li>Save the file (NAVAll.txt) to your computer</li>
+                  <li>Click "Choose File" and select the downloaded file</li>
+                  <li>Review the preview and click "Process Upload"</li>
+                </ol>
+              </div>
+
+              {/* Upload Actions */}
+              <div className="flex gap-4">
+                <Button 
+                  variant="outline"
+                  onClick={downloadAMFIFile}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download AMFI File
+                </Button>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt,.csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="amfi-file-upload"
+                />
+                <label htmlFor="amfi-file-upload">
+                  <Button 
+                    variant="default"
+                    disabled={uploading}
+                    className="flex items-center gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                    type="button"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Choose File
+                  </Button>
+                </label>
+
+                {uploadPreview && (
+                  <Button 
+                    onClick={handleProcessUpload}
+                    disabled={uploading}
+                    className="flex items-center gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Process Upload
+                  </Button>
+                )}
+              </div>
+
+              {/* Preview */}
+              {uploadPreview && (
+                <div className="p-4 bg-muted border border-border rounded-lg">
+                  <h4 className="font-semibold text-foreground mb-2">File Preview (First 10 lines)</h4>
+                  <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
+                    {uploadPreview}
+                  </pre>
+                </div>
+              )}
+
+              {/* Info */}
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Note:</strong> The file should be in AMFI's standard format with semicolon-separated values. 
+                  The system will automatically parse and validate the data before uploading to the database.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Scheme Master Data */}
             <Card className="dashboard-card">

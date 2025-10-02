@@ -50,10 +50,10 @@ Frontend Pages (3 Levels)
 
 ### Technology Stack
 - **Frontend**: React 18, TypeScript, TailwindCSS
-- **Backend**: Supabase (PostgreSQL)
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
 - **Charts**: Recharts
-- **Data Source**: AMFI India (via CORS proxy)
-- **CORS Proxies**: corsproxy.io (primary), allorigins.win, cors-anywhere (fallback)
+- **Data Source**: AMFI India
+- **Data Fetching**: Supabase Edge Function (no CORS issues!)
 - **State Management**: React Query
 - **Routing**: React Router v6
 
@@ -439,12 +439,13 @@ const drawdown = riskCalculator.calculateMaxDrawdown(navHistory);
 
 #### 1. CORS Error / Failed to Fetch
 **Problem**: `TypeError: Failed to fetch` or `ERR_QUIC_PROTOCOL_ERROR` when syncing AMFI data  
-**Solution**: ✅ **FIXED** - Now using multiple CORS proxies with automatic fallback:
-1. corsproxy.io (primary)
-2. allorigins.win (fallback)
-3. cors-anywhere.herokuapp.com (fallback)
+**Solution**: ✅ **FIXED** - Now using **Supabase Edge Function** as a backend proxy:
+- Edge Function URL: `https://fhcddkfgqhwwfvqymqow.supabase.co/functions/v1/fetch-amfi-data`
+- Fetches data server-side (no CORS restrictions)
+- Automatic data validation
+- 1-hour caching for performance
 
-The system will automatically try each proxy until one works. Rebuild the app (`npm run build`) and refresh your browser.
+**Alternative**: Manual upload option also available in admin panel.
 
 #### 2. No Data Showing on Frontend
 **Problem**: Tables are empty  
