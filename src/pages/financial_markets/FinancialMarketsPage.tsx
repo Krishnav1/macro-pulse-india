@@ -1,6 +1,6 @@
 // Financial Markets Landing Page
 
-import { LiveMarketHeader } from '@/components/financial/LiveMarketHeader';
+import { CompactMarketTicker } from '@/components/financial/CompactMarketTicker';
 import { CategoryCard } from '@/components/financial/CategoryCard';
 import { useFinancialCategories } from '@/hooks/financial/useFinancialCategories';
 import { Loader2 } from 'lucide-react';
@@ -10,8 +10,8 @@ export default function FinancialMarketsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Live Market Header */}
-      <LiveMarketHeader />
+      {/* Compact Market Ticker */}
+      <CompactMarketTicker />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -10,15 +10,19 @@ const IndicatorGridCard = ({ indicator }: IndicatorGridCardProps) => {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
-    // Route CPI inflation to dedicated CPI page
+    // Route to dedicated pages
     if (indicator.id === 'cpi_inflation') {
       navigate('/indicators/cpi');
-    } else if (indicator.id === 'iip_growth') {
+    } else if (indicator.id === 'iip_growth' || indicator.id === 'iip') {
       navigate('/indicators/iip');
     } else if (indicator.id === 'repo_rate') {
       navigate('/indicators/repo-rate');
     } else if (indicator.id === 'inr_exchange_rate') {
       navigate('/indicators/exchange-rate');
+    } else if (indicator.id === 'market_cap') {
+      navigate('/financial-markets/equity-markets');
+    } else if (indicator.id === 'total_aum') {
+      navigate('/financial-markets/industry-trends');
     } else {
       navigate(`/indicators/${indicator.id}`);
     }

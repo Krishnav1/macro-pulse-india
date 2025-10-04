@@ -40,14 +40,14 @@ export const dashboardIndicators: IndicatorData[] = [
     source: 'MOSPI'
   },
   {
-    id: 'debt_to_gdp',
-    name: 'Debt to GDP Ratio',
-    value: '54.90%',
-    change: -0.3,
-    category: 'Fiscal',
-    sparklineData: generateSparklineData(54.9, 0.05),
-    unit: 'Percentage',
-    source: 'RBI'
+    id: 'market_cap',
+    name: 'India Market Cap',
+    value: '₹428.5L Cr',
+    change: 2.8,
+    category: 'Financial Markets',
+    sparklineData: generateSparklineData(428.5, 0.15),
+    unit: 'Lakh Crore',
+    source: 'NSE/BSE'
   },
   {
     id: 'repo_rate',
@@ -100,14 +100,14 @@ export const dashboardIndicators: IndicatorData[] = [
     source: 'MOSPI'
   },
   {
-    id: 'unemployment_rate',
-    name: 'Unemployment Rate',
-    value: '6.1%',
-    change: -0.3,
-    category: 'Employment',
-    sparklineData: generateSparklineData(6.1, 0.12),
-    unit: 'Percentage',
-    source: 'CMIE'
+    id: 'total_aum',
+    name: 'Total AUM (Mutual Funds)',
+    value: '₹67.25L Cr',
+    change: 18.5,
+    category: 'Financial Markets',
+    sparklineData: generateSparklineData(67.25, 0.18),
+    unit: 'Lakh Crore',
+    source: 'AMFI'
   },
   {
     id: 'iip',

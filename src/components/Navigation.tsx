@@ -9,10 +9,10 @@ const Navigation = () => {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
-    { path: '/indicators', label: 'Indicators', icon: TrendingUp },
+    // { path: '/indicators', label: 'Indicators', icon: TrendingUp }, // Temporarily disabled - access via dashboard cards
     { path: '/india-heat-map', label: 'India Heat Map', icon: Map },
     { path: '/financial-markets', label: 'Financial Markets', icon: LineChart },
-    { path: '/financial-markets/industry-trends', label: 'Industry Trends', icon: Activity },
+    // { path: '/financial-markets/industry-trends', label: 'Industry Trends', icon: Activity }, // Temporarily disabled - access via financial markets
   ];
 
   const handleSearch = (e: React.FormEvent) => {

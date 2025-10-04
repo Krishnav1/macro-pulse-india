@@ -33,10 +33,10 @@ const getColor = (value: number | null, min: number, max: number): string => {
   // Normalize value to 0-1 range
   const normalized = max > min ? (value - min) / (max - min) : 0.5;
   
-  // Use a blue color scale (light to dark)
+  // Use primary color scale (light to dark) matching theme
   const colors = [
-    '#eff6ff', '#dbeafe', '#bfdbfe', '#93c5fd', 
-    '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af'
+    'hsl(200, 98%, 85%)', 'hsl(200, 98%, 75%)', 'hsl(200, 98%, 65%)', 'hsl(200, 98%, 55%)', 
+    'hsl(200, 98%, 45%)', 'hsl(200, 98%, 39%)', 'hsl(200, 98%, 35%)', 'hsl(200, 98%, 30%)', 'hsl(200, 98%, 25%)'
   ];
 
   const index = Math.min(Math.floor(normalized * colors.length), colors.length - 1);
@@ -79,7 +79,7 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
+      style: 'mapbox://styles/mapbox/dark-v11',
       center: [78.9629, 22.5937], // Center of India
       zoom: 4,
       minZoom: 3,
@@ -110,8 +110,8 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
             type: 'fill',
             source: 'india-states',
             paint: {
-              'fill-color': '#e5e7eb',
-              'fill-opacity': 0.8
+              'fill-color': 'hsl(200, 98%, 39%)',
+              'fill-opacity': 0.7
             }
           });
 
@@ -121,8 +121,27 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
             type: 'line',
             source: 'india-states',
             paint: {
-              'line-color': '#374151',
-              'line-width': 2
+              'line-color': '#ffffff',
+              'line-width': 1.5
+            }
+          });
+
+          // Add state labels
+          map.current.addLayer({
+            id: 'state-labels',
+            type: 'symbol',
+            source: 'india-states',
+            layout: {
+              'text-field': ['get', STATE_NAME_PROPERTY],
+              'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+              'text-size': 12,
+              'text-anchor': 'center'
+            },
+            paint: {
+              'text-color': '#1f2937',
+              'text-halo-color': '#ffffff',
+              'text-halo-width': 2,
+              'text-halo-blur': 1
             }
           });
 
@@ -238,36 +257,39 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
       <div ref={mapContainer} className="h-full w-full rounded-lg" />
       
       {/* Legend */}
-      <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-xl border-2 border-gray-300 p-4">
-        <div className="text-sm font-bold mb-3 text-gray-900">Legend</div>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs font-semibold text-gray-900">Low</span>
+      <div className="absolute bottom-4 right-4 bg-card border border-border rounded-lg shadow-xl p-3">
+        <div className="text-sm font-semibold mb-2 text-foreground">Legend</div>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs font-medium text-muted-foreground">Low</span>
           <div className="flex gap-0.5">
-            {['#eff6ff', '#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af'].map((color, i) => (
+            {[
+              'hsl(200, 98%, 85%)', 'hsl(200, 98%, 75%)', 'hsl(200, 98%, 65%)', 'hsl(200, 98%, 55%)', 
+              'hsl(200, 98%, 45%)', 'hsl(200, 98%, 39%)', 'hsl(200, 98%, 35%)', 'hsl(200, 98%, 30%)', 'hsl(200, 98%, 25%)'
+            ].map((color, i) => (
               <div
                 key={i}
-                className="w-5 h-4 border border-gray-400"
+                className="w-4 h-3 border border-border"
                 style={{ backgroundColor: color }}
               />
             ))}
           </div>
-          <span className="text-xs font-semibold text-gray-900">High</span>
+          <span className="text-xs font-medium text-muted-foreground">High</span>
         </div>
         {stats && (
-          <div className="text-xs font-medium text-gray-900 space-y-1 bg-gray-50 p-2 rounded">
-            <div>Min: <span className="font-bold">{stats.min.toFixed(2)}</span></div>
-            <div>Max: <span className="font-bold">{stats.max.toFixed(2)}</span></div>
-            <div>States: <span className="font-bold">{stats.count}</span></div>
+          <div className="text-xs text-muted-foreground space-y-1 bg-muted/50 p-2 rounded">
+            <div>Min: <span className="font-semibold text-foreground">{stats.min.toFixed(2)}</span></div>
+            <div>Max: <span className="font-semibold text-foreground">{stats.max.toFixed(2)}</span></div>
+            <div>States: <span className="font-semibold text-foreground">{stats.count}</span></div>
           </div>
         )}
       </div>
 
       {/* Loading indicator */}
       {(!mapLoaded || !geoDataLoaded) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/75 backdrop-blur-sm">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-sm text-muted-foreground">
               {!mapLoaded ? 'Initializing map...' : 'Loading India boundaries...'}
             </p>
           </div>

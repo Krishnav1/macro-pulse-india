@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ArrowLeft, RefreshCw, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { LiveMarketHeader } from '@/components/financial/LiveMarketHeader';
+import { CompactMarketTicker } from '@/components/financial/CompactMarketTicker';
 import { SectorHeatmapGrid } from '@/components/financial/SectorHeatmapGrid';
 import { MetricCard } from '@/components/financial/MetricCard';
 import { useSectorData } from '@/hooks/financial/useSectorData';
@@ -30,8 +30,8 @@ export default function SectoralHeatmapPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Live Market Header */}
-      <LiveMarketHeader />
+      {/* Compact Market Ticker */}
+      <CompactMarketTicker />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

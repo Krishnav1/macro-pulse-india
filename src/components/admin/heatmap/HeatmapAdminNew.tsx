@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Alert, AlertDescription } from '../../ui/alert';
-import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle2, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
+import { CityAumUpload } from './CityAumUpload';
 
 interface ParsedRow {
   year: string;
@@ -496,6 +498,11 @@ export const HeatmapAdminNew: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* City AUM Upload Section */}
+      <div className="mt-6">
+        <CityAumUpload />
+      </div>
     </div>
   );
 };

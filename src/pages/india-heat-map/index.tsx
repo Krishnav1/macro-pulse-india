@@ -1,33 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { IndiaHeatmapMapbox } from '@/components/heatmap/IndiaHeatmapMapbox';
+import { CityAumMap } from '@/components/heatmap/CityAumMap';
 import { HeatmapControls } from '@/components/heatmap/HeatmapControls';
 import { StateDetailsDrawer } from '@/components/heatmap/StateDetailsDrawer';
 import { HeatmapLegend } from '@/components/heatmap/HeatmapLegend';
 import { useHeatmapIndicators } from '@/hooks/useHeatmapIndicators';
 import { useHeatmapYears } from '@/hooks/useHeatmapYears';
 import { useHeatmapValues } from '@/hooks/useHeatmapValues';
+import { useCityAumQuarters, useCityAumData } from '@/hooks/useCityAumData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Map, AlertCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Map, AlertCircle, MapPin } from 'lucide-react';
 
 export default function IndiaHeatMapPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   
   // State management
+  const [viewMode, setViewMode] = useState<'state' | 'city'>('state');
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>('');
+  const [selectedQuarter, setSelectedQuarter] = useState<string>('');
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(1000);
 
-  // Data hooks
+  // Data hooks for state view
   const { indicators, loading: indicatorsLoading, error: indicatorsError } = useHeatmapIndicators();
   const { years, loading: yearsLoading } = useHeatmapYears(selectedIndicatorId);
   const { stateValueMap, stats, loading: valuesLoading, error: valuesError } = useHeatmapValues(
     selectedIndicatorId,
     selectedYear
   );
+
+  // Data hooks for city view
+  const { quarters, loading: quartersLoading } = useCityAumQuarters();
+  const { data: cityAumData, loading: cityAumLoading } = useCityAumData(selectedQuarter);
 
   // URL sync with throttling - simplified without auto-selection
   useEffect(() => {
@@ -95,6 +104,7 @@ export default function IndiaHeatMapPage() {
         currentIndex++;
         setTimeout(animate, animationSpeed);
       } else {
+        // Stop after one complete cycle
         setIsAnimating(false);
       }
     };
@@ -139,17 +149,17 @@ export default function IndiaHeatMapPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-900 via-purple-900 to-pink-900 border-b-4 border-indigo-700 shadow-2xl">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-white/10 rounded-xl backdrop-blur-md border border-white/20">
-              <Map className="h-12 w-12 text-white" />
+      <div className="bg-card border-b border-border">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Map className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-5xl font-bold text-white drop-shadow-2xl">India Heat Map</h1>
-              <p className="text-indigo-100 mt-2 text-xl font-medium">
+              <h1 className="text-2xl font-bold text-foreground">India Heat Map</h1>
+              <p className="text-muted-foreground text-sm">
                 Interactive state-wise visualization of economic indicators
               </p>
             </div>
@@ -158,66 +168,81 @@ export default function IndiaHeatMapPage() {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Controls Sidebar */}
-          <div className="lg:col-span-1">
-            <Card className="shadow-2xl border border-gray-600 bg-gray-800/90 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 border-b border-gray-600">
-                <CardTitle className="text-white text-xl font-bold">Controls</CardTitle>
-              </CardHeader>
-              <CardContent className="bg-gray-800/50 p-6 text-white">
-                <HeatmapControls
-                  indicators={indicators}
-                  selectedIndicatorId={selectedIndicatorId}
-                  onIndicatorChange={handleIndicatorChange}
-                  years={years}
-                  selectedYear={selectedYear}
-                  onYearChange={handleYearChange}
-                  isAnimating={isAnimating}
-                  animationSpeed={animationSpeed}
-                  onAnimationSpeedChange={setAnimationSpeed}
-                  onStartAnimation={startAnimation}
-                  onStopAnimation={stopAnimation}
-                  loading={loading}
-                />
-              </CardContent>
-            </Card>
+        {/* View Mode Tabs */}
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'state' | 'city')} className="mb-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="state" className="flex items-center gap-2">
+              <Map className="h-4 w-4" />
+              State Indicators
+            </TabsTrigger>
+            <TabsTrigger value="city" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              City AUM
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Legend */}
-            {hasData && stats && selectedIndicator && (
-              <Card className="mt-4 shadow-2xl border border-gray-600 bg-gray-800/90 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 border-b border-gray-600">
-                  <CardTitle className="text-white text-xl font-bold">Statistics</CardTitle>
-                </CardHeader>
-                <CardContent className="bg-gray-800/50 p-6 text-white">
-                  <HeatmapLegend
-                    stats={stats}
-                    unit={selectedIndicator.unit}
-                    indicatorName={selectedIndicator.name}
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          {/* State View */}
+          <TabsContent value="state" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Controls Sidebar */}
+              <div className="lg:col-span-1">
+                <Card className="shadow-lg border-border bg-card">
+                  <CardHeader className="border-b border-border">
+                    <CardTitle className="text-foreground text-lg font-semibold">Controls</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <HeatmapControls
+                      indicators={indicators}
+                      selectedIndicatorId={selectedIndicatorId}
+                      onIndicatorChange={handleIndicatorChange}
+                      years={years}
+                      selectedYear={selectedYear}
+                      onYearChange={handleYearChange}
+                      isAnimating={isAnimating}
+                      animationSpeed={animationSpeed}
+                      onAnimationSpeedChange={setAnimationSpeed}
+                      onStartAnimation={startAnimation}
+                      onStopAnimation={stopAnimation}
+                      loading={loading}
+                    />
+                  </CardContent>
+                </Card>
 
-          {/* Map Area */}
-          <div className="lg:col-span-3">
-            <Card className="h-[600px] flex flex-col shadow-2xl border border-gray-600 bg-gray-800/90 backdrop-blur-sm">
-              <CardContent className="p-0 flex-1 relative bg-gradient-to-br from-gray-900/50 to-slate-900/50">
+                {/* Legend */}
+                {hasData && stats && selectedIndicator && (
+                  <Card className="mt-4 shadow-lg border-border bg-card">
+                    <CardHeader className="border-b border-border">
+                      <CardTitle className="text-foreground text-lg font-semibold">Statistics</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <HeatmapLegend
+                        stats={stats}
+                        unit={selectedIndicator.unit}
+                        indicatorName={selectedIndicator.name}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Map Area */}
+              <div className="lg:col-span-3">
+                <Card className="h-[600px] flex flex-col shadow-lg border-border bg-card">
+                  <CardContent className="p-0 flex-1 relative bg-muted/30">
                 {loading && (
                   <div className="flex items-center justify-center h-full">
-                    <div className="flex items-center gap-2 text-white">
-                      <Loader2 className="h-6 w-6 animate-spin text-indigo-400" />
-                      <span className="text-lg font-medium">Loading map data...</span>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <span className="text-lg font-medium text-foreground">Loading map data...</span>
                     </div>
                   </div>
                 )}
 
                 {valuesError && (
                   <div className="flex items-center justify-center h-full">
-                    <Alert className="max-w-md bg-red-900/50 border-red-600 text-white">
-                      <AlertCircle className="h-4 w-4 text-red-400" />
-                      <AlertDescription className="text-red-100">
+                    <Alert variant="destructive" className="max-w-md">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
                         {valuesError}
                       </AlertDescription>
                     </Alert>
@@ -226,11 +251,11 @@ export default function IndiaHeatMapPage() {
                 {!loading && !valuesError && indicators.length === 0 && (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <Map className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-white mb-2">
+                      <Map className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
                         No Indicators Available
                       </h3>
-                      <p className="text-gray-300">
+                      <p className="text-muted-foreground">
                         Upload heatmap data through the admin panel to get started.
                       </p>
                     </div>
@@ -252,11 +277,11 @@ export default function IndiaHeatMapPage() {
                 {!loading && !valuesError && (!selectedIndicatorId || !selectedYear) && (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
-                      <Map className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      <Map className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
                         Select Indicator and Year
                       </h3>
-                      <p className="text-gray-600">
+                      <p className="text-muted-foreground">
                         Choose an indicator and year from the controls to view the heatmap.
                       </p>
                     </div>
@@ -279,17 +304,17 @@ export default function IndiaHeatMapPage() {
 
             {/* Current Selection Info */}
             {selectedIndicator && selectedYear && (
-              <Card className="mt-4 shadow-lg border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <Card className="mt-4 shadow-lg border-border bg-card">
                 <CardContent className="py-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium">{selectedIndicator.name}</h3>
-                      <p className="text-sm text-gray-600">
+                      <h3 className="font-medium text-foreground">{selectedIndicator.name}</h3>
+                      <p className="text-sm text-muted-foreground">
                         Year: {selectedYear} • Unit: {selectedIndicator.unit}
                       </p>
                     </div>
                     {stats && (
-                      <div className="text-right text-sm">
+                      <div className="text-right text-sm text-muted-foreground">
                         <div>States with data: {stats.count}</div>
                         <div>Range: {stats.min.toFixed(2)} - {stats.max.toFixed(2)}</div>
                       </div>
@@ -298,8 +323,87 @@ export default function IndiaHeatMapPage() {
                 </CardContent>
               </Card>
             )}
-          </div>
-        </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* City AUM View */}
+          <TabsContent value="city" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Quarter Selector Sidebar */}
+              <div className="lg:col-span-1">
+                <Card className="shadow-lg border-border bg-card">
+                  <CardHeader className="border-b border-border">
+                    <CardTitle className="text-foreground text-lg font-semibold">Select Quarter</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Quarter End Date</label>
+                      <select
+                        value={selectedQuarter}
+                        onChange={(e) => setSelectedQuarter(e.target.value)}
+                        className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground"
+                        disabled={quartersLoading}
+                      >
+                        <option value="">Select Quarter</option>
+                        {quarters.map((quarter) => (
+                          <option key={quarter} value={quarter}>
+                            {quarter}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {selectedQuarter && cityAumData.length > 0 && (
+                      <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                        <div className="text-sm font-medium text-foreground mb-2">Summary</div>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>Total Cities: {cityAumData.length}</div>
+                          <div>Mapped: {cityAumData.filter(c => c.latitude && c.longitude).length}</div>
+                          <div>Top City: {cityAumData[0]?.city_name} ({cityAumData[0]?.aum_percentage.toFixed(2)}%)</div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* City Map Area */}
+              <div className="lg:col-span-3">
+                <Card className="h-[600px] flex flex-col shadow-lg border-border bg-card">
+                  <CardContent className="p-0 flex-1 relative">
+                    {cityAumLoading && (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          <span className="text-lg font-medium text-foreground">Loading city data...</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {!cityAumLoading && !selectedQuarter && (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-foreground mb-2">
+                            Select a Quarter
+                          </h3>
+                          <p className="text-muted-foreground">
+                            Choose a quarter from the sidebar to view city-wise AUM distribution
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {!cityAumLoading && selectedQuarter && (
+                      <CityAumMap data={cityAumData} quarterEndDate={selectedQuarter} />
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* State Details Drawer */}
