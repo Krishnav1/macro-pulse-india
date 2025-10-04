@@ -13,6 +13,15 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authorization header exists (but don't validate it strictly for now)
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const { endpoint, params } = await req.json()
 
     console.log(`Fetching NSE data: ${endpoint}`, params)
