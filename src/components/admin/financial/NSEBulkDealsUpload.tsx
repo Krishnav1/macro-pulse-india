@@ -113,6 +113,24 @@ export function NSEBulkDealsUpload() {
           console.log(`Removed ${parsedData.length - uniqueData.length} exact duplicates. Uploading ${uniqueData.length} unique records.`);
           const data = uniqueData;
 
+          // Get unique dates in the upload
+          const uniqueDates = [...new Set(data.map((d: any) => d.date))];
+          console.log(`Deleting existing data for ${uniqueDates.length} dates...`);
+
+          // Delete existing data for these dates
+          const { error: deleteError } = await (supabase as any)
+            .from('bulk_deals')
+            .delete()
+            .in('date', uniqueDates);
+
+          if (deleteError) {
+            console.warn('Delete error (might be no existing data):', deleteError);
+          }
+
+          // Wait a bit for deletion to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Insert new data
           const { error } = await (supabase as any)
             .from('bulk_deals')
             .insert(data);
