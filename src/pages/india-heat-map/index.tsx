@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { IndiaHeatmapMapbox } from '@/components/heatmap/IndiaHeatmapMapbox';
 import { CityAumMap } from '@/components/heatmap/CityAumMap';
+import { StateAumMap } from '@/components/heatmap/StateAumMap';
 import { HeatmapControls } from '@/components/heatmap/HeatmapControls';
 import { StateDetailsDrawer } from '@/components/heatmap/StateDetailsDrawer';
 import { HeatmapLegend } from '@/components/heatmap/HeatmapLegend';
@@ -9,24 +10,27 @@ import { useHeatmapIndicators } from '@/hooks/useHeatmapIndicators';
 import { useHeatmapYears } from '@/hooks/useHeatmapYears';
 import { useHeatmapValues } from '@/hooks/useHeatmapValues';
 import { useCityAumQuarters, useCityAumData } from '@/hooks/useCityAumData';
+import { useStateAumMonths, useStateAumComposition } from '@/hooks/useStateAumData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Map, AlertCircle, MapPin } from 'lucide-react';
+import { Loader2, Map, AlertCircle, MapPin, TrendingUp } from 'lucide-react';
 
 export default function IndiaHeatMapPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   
   // State management
-  const [viewMode, setViewMode] = useState<'state' | 'city'>('state');
+  const [viewMode, setViewMode] = useState<'state' | 'city' | 'state-aum'>('state');
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedQuarter, setSelectedQuarter] = useState<string>('');
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [stateAumViewMode, setStateAumViewMode] = useState<'overall' | 'liquid' | 'debt' | 'equity' | 'etfs'>('overall');
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState(1000);
 
-  // Data hooks for state view
+  // Data hooks for state indicators view
   const { indicators, loading: indicatorsLoading, error: indicatorsError } = useHeatmapIndicators();
   const { years, loading: yearsLoading } = useHeatmapYears(selectedIndicatorId);
   const { stateValueMap, stats, loading: valuesLoading, error: valuesError } = useHeatmapValues(
@@ -34,9 +38,13 @@ export default function IndiaHeatMapPage() {
     selectedYear
   );
 
-  // Data hooks for city view
+  // Data hooks for city AUM view
   const { quarters, loading: quartersLoading } = useCityAumQuarters();
   const { data: cityAumData, loading: cityAumLoading } = useCityAumData(selectedQuarter);
+
+  // Data hooks for state AUM view
+  const { months, loading: monthsLoading } = useStateAumMonths();
+  const { data: stateAumData, loading: stateAumLoading } = useStateAumComposition(selectedMonth);
 
   // URL sync with throttling - simplified without auto-selection
   useEffect(() => {
@@ -169,8 +177,8 @@ export default function IndiaHeatMapPage() {
 
       <div className="container mx-auto px-4 py-6">
         {/* View Mode Tabs */}
-        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'state' | 'city')} className="mb-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+        <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'state' | 'city' | 'state-aum')} className="mb-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
             <TabsTrigger value="state" className="flex items-center gap-2">
               <Map className="h-4 w-4" />
               State Indicators
@@ -178,6 +186,10 @@ export default function IndiaHeatMapPage() {
             <TabsTrigger value="city" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               City AUM
+            </TabsTrigger>
+            <TabsTrigger value="state-aum" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              State AUM
             </TabsTrigger>
           </TabsList>
 
@@ -397,6 +409,159 @@ export default function IndiaHeatMapPage() {
 
                     {!cityAumLoading && selectedQuarter && (
                       <CityAumMap data={cityAumData} quarterEndDate={selectedQuarter} />
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* State AUM View */}
+          <TabsContent value="state-aum" className="mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Month & Category Selector Sidebar */}
+              <div className="lg:col-span-1">
+                <Card className="shadow-lg border-border bg-card">
+                  <CardHeader className="border-b border-border">
+                    <CardTitle className="text-foreground text-lg font-semibold">Select Options</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 space-y-4">
+                    {/* Month Selector */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Month/Year</label>
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground"
+                        disabled={monthsLoading}
+                      >
+                        <option value="">Select Month</option>
+                        {months.map((month) => (
+                          <option key={month} value={month}>
+                            {new Date(month).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* View Mode Selector */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Category</label>
+                      <div className="space-y-2">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="state-aum-view"
+                            value="overall"
+                            checked={stateAumViewMode === 'overall'}
+                            onChange={(e) => setStateAumViewMode(e.target.value as any)}
+                            className="text-primary"
+                          />
+                          <span className="text-sm">Overall AUM %</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="state-aum-view"
+                            value="liquid"
+                            checked={stateAumViewMode === 'liquid'}
+                            onChange={(e) => setStateAumViewMode(e.target.value as any)}
+                            className="text-primary"
+                          />
+                          <span className="text-sm">Liquid/Money Market</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="state-aum-view"
+                            value="debt"
+                            checked={stateAumViewMode === 'debt'}
+                            onChange={(e) => setStateAumViewMode(e.target.value as any)}
+                            className="text-primary"
+                          />
+                          <span className="text-sm">Debt Oriented</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="state-aum-view"
+                            value="equity"
+                            checked={stateAumViewMode === 'equity'}
+                            onChange={(e) => setStateAumViewMode(e.target.value as any)}
+                            className="text-primary"
+                          />
+                          <span className="text-sm">Equity Oriented</span>
+                        </label>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="state-aum-view"
+                            value="etfs"
+                            checked={stateAumViewMode === 'etfs'}
+                            onChange={(e) => setStateAumViewMode(e.target.value as any)}
+                            className="text-primary"
+                          />
+                          <span className="text-sm">ETFs/FoFs</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Summary Stats */}
+                    {selectedMonth && stateAumData.length > 0 && (
+                      <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                        <div className="text-sm font-medium text-foreground mb-2">Summary</div>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>Total States: {stateAumData.length}</div>
+                          <div>Top State: {stateAumData[0]?.state_name}</div>
+                          <div>
+                            Top AUM: {
+                              stateAumViewMode === 'overall' ? stateAumData[0]?.industry_share_percentage :
+                              stateAumViewMode === 'liquid' ? stateAumData[0]?.liquid_money_market_percentage :
+                              stateAumViewMode === 'debt' ? stateAumData[0]?.debt_oriented_percentage :
+                              stateAumViewMode === 'equity' ? stateAumData[0]?.equity_oriented_percentage :
+                              stateAumData[0]?.etfs_fofs_percentage
+                            }%
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* State AUM Map Area */}
+              <div className="lg:col-span-3">
+                <Card className="h-[600px] flex flex-col shadow-lg border-border bg-card">
+                  <CardContent className="p-0 flex-1 relative">
+                    {stateAumLoading && (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          <span className="text-lg font-medium text-foreground">Loading state data...</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {!stateAumLoading && !selectedMonth && (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-center">
+                          <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-foreground mb-2">
+                            Select a Month
+                          </h3>
+                          <p className="text-muted-foreground">
+                            Choose a month from the sidebar to view state-wise AUM distribution
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {!stateAumLoading && selectedMonth && (
+                      <StateAumMap 
+                        data={stateAumData} 
+                        monthYear={selectedMonth}
+                        viewMode={stateAumViewMode}
+                      />
                     )}
                   </CardContent>
                 </Card>
