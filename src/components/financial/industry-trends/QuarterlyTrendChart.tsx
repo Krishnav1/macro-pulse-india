@@ -1,4 +1,4 @@
-// =====================================================
+==================================================
 // QUARTERLY TREND CHART
 // Line chart showing last 8 quarters trend by category
 // =====================================================
@@ -59,16 +59,12 @@ export function QuarterlyTrendChart({ selectedQuarter }: QuarterlyTrendChartProp
         const trendData: TrendData[] = [];
 
         for (const quarter of uniqueQuarters) {
-          const { data: subtotals, error } = await (supabase as any)
-            .from('quarterly_aum_data')
-            .select('*')
-            .eq('quarter_end_date', quarter.quarter_end_date)
-            .eq('is_subtotal', true);
+ .ilike('category_display_name', '%- TOTAL');
 
           if (error) continue;
 
           const dataPoint: any = {
-            quarter: quarter.quarter_label,
+            quarter: q.quarter_label,
             Equity: 0,
             Debt: 0,
             Hybrid: 0,

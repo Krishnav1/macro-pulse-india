@@ -14,21 +14,23 @@ import { useQuarterlyAUMData } from '@/hooks/quarterly-aum/useQuarterlyAUMData';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function IndustryTrendsPage() {
-  const [viewMode, setViewMode] = useState<'grid' | 'chart'>('chart');
+  const [viewMode, setViewMode] = useState<'quarter' | 'year'>('quarter');
   const [selectedQuarter, setSelectedQuarter] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('');
   const [availableQuarters, setAvailableQuarters] = useState<{ value: string; label: string }[]>([]);
+  const [availableYears, setAvailableYears] = useState<{ value: string; label: string }[]>([]);
   const { data: allData, isLoading } = useQuarterlyAUMData();
 
-  // Get unique quarters and set latest as default
+  // Get unique quarters and years, set latest as default
   useEffect(() => {
-    const fetchQuarters = async () => {
+    const fetchPeriodsAsync = async () => {
       const { data, error } = await (supabase as any)
         .from('quarterly_aum_data')
-        .select('quarter_end_date, quarter_label')
+        .select('quarter_end_date, quarter_label, fiscal_year')
         .order('quarter_end_date', { ascending: false });
 
       if (error) {
-        console.error('Error fetching quarters:', error);
+        console.error('Error fetching periods:', error);
         return;
       }
 
@@ -42,13 +44,28 @@ export default function IndustryTrendsPage() {
         label: q.quarter_label
       }));
 
+      // Get unique years
+      const uniqueYears = Array.from(
+        new Set(data.map((item: any) => item.fiscal_year).filter(Boolean))
+      ).sort().reverse();
+
+      const years = uniqueYears.map((year: any) => ({
+        value: year,
+        label: `FY ${year}`
+      }));
+
       setAvailableQuarters(quarters);
+      setAvailableYears(years);
+      
       if (quarters.length > 0 && !selectedQuarter) {
         setSelectedQuarter(quarters[0].value);
       }
+      if (years.length > 0 && !selectedYear) {
+        setSelectedYear(years[0].value);
+      }
     };
 
-    fetchQuarters();
+    fetchPeriodsAsync();
   }, []);
 
   return (
@@ -65,50 +82,65 @@ export default function IndustryTrendsPage() {
         </div>
         
         <div className="flex items-center gap-3">
-          {/* Quarter Selector */}
-          <select
-            value={selectedQuarter}
-            onChange={(e) => setSelectedQuarter(e.target.value)}
-            className="px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-            disabled={isLoading || availableQuarters.length === 0}
-          >
-            {availableQuarters.map((q) => (
-              <option key={q.value} value={q.value}>
-                {q.label}
-              </option>
-            ))}
-          </select>
+          {/* Period Selector */}
+          {viewMode === 'quarter' ? (
+            <select
+              value={selectedQuarter}
+              onChange={(e) => setSelectedQuarter(e.target.value)}
+              className="px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={isLoading || availableQuarters.length === 0}
+            >
+              {availableQuarters.map((q) => (
+                <option key={q.value} value={q.value}>
+                  {q.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={isLoading || availableYears.length === 0}
+            >
+              {availableYears.map((y) => (
+                <option key={y.value} value={y.value}>
+                  {y.label}
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* View Mode Toggle */}
           <div className="flex items-center border border-input rounded-md">
             <button
-              onClick={() => setViewMode('grid')}
+              onClick={() => setViewMode('quarter')}
               className={`px-3 py-2 text-sm flex items-center gap-2 rounded-l-md transition-colors ${
-                viewMode === 'grid'
+                viewMode === 'quarter'
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-background hover:bg-muted'
               }`}
             >
-              <Grid3x3 className="h-4 w-4" />
-              Grid
+              <BarChart3 className="h-4 w-4" />
+              Quarter
             </button>
             <button
-              onClick={() => setViewMode('chart')}
+              onClick={() => setViewMode('year')}
               className={`px-3 py-2 text-sm flex items-center gap-2 rounded-r-md transition-colors ${
-                viewMode === 'chart'
+                viewMode === 'year'
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-background hover:bg-muted'
               }`}
             >
               <LineChart className="h-4 w-4" />
-              Chart
+              Year
             </button>
           </div>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <IndustryKPICards selectedQuarter={selectedQuarter} />
+      <IndustryKPICards selectedQuarter={viewMode === 'quarter' ? selectedQuarter : ''} selectedYear={viewMode === 'year' ? selectedYear : ''} viewMode={viewMode} />
 
       {/* Charts Section - At a Glance */}
       <div className="space-y-6">
@@ -125,7 +157,7 @@ export default function IndustryTrendsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <CategoryDistributionChart selectedQuarter={selectedQuarter} />
+              <CategoryDistributionChart selectedQuarter={viewMode === 'quarter' ? selectedQuarter : ''} selectedYear={viewMode === 'year' ? selectedYear : ''} viewMode={viewMode} />
             </CardContent>
           </Card>
 
@@ -140,7 +172,7 @@ export default function IndustryTrendsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AumAaumComparisonChart selectedQuarter={selectedQuarter} />
+              <AumAaumComparisonChart selectedQuarter={viewMode === 'quarter' ? selectedQuarter : ''} selectedYear={viewMode === 'year' ? selectedYear : ''} viewMode={viewMode} />
             </CardContent>
           </Card>
         </div>
@@ -157,7 +189,7 @@ export default function IndustryTrendsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <QuarterlyTrendChart selectedQuarter={selectedQuarter} />
+            <QuarterlyTrendChart selectedQuarter={viewMode === 'quarter' ? selectedQuarter : ''} selectedYear={viewMode === 'year' ? selectedYear : ''} viewMode={viewMode} />
           </CardContent>
         </Card>
       </div>

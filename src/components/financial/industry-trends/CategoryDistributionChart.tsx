@@ -41,7 +41,8 @@ export function CategoryDistributionChart({ selectedQuarter }: CategoryDistribut
           .from('quarterly_aum_data')
           .select('*')
           .eq('quarter_end_date', selectedQuarter)
-          .eq('is_subtotal', true);
+          .ilike('category_display_name', '%- TOTAL')
+          .not('category_display_name', 'ilike', '%Grand TOTAL%');
 
         if (error) throw error;
 

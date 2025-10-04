@@ -97,6 +97,37 @@ export function QuarterlyAUMUpload() {
     setErrorMessage('');
 
     try {
+      // Check if data already exists for this quarter
+      const { data: existingData, count } = await (supabase as any)
+        .from('quarterly_aum_data')
+        .select('id', { count: 'exact' })
+        .eq('quarter_end_date', parsedData.quarter_end_date)
+        .limit(1);
+
+      if (existingData && existingData.length > 0) {
+        // Show confirmation toast
+        toast({
+          title: 'Existing Data Found',
+          description: `Found existing data for ${parsedData.quarter_label}. Deleting ${count} records...`,
+        });
+
+        // Delete existing data for this quarter only
+        const { error: deleteError } = await (supabase as any)
+          .from('quarterly_aum_data')
+          .delete()
+          .eq('quarter_end_date', parsedData.quarter_end_date);
+
+        if (deleteError) throw deleteError;
+
+        // Wait 1 second for deletion to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        toast({
+          title: 'Data Deleted',
+          description: `Successfully deleted existing data for ${parsedData.quarter_label}. Uploading new data...`,
+        });
+      }
+
       // Create upload record (using type assertion for new table)
       const { data: uploadRecord, error: uploadError } = await (supabase as any)
         .from('quarterly_aum_uploads')
@@ -118,21 +149,6 @@ export function QuarterlyAUMUpload() {
       // Transform data using category mappings
       const transformer = new QuarterlyAUMTransformer();
       const records = await transformer.transform(parsedData);
-
-      // Check if data already exists for this quarter
-      const { data: existingData } = await (supabase as any)
-        .from('quarterly_aum_data')
-        .select('id')
-        .eq('quarter_end_date', parsedData.quarter_end_date)
-        .limit(1);
-
-      if (existingData && existingData.length > 0) {
-        // Delete existing data
-        await (supabase as any)
-          .from('quarterly_aum_data')
-          .delete()
-          .eq('quarter_end_date', parsedData.quarter_end_date);
-      }
 
       // Insert new data in batches
       const batchSize = 100;

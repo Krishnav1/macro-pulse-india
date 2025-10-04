@@ -1,4 +1,4 @@
-// =====================================================
+
 // INDUSTRY KPI CARDS
 // Key metrics for industry trends (similar to investor-behavior)
 // =====================================================
@@ -10,7 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface IndustryKPICardsProps {
-  selectedQuarter: string;
+  selectedQuarter?: string;
+  selectedYear?: string;
+  viewMode: 'quarter' | 'year';
 }
 
 interface QuarterMetrics {
@@ -25,37 +27,32 @@ interface QuarterMetrics {
   top_category_aum: number;
 }
 
-export function IndustryKPICards({ selectedQuarter }: IndustryKPICardsProps) {
+export function IndustryKPICards({ selectedQuarter, selectedYear, viewMode }: IndustryKPICardsProps) {
   const [metrics, setMetrics] = useState<QuarterMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!selectedQuarter) return;
+    const period = viewMode === 'quarter' ? selectedQuarter : selectedYear;
+    if (!period) return;
 
     const fetchMetrics = async () => {
       setIsLoading(true);
       try {
-        // Get subtotal rows for the selected quarter
+        // Get subtotal rows for the selected period
         const { data, error } = await (supabase as any)
           .from('quarterly_aum_data')
           .select('*')
-          .eq('quarter_end_date', selectedQuarter)
-          .eq('is_subtotal', true);
-
-        if (error) throw error;
+          .eq(viewMode === 'quarter' ? 'quarter_end_date' : 'fiscal_year', period)
+          .ilike('category_display_name', '%- TOTAL')
+          .not('category_display_name', 'ilike', '%Grand TOTAL%');
 
         // Get grand total
         const { data: totalData } = await (supabase as any)
           .from('quarterly_aum_data')
           .select('*')
-          .eq('quarter_end_date', selectedQuarter)
-          .eq('is_total', true)
-          .single();
-
-        if (!data || data.length === 0) {
-          setMetrics(null);
-          return;
-        }
+          .eq(viewMode === 'quarter' ? 'quarter_end_date' : 'fiscal_year', period)
+          .ilike('category_display_name', '%Grand TOTAL%')
+          .maybeSingle();
 
         const totalAUM = totalData?.aum_crore || data.reduce((sum: number, row: any) => sum + parseFloat(row.aum_crore), 0);
         const totalAAUM = totalData?.aaum_crore || data.reduce((sum: number, row: any) => sum + parseFloat(row.aaum_crore), 0);
@@ -102,7 +99,7 @@ export function IndustryKPICards({ selectedQuarter }: IndustryKPICardsProps) {
     };
 
     fetchMetrics();
-  }, [selectedQuarter]);
+  }, [selectedQuarter, selectedYear, viewMode]);
 
   if (isLoading) {
     return (
