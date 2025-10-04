@@ -41,17 +41,38 @@ export function NSEBulkDealsUpload() {
         header: true,
         skipEmptyLines: true,
         complete: async (results) => {
+          console.log('Raw CSV data:', results.data);
+          console.log('First row keys:', results.data[0] ? Object.keys(results.data[0]) : 'No data');
+          
           // Parse and validate data
           const parsedData = results.data
             .filter((row: any) => {
-              // Filter out empty rows
-              const hasDate = row['Date'] && row['Date'].toString().trim() !== '';
-              const hasSymbol = row['Symbol'] && row['Symbol'].toString().trim() !== '';
+              // Skip if row is empty object
+              if (!row || Object.keys(row).length === 0) return false;
+              
+              // Get the actual column names (they might have spaces)
+              const dateKey = Object.keys(row).find(k => k.toLowerCase().includes('date')) || 'Date';
+              const symbolKey = Object.keys(row).find(k => k.toLowerCase().includes('symbol')) || 'Symbol';
+              
+              const hasDate = row[dateKey] && row[dateKey].toString().trim() !== '';
+              const hasSymbol = row[symbolKey] && row[symbolKey].toString().trim() !== '';
+              
+              console.log('Row check:', { dateKey, symbolKey, hasDate, hasSymbol, row });
               return hasDate && hasSymbol;
             })
             .map((row: any) => {
+              // Find column names (case-insensitive, handle spaces)
+              const dateKey = Object.keys(row).find(k => k.toLowerCase().includes('date')) || 'Date';
+              const symbolKey = Object.keys(row).find(k => k.toLowerCase().includes('symbol')) || 'Symbol';
+              const stockNameKey = Object.keys(row).find(k => k.toLowerCase().includes('stock')) || 'Stock Name';
+              const clientNameKey = Object.keys(row).find(k => k.toLowerCase().includes('client')) || 'Client Name';
+              const dealTypeKey = Object.keys(row).find(k => k.toLowerCase().includes('buy') || k.toLowerCase().includes('sell')) || 'buy / sell';
+              const quantityKey = Object.keys(row).find(k => k.toLowerCase().includes('quantity')) || 'Quantity';
+              const priceKey = Object.keys(row).find(k => k.toLowerCase().includes('price')) || 'Trade Price';
+              const exchangeKey = Object.keys(row).find(k => k.toLowerCase().includes('exchange')) || 'Exchange';
+              
               // Parse date (handle MM/DD/YYYY format)
-              let dateStr = row['Date'].toString().trim();
+              let dateStr = row[dateKey].toString().trim();
               if (dateStr.includes('/')) {
                 const [month, day, year] = dateStr.split('/');
                 dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
@@ -59,13 +80,13 @@ export function NSEBulkDealsUpload() {
               
               return {
                 date: dateStr,
-                symbol: row['Symbol'].toString().trim(),
-                stock_name: (row['Stock Name'] || '').toString().trim(),
-                client_name: (row['Client Name'] || '').toString().trim(),
-                deal_type: (row['buy / sell'] || row['Deal Type'] || 'buy').toString().toLowerCase().trim(),
-                quantity: parseInt(row['Quantity']) || 0,
-                avg_price: parseFloat(row['Trade Price'] || row['Avg Price']) || 0,
-                exchange: (row['Exchange'] || 'NSE').toString().trim(),
+                symbol: row[symbolKey].toString().trim(),
+                stock_name: (row[stockNameKey] || '').toString().trim(),
+                client_name: (row[clientNameKey] || '').toString().trim(),
+                deal_type: (row[dealTypeKey] || 'buy').toString().toLowerCase().trim(),
+                quantity: parseInt(row[quantityKey]) || 0,
+                avg_price: parseFloat(row[priceKey]) || 0,
+                exchange: (row[exchangeKey] || 'NSE').toString().trim(),
               };
             });
 
