@@ -91,11 +91,31 @@ export function NSEBlockDealsUpload() {
             });
 
           console.log('Parsed data:', parsedData);
-          const data = parsedData;
+          
+          // Remove TRUE duplicates - check ALL columns
+          const uniqueData = parsedData.reduce((acc: any[], curr: any) => {
+            const isDuplicate = acc.some((item: any) => 
+              item.date === curr.date &&
+              item.symbol === curr.symbol &&
+              item.stock_name === curr.stock_name &&
+              item.client_name === curr.client_name &&
+              item.deal_type === curr.deal_type &&
+              item.quantity === curr.quantity &&
+              item.trade_price === curr.trade_price &&
+              item.exchange === curr.exchange
+            );
+            if (!isDuplicate) {
+              acc.push(curr);
+            }
+            return acc;
+          }, []);
+          
+          console.log(`Removed ${parsedData.length - uniqueData.length} exact duplicates. Uploading ${uniqueData.length} unique records.`);
+          const data = uniqueData;
 
           const { error } = await (supabase as any)
             .from('block_deals')
-            .upsert(data, { onConflict: 'date,symbol,client_name,quantity' });
+            .insert(data);
 
           if (error) throw error;
 

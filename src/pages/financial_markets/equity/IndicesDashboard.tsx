@@ -1,7 +1,8 @@
 // Indices Dashboard - Main equity markets overview page
 
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, TrendingDown, Activity, BarChart3, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, BarChart3, Clock, ChevronDown } from 'lucide-react';
 import { CompactMarketTicker } from '@/components/financial/CompactMarketTicker';
 import { useMarketIndices } from '@/hooks/equity/useMarketIndices';
 
@@ -14,6 +15,24 @@ export default function IndicesDashboard() {
   const avgChange = indices.length > 0
     ? indices.reduce((sum, i) => sum + (i.change_percent || 0), 0) / indices.length
     : 0;
+
+  // Top performers
+  const topGainers = [...indices]
+    .filter(i => i.change_percent && i.change_percent > 0)
+    .sort((a, b) => (b.change_percent || 0) - (a.change_percent || 0))
+    .slice(0, 5);
+  
+  const topLosers = [...indices]
+    .filter(i => i.change_percent && i.change_percent < 0)
+    .sort((a, b) => (a.change_percent || 0) - (b.change_percent || 0))
+    .slice(0, 5);
+
+  // Top 10 indices by market cap (using last_price as proxy)
+  const top10Indices = [...indices]
+    .sort((a, b) => (b.last_price || 0) - (a.last_price || 0))
+    .slice(0, 10);
+
+  const [showAllIndices, setShowAllIndices] = useState(false);
 
   // Format last updated time
   const formatTime = (date: Date | null) => {
@@ -93,9 +112,83 @@ export default function IndicesDashboard() {
           </div>
         )}
 
+        {/* Market Analysis Section */}
+        {!loading && indices.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Top Gainers */}
+            <div className="dashboard-card">
+              <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-success" />
+                Top 5 Gainers
+              </h3>
+              <div className="space-y-2">
+                {topGainers.map((index) => (
+                  <div key={index.id} className="flex items-center justify-between p-2 bg-success/5 rounded-lg">
+                    <Link
+                      to={`/financial-markets/equity-markets/index/${index.symbol.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      {index.name}
+                    </Link>
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-success">
+                        +{index.change_percent?.toFixed(2)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {index.last_price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Top Losers */}
+            <div className="dashboard-card">
+              <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
+                <TrendingDown className="h-4 w-4 text-destructive" />
+                Top 5 Losers
+              </h3>
+              <div className="space-y-2">
+                {topLosers.map((index) => (
+                  <div key={index.id} className="flex items-center justify-between p-2 bg-destructive/5 rounded-lg">
+                    <Link
+                      to={`/financial-markets/equity-markets/index/${index.symbol.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      {index.name}
+                    </Link>
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-destructive">
+                        {index.change_percent?.toFixed(2)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {index.last_price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* All Indices Table */}
         <div className="mb-6">
-          <h2 className="text-lg font-semibold text-foreground mb-3">All Indices</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-foreground">
+              {showAllIndices ? 'All Indices' : 'Top 10 Indices'}
+            </h2>
+            {indices.length > 10 && (
+              <button
+                onClick={() => setShowAllIndices(!showAllIndices)}
+                className="text-sm text-primary hover:underline flex items-center gap-1"
+              >
+                {showAllIndices ? 'Show Less' : `Show All ${indices.length} Indices`}
+                <ChevronDown className={`h-4 w-4 transition-transform ${showAllIndices ? 'rotate-180' : ''}`} />
+              </button>
+            )}
+          </div>
           
           {loading ? (
             <div className="dashboard-card animate-pulse">
@@ -119,7 +212,7 @@ export default function IndicesDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {indices.map((index) => {
+                  {(showAllIndices ? indices : top10Indices).map((index) => {
                     const isPositive = (index.change_percent || 0) >= 0;
                     return (
                       <tr key={index.id} className="border-b border-border hover:bg-muted/50 transition-colors">
@@ -168,7 +261,7 @@ export default function IndicesDashboard() {
         </div>
 
         {/* Quick Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Link
             to="/financial-markets/equity-markets/bulk-deals"
             className="group bg-card border border-border hover:border-primary rounded-lg p-3 transition-all"
@@ -189,17 +282,6 @@ export default function IndicesDashboard() {
               <h3 className="text-sm font-semibold text-foreground">FII/DII Activity</h3>
             </div>
             <p className="text-xs text-muted-foreground">Foreign & domestic flows</p>
-          </Link>
-
-          <Link
-            to="/financial-markets/equity-markets/sector-analysis"
-            className="group bg-card border border-border hover:border-primary rounded-lg p-3 transition-all"
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingDown className="h-4 w-4 text-warning" />
-              <h3 className="text-sm font-semibold text-foreground">Sector Analysis</h3>
-            </div>
-            <p className="text-xs text-muted-foreground">Sector performance</p>
           </Link>
 
           <Link

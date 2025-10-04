@@ -49,22 +49,33 @@ export function NSEDataSyncAdmin() {
       if (result.success) {
         toast({
           title: 'Indices Synced',
-          description: `${result.count} indices updated. Now syncing constituents...`,
+          description: `${result.count} indices updated. Syncing constituents for all indices...`,
         });
         
-        // Auto-sync constituents for major indices
-        const majorIndices = ['NIFTY 50', 'NIFTY BANK', 'NIFTY IT'];
-        for (const index of majorIndices) {
+        // Auto-sync constituents for ALL major indices
+        const allIndices = [
+          'NIFTY 50', 'NIFTY BANK', 'NIFTY IT', 'NIFTY AUTO', 'NIFTY PHARMA',
+          'NIFTY FMCG', 'NIFTY METAL', 'NIFTY ENERGY', 'NIFTY REALTY',
+          'NIFTY FINANCIAL SERVICES', 'NIFTY MEDIA', 'NIFTY PSU BANK',
+          'NIFTY MIDCAP 50', 'NIFTY SMALLCAP 50', 'NIFTY NEXT 50'
+        ];
+        
+        let successCount = 0;
+        for (const index of allIndices) {
           try {
-            await NSESyncService.syncIndexConstituents(index);
+            const constResult = await NSESyncService.syncIndexConstituents(index);
+            if (constResult.success) {
+              successCount++;
+              console.log(`✅ ${index}: ${constResult.count} stocks synced`);
+            }
           } catch (err) {
-            console.error(`Failed to sync ${index} constituents:`, err);
+            console.error(`❌ Failed to sync ${index}:`, err);
           }
         }
         
         toast({
-          title: 'Complete',
-          description: `${result.count} indices and constituents synced`,
+          title: 'Sync Complete',
+          description: `${result.count} indices + constituents from ${successCount} indices synced`,
         });
       } else {
         throw new Error(result.error);
