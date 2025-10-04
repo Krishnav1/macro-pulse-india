@@ -153,7 +153,7 @@ export const StateAumMap: React.FC<StateAumMapProps> = ({ data, monthYear, viewM
             }
           });
 
-          // Add state labels
+          // Add state labels - positioned at label points for better placement
           map.current.addLayer({
             id: 'state-labels',
             type: 'symbol',
@@ -161,14 +161,20 @@ export const StateAumMap: React.FC<StateAumMapProps> = ({ data, monthYear, viewM
             layout: {
               'text-field': ['get', STATE_NAME_PROPERTY],
               'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-              'text-size': 12,
-              'text-anchor': 'center'
+              'text-size': 13,
+              'text-anchor': 'center',
+              'text-offset': [0, 0],
+              'text-allow-overlap': false,
+              'text-ignore-placement': false,
+              'symbol-placement': 'point',
+              'text-max-width': 10
             },
             paint: {
               'text-color': '#ffffff',
               'text-halo-color': '#000000',
-              'text-halo-width': 2,
-              'text-halo-blur': 1
+              'text-halo-width': 2.5,
+              'text-halo-blur': 0.5,
+              'text-opacity': 1
             }
           });
 

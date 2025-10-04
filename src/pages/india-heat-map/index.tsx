@@ -46,6 +46,13 @@ export default function IndiaHeatMapPage() {
   const { months, loading: monthsLoading } = useStateAumMonths();
   const { data: stateAumData, loading: stateAumLoading } = useStateAumComposition(selectedMonth);
 
+  // Auto-select first month when months load
+  useEffect(() => {
+    if (months.length > 0 && !selectedMonth) {
+      setSelectedMonth(months[0]);
+    }
+  }, [months, selectedMonth]);
+
   // URL sync with throttling - simplified without auto-selection
   useEffect(() => {
     const timeoutId = setTimeout(() => {

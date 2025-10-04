@@ -126,7 +126,7 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
             }
           });
 
-          // Add state labels
+          // Add state labels - prevent duplicates with proper placement
           map.current.addLayer({
             id: 'state-labels',
             type: 'symbol',
@@ -134,14 +134,20 @@ export const IndiaHeatmapMapbox: React.FC<IndiaHeatmapMapboxProps> = ({
             layout: {
               'text-field': ['get', STATE_NAME_PROPERTY],
               'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-              'text-size': 12,
-              'text-anchor': 'center'
+              'text-size': 13,
+              'text-anchor': 'center',
+              'text-offset': [0, 0],
+              'text-allow-overlap': false,
+              'text-ignore-placement': false,
+              'symbol-placement': 'point',
+              'text-max-width': 10
             },
             paint: {
               'text-color': '#1f2937',
               'text-halo-color': '#ffffff',
-              'text-halo-width': 2,
-              'text-halo-blur': 1
+              'text-halo-width': 2.5,
+              'text-halo-blur': 0.5,
+              'text-opacity': 1
             }
           });
 
