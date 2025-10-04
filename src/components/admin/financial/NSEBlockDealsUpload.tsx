@@ -41,18 +41,36 @@ export function NSEBlockDealsUpload() {
         header: true,
         skipEmptyLines: true,
         complete: async (results) => {
-          const data = results.data
-            .filter((row: any) => row['Date'] && row['Symbol']) // Filter out empty rows
-            .map((row: any) => ({
-              date: row['Date'],
-              symbol: row['Symbol'],
-              stock_name: row['Stock Name'] || '',
-              client_name: row['Client Name'] || '',
-              deal_type: (row['buy / sell'] || 'buy').toLowerCase().trim(),
-              quantity: parseInt(row['Quantity']) || 0,
-              trade_price: parseFloat(row['Trade Price']) || 0,
-              exchange: row['Exchange'] || 'NSE',
-            }));
+          // Parse and validate data
+          const parsedData = results.data
+            .filter((row: any) => {
+              // Filter out empty rows
+              const hasDate = row['Date'] && row['Date'].toString().trim() !== '';
+              const hasSymbol = row['Symbol'] && row['Symbol'].toString().trim() !== '';
+              return hasDate && hasSymbol;
+            })
+            .map((row: any) => {
+              // Parse date (handle MM/DD/YYYY format)
+              let dateStr = row['Date'].toString().trim();
+              if (dateStr.includes('/')) {
+                const [month, day, year] = dateStr.split('/');
+                dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              }
+              
+              return {
+                date: dateStr,
+                symbol: row['Symbol'].toString().trim(),
+                stock_name: (row['Stock Name'] || '').toString().trim(),
+                client_name: (row['Client Name'] || '').toString().trim(),
+                deal_type: (row['buy / sell'] || row['Deal Type'] || 'buy').toString().toLowerCase().trim(),
+                quantity: parseInt(row['Quantity']) || 0,
+                trade_price: parseFloat(row['Trade Price']) || 0,
+                exchange: (row['Exchange'] || 'NSE').toString().trim(),
+              };
+            });
+
+          console.log('Parsed data:', parsedData);
+          const data = parsedData;
 
           const { error } = await (supabase as any)
             .from('block_deals')
