@@ -44,11 +44,27 @@ export function NSEDataSyncAdmin() {
   const handleIndicesSync = async () => {
     setSyncing(true);
     try {
+      // Sync indices first
       const result = await NSESyncService.syncIndices();
       if (result.success) {
         toast({
           title: 'Indices Synced',
-          description: `${result.count} indices updated`,
+          description: `${result.count} indices updated. Now syncing constituents...`,
+        });
+        
+        // Auto-sync constituents for major indices
+        const majorIndices = ['NIFTY 50', 'NIFTY BANK', 'NIFTY IT'];
+        for (const index of majorIndices) {
+          try {
+            await NSESyncService.syncIndexConstituents(index);
+          } catch (err) {
+            console.error(`Failed to sync ${index} constituents:`, err);
+          }
+        }
+        
+        toast({
+          title: 'Complete',
+          description: `${result.count} indices and constituents synced`,
         });
       } else {
         throw new Error(result.error);
