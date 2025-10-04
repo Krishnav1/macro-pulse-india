@@ -1,44 +1,12 @@
 // Indices Dashboard - Main equity markets overview page
 
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Activity, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, BarChart3, Clock } from 'lucide-react';
 import { CompactMarketTicker } from '@/components/financial/CompactMarketTicker';
-import { IndexCard } from '@/components/equity/IndexCard';
-import { MarketSummary } from '@/components/equity/MarketSummary';
-import { IndexComparison } from '@/components/equity/IndexComparison';
 import { useMarketIndices } from '@/hooks/equity/useMarketIndices';
-import { NSESyncService } from '@/services/equity/nseSyncService';
-import { useToast } from '@/hooks/use-toast';
 
 export default function IndicesDashboard() {
-  const { indices, loading, error, refresh } = useMarketIndices();
-  const [syncing, setSyncing] = useState(false);
-  const { toast } = useToast();
-
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      const result = await NSESyncService.syncIndices();
-      if (result.success) {
-        toast({
-          title: 'Sync Successful',
-          description: `Updated ${result.count} indices`,
-        });
-        refresh();
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (err) {
-      toast({
-        title: 'Sync Failed',
-        description: err instanceof Error ? err.message : 'Failed to sync data',
-        variant: 'destructive',
-      });
-    } finally {
-      setSyncing(false);
-    }
-  };
+  const { indices, loading, error, lastUpdated } = useMarketIndices();
 
   // Calculate summary stats
   const gainers = indices.filter(i => (i.change_percent || 0) > 0).length;
@@ -47,10 +15,15 @@ export default function IndicesDashboard() {
     ? indices.reduce((sum, i) => sum + (i.change_percent || 0), 0) / indices.length
     : 0;
 
-  // Major indices for comparison
-  const majorIndices = indices.filter(i => 
-    ['NIFTY 50', 'NIFTY BANK', 'NIFTY IT', 'NIFTY AUTO', 'NIFTY PHARMA', 'NIFTY FMCG'].includes(i.name)
-  );
+  // Format last updated time
+  const formatTime = (date: Date | null) => {
+    if (!date) return 'Never';
+    return new Intl.DateTimeFormat('en-IN', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Kolkata'
+    }).format(date);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -58,162 +31,187 @@ export default function IndicesDashboard() {
       <CompactMarketTicker />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <Link
-            to="/financial-markets"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Financial Markets
-          </Link>
-        </div>
-
-        {/* Page Header */}
-        <div className="flex items-start justify-between mb-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Page Header with Last Updated */}
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent mb-2">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent mb-1">
               Market Indices
             </h1>
-            <p className="text-muted-foreground">
-              Live tracking of all NSE indices with detailed analysis
-            </p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              <span>Last Updated: {formatTime(lastUpdated)}</span>
+            </div>
           </div>
-
-          {/* Sync Button */}
-          <button
-            onClick={handleSync}
-            disabled={syncing || loading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-            {syncing ? 'Syncing...' : 'Sync Now'}
-          </button>
         </div>
 
-        {/* Market Summary */}
-        <MarketSummary
-          gainers={gainers}
-          losers={losers}
-          avgChange={avgChange}
-          totalIndices={indices.length}
-          loading={loading}
-        />
+        {/* Compact Market Summary */}
+        <div className="grid grid-cols-4 gap-3 mb-6">
+          <div className="bg-success/10 border border-success/20 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="h-4 w-4 text-success" />
+              <span className="text-xs text-muted-foreground">Advancing</span>
+            </div>
+            <div className="text-2xl font-bold text-success">{gainers}</div>
+            <div className="text-xs text-muted-foreground">Indices in green</div>
+          </div>
+
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingDown className="h-4 w-4 text-destructive" />
+              <span className="text-xs text-muted-foreground">Declining</span>
+            </div>
+            <div className="text-2xl font-bold text-destructive">{losers}</div>
+            <div className="text-xs text-muted-foreground">Indices in red</div>
+          </div>
+
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Activity className="h-4 w-4 text-primary" />
+              <span className="text-xs text-muted-foreground">Avg Change</span>
+            </div>
+            <div className={`text-2xl font-bold ${avgChange >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {avgChange >= 0 ? '+' : ''}{avgChange.toFixed(2)}%
+            </div>
+            <div className="text-xs text-muted-foreground">Market sentiment</div>
+          </div>
+
+          <div className="bg-muted/50 border border-border rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart3 className="h-4 w-4 text-foreground" />
+              <span className="text-xs text-muted-foreground">Total</span>
+            </div>
+            <div className="text-2xl font-bold text-foreground">{indices.length}</div>
+            <div className="text-xs text-muted-foreground">Indices tracked</div>
+          </div>
+        </div>
 
         {/* Error State */}
         {error && (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-6 text-destructive">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4 text-destructive text-sm">
             Error loading indices: {error}
           </div>
         )}
 
-        {/* Index Comparison Chart */}
-        {majorIndices.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Index Comparison</h2>
-            <IndexComparison indices={majorIndices} loading={loading} />
-          </div>
-        )}
-
-        {/* All Indices Grid */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-foreground mb-4">All Indices</h2>
+        {/* All Indices Table */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-foreground mb-3">All Indices</h2>
           
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="dashboard-card animate-pulse">
-                  <div className="h-24 bg-muted rounded"></div>
-                </div>
-              ))}
+            <div className="dashboard-card animate-pulse">
+              <div className="h-96 bg-muted rounded"></div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {indices.map((index) => (
-                <IndexCard key={index.id} index={index} />
-              ))}
+            <div className="dashboard-card overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-border">
+                  <tr>
+                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Index</th>
+                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Last Price</th>
+                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Change</th>
+                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Change %</th>
+                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Open</th>
+                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">High</th>
+                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Low</th>
+                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Prev Close</th>
+                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">52W High</th>
+                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">52W Low</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {indices.map((index) => {
+                    const isPositive = (index.change_percent || 0) >= 0;
+                    return (
+                      <tr key={index.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                        <td className="py-3 px-4">
+                          <Link
+                            to={`/financial-markets/equity-markets/index/${index.symbol.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {index.name}
+                          </Link>
+                        </td>
+                        <td className="py-3 px-4 text-right font-medium text-foreground">
+                          {index.last_price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </td>
+                        <td className={`py-3 px-4 text-right font-medium ${isPositive ? 'text-success' : 'text-destructive'}`}>
+                          {isPositive ? '+' : ''}{index.change?.toFixed(2)}
+                        </td>
+                        <td className={`py-3 px-4 text-right font-medium ${isPositive ? 'text-success' : 'text-destructive'}`}>
+                          {isPositive ? '+' : ''}{index.change_percent?.toFixed(2)}%
+                        </td>
+                        <td className="py-3 px-4 text-right text-muted-foreground">
+                          {index.open?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-right text-success">
+                          {index.high?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-right text-destructive">
+                          {index.low?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-right text-muted-foreground">
+                          {index.previous_close?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-right text-muted-foreground">
+                          {index.year_high?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-right text-muted-foreground">
+                          {index.year_low?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
 
         {/* Quick Links */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Link
             to="/financial-markets/equity-markets/bulk-deals"
-            className="group dashboard-card hover:border-primary transition-all"
+            className="group bg-card border border-border hover:border-primary rounded-lg p-3 transition-all"
           >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                <Activity className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                  Bulk & Block Deals
-                </h3>
-                <p className="text-sm text-muted-foreground">Track institutional activity</p>
-              </div>
+            <div className="flex items-center gap-2 mb-1">
+              <Activity className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Bulk & Block Deals</h3>
             </div>
+            <p className="text-xs text-muted-foreground">Institutional activity</p>
           </Link>
 
           <Link
             to="/financial-markets/fii-dii-activity"
-            className="group dashboard-card hover:border-primary transition-all"
+            className="group bg-card border border-border hover:border-primary rounded-lg p-3 transition-all"
           >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-success/10 rounded-lg group-hover:bg-success/20 transition-colors">
-                <TrendingUp className="h-6 w-6 text-success" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                  FII/DII Activity
-                </h3>
-                <p className="text-sm text-muted-foreground">Foreign & domestic flows</p>
-              </div>
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="h-4 w-4 text-success" />
+              <h3 className="text-sm font-semibold text-foreground">FII/DII Activity</h3>
             </div>
+            <p className="text-xs text-muted-foreground">Foreign & domestic flows</p>
           </Link>
 
           <Link
             to="/financial-markets/equity-markets/sector-analysis"
-            className="group dashboard-card hover:border-primary transition-all"
+            className="group bg-card border border-border hover:border-primary rounded-lg p-3 transition-all"
           >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-warning/10 rounded-lg group-hover:bg-warning/20 transition-colors">
-                <TrendingDown className="h-6 w-6 text-warning" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                  Sector Analysis
-                </h3>
-                <p className="text-sm text-muted-foreground">Detailed sector performance</p>
-              </div>
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingDown className="h-4 w-4 text-warning" />
+              <h3 className="text-sm font-semibold text-foreground">Sector Analysis</h3>
             </div>
+            <p className="text-xs text-muted-foreground">Sector performance</p>
           </Link>
 
           <Link
             to="/financial-markets/equity-markets/comparison"
-            className="group dashboard-card hover:border-primary transition-all"
+            className="group bg-card border border-border hover:border-primary rounded-lg p-3 transition-all"
           >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors">
-                <BarChart3 className="h-6 w-6 text-purple-500" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                  Compare Indices
-                </h3>
-                <p className="text-sm text-muted-foreground">Side-by-side comparison</p>
-              </div>
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart3 className="h-4 w-4 text-purple-500" />
+              <h3 className="text-sm font-semibold text-foreground">Compare Indices</h3>
             </div>
+            <p className="text-xs text-muted-foreground">Side-by-side comparison</p>
           </Link>
-        </div>
-
-        {/* Info Note */}
-        <div className="mt-8 bg-primary/10 border border-primary/20 rounded-lg p-4">
-          <p className="text-sm text-foreground">
-            <strong>Note:</strong> Data is updated every 15 minutes during market hours (9:15 AM - 3:30 PM IST).
-            Click on any index to view detailed constituent analysis, gainers, losers, and more.
-          </p>
         </div>
       </div>
     </div>

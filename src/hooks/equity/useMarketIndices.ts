@@ -8,6 +8,7 @@ interface UseMarketIndicesResult {
   indices: MarketIndex[];
   loading: boolean;
   error: string | null;
+  lastUpdated: Date | null;
   refresh: () => void;
 }
 
@@ -15,6 +16,7 @@ export function useMarketIndices(): UseMarketIndicesResult {
   const [indices, setIndices] = useState<MarketIndex[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchIndices = async () => {
     try {
@@ -38,6 +40,7 @@ export function useMarketIndices(): UseMarketIndicesResult {
       }, []) || [];
 
       setIndices(uniqueIndices);
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Error fetching indices:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch indices');
@@ -66,5 +69,5 @@ export function useMarketIndices(): UseMarketIndicesResult {
     return () => clearInterval(interval);
   }, []);
 
-  return { indices, loading, error, refresh: fetchIndices };
+  return { indices, loading, error, lastUpdated, refresh: fetchIndices };
 }
