@@ -33,12 +33,16 @@ export class QuarterlyAUMParser {
       ? this.parseAggregatedFormat(dataRows)
       : this.parseDetailedFormat(dataRows);
     
-    // Calculate total AUM
-    const totalRow = parsedRows.find(row => 
-      row.category_name.toLowerCase().includes('total')
-    );
-    const totalAUM = totalRow ? totalRow.aum_crore : 
-      parsedRows.reduce((sum, row) => sum + row.aum_crore, 0);
+    // Calculate total AUM from Grand TOTAL row
+    const grandTotalRow = parsedRows.find(row => row.is_grand_total);
+    const totalAUM = grandTotalRow ? grandTotalRow.aum_crore : 
+      parsedRows.reduce((sum, row) => {
+        // Sum only non-subtotal, non-total rows
+        if (!row.is_subtotal && !row.is_grand_total) {
+          return sum + row.aum_crore;
+        }
+        return sum;
+      }, 0);
     
     return {
       quarter_end_date: metadata.quarter_end_date,
@@ -46,9 +50,7 @@ export class QuarterlyAUMParser {
       fiscal_year: metadata.fiscal_year,
       data_format_version: formatVersion,
       total_aum_crore: totalAUM,
-      rows: parsedRows.filter(row => 
-        !row.category_name.toLowerCase().includes('total')
-      )
+      rows: parsedRows // Keep all rows including subtotals
     };
   }
 
@@ -193,10 +195,34 @@ export class QuarterlyAUMParser {
       
       const cleanCategoryName = categoryName.trim();
       
+      // Detect subtotal rows
+      const isSubtotal = cleanCategoryName.includes('- TOTAL') || 
+                        cleanCategoryName.includes('Schemes - TOTAL') ||
+                        cleanCategoryName.includes('Scheme - TOTAL');
+      const isGrandTotal = cleanCategoryName === 'Grand TOTAL' || 
+                          cleanCategoryName === 'TOTAL';
+      
+      // Determine parent category for subtotals
+      let parentCategory: 'Equity' | 'Debt' | 'Hybrid' | 'Other' | undefined;
+      if (isSubtotal) {
+        if (cleanCategoryName.toLowerCase().includes('equity')) {
+          parentCategory = 'Equity';
+        } else if (cleanCategoryName.toLowerCase().includes('debt')) {
+          parentCategory = 'Debt';
+        } else if (cleanCategoryName.toLowerCase().includes('hybrid')) {
+          parentCategory = 'Hybrid';
+        } else if (cleanCategoryName.toLowerCase().includes('other')) {
+          parentCategory = 'Other';
+        }
+      }
+      
       parsed.push({
         category_name: cleanCategoryName,
         aum_crore: aumValue,
-        aaum_crore: aaumValue || aumValue
+        aaum_crore: aaumValue || aumValue,
+        is_subtotal: isSubtotal,
+        is_grand_total: isGrandTotal,
+        parent_category: parentCategory
       });
     }
     

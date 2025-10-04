@@ -1,131 +1,165 @@
 // =====================================================
-// INDUSTRY TRENDS PAGE
-// Comprehensive analysis of mutual fund industry trends
+// INDUSTRY TRENDS PAGE - REDESIGNED
+// At-a-glance analysis with quarter selection
 // =====================================================
 
-import { useState } from 'react';
-import { TrendingUp, PieChart, BarChart3, Activity } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { TrendingUp, PieChart, BarChart3, Grid3x3, LineChart } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AUMGrowthChart } from '@/components/financial/industry-trends/AUMGrowthChart';
-import { AssetClassDistribution } from '@/components/financial/industry-trends/AssetClassDistribution';
-import { CategoryBreakdownChart } from '@/components/financial/industry-trends/CategoryBreakdownChart';
-import { FundFlowHeatmap } from '@/components/financial/industry-trends/FundFlowHeatmap';
-import { ActiveVsPassiveChart } from '@/components/financial/industry-trends/ActiveVsPassiveChart';
-import { InvestorBehaviorInsights } from '@/components/financial/industry-trends/InvestorBehaviorInsights';
-import { KeyMetricsCards } from '@/components/financial/industry-trends/KeyMetricsCards';
-import { useLatestQuarterData } from '@/hooks/quarterly-aum/useQuarterlyAUMData';
+import { IndustryKPICards } from '@/components/financial/industry-trends/IndustryKPICards';
+import { CategoryDistributionChart } from '@/components/financial/industry-trends/CategoryDistributionChart';
+import { AumAaumComparisonChart } from '@/components/financial/industry-trends/AumAaumComparisonChart';
+import { QuarterlyTrendChart } from '@/components/financial/industry-trends/QuarterlyTrendChart';
+import { useQuarterlyAUMData } from '@/hooks/quarterly-aum/useQuarterlyAUMData';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function IndustryTrendsPage() {
-  const [viewMode, setViewMode] = useState<'quarterly' | 'annual'>('quarterly');
-  const { latestQuarter } = useLatestQuarterData();
+  const [viewMode, setViewMode] = useState<'grid' | 'chart'>('chart');
+  const [selectedQuarter, setSelectedQuarter] = useState<string>('');
+  const [availableQuarters, setAvailableQuarters] = useState<{ value: string; label: string }[]>([]);
+  const { data: allData, isLoading } = useQuarterlyAUMData();
+
+  // Get unique quarters and set latest as default
+  useEffect(() => {
+    const fetchQuarters = async () => {
+      const { data, error } = await (supabase as any)
+        .from('quarterly_aum_data')
+        .select('quarter_end_date, quarter_label')
+        .order('quarter_end_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching quarters:', error);
+        return;
+      }
+
+      // Get unique quarters
+      const uniqueQuarters = Array.from(
+        new Map(data.map((item: any) => [item.quarter_end_date, item])).values()
+      );
+
+      const quarters = uniqueQuarters.map((q: any) => ({
+        value: q.quarter_end_date,
+        label: q.quarter_label
+      }));
+
+      setAvailableQuarters(quarters);
+      if (quarters.length > 0 && !selectedQuarter) {
+        setSelectedQuarter(quarters[0].value);
+      }
+    };
+
+    fetchQuarters();
+  }, []);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Industry Trends</h1>
-        <p className="text-muted-foreground">
-          Comprehensive analysis of mutual fund industry growth, composition, and investor behavior
-        </p>
+    <div className="container mx-auto p-4 md:p-6 space-y-6">
+      {/* Header Row: Headline + Quarter Selector + View Toggle */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+            Industry Trends
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Mutual fund industry composition and growth analysis
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {/* Quarter Selector */}
+          <select
+            value={selectedQuarter}
+            onChange={(e) => setSelectedQuarter(e.target.value)}
+            className="px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+            disabled={isLoading || availableQuarters.length === 0}
+          >
+            {availableQuarters.map((q) => (
+              <option key={q.value} value={q.value}>
+                {q.label}
+              </option>
+            ))}
+          </select>
+
+          {/* View Mode Toggle */}
+          <div className="flex items-center border border-input rounded-md">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-3 py-2 text-sm flex items-center gap-2 rounded-l-md transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background hover:bg-muted'
+              }`}
+            >
+              <Grid3x3 className="h-4 w-4" />
+              Grid
+            </button>
+            <button
+              onClick={() => setViewMode('chart')}
+              className={`px-3 py-2 text-sm flex items-center gap-2 rounded-r-md transition-colors ${
+                viewMode === 'chart'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background hover:bg-muted'
+              }`}
+            >
+              <LineChart className="h-4 w-4" />
+              Chart
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* View Mode Toggle */}
-      <div className="flex items-center gap-4">
-        <span className="text-sm font-medium">View Mode:</span>
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'quarterly' | 'annual')}>
-          <TabsList>
-            <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
-            <TabsTrigger value="annual">Annual</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
+      {/* KPI Cards */}
+      <IndustryKPICards selectedQuarter={selectedQuarter} />
 
-      {/* Key Metrics Cards */}
-      <KeyMetricsCards viewMode={viewMode} />
-
-      {/* Main Charts Section */}
-      <div className="grid gap-6">
-        {/* AUM Growth Timeline */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Total AUM Growth Trend
-            </CardTitle>
-            <CardDescription>
-              Industry-wide Assets Under Management from 2011 to present
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <AUMGrowthChart viewMode={viewMode} />
-          </CardContent>
-        </Card>
-
-        {/* Asset Class Distribution */}
+      {/* Charts Section - At a Glance */}
+      <div className="space-y-6">
+        {/* Top Row: Two Charts Side-by-Side */}
         <div className="grid lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <PieChart className="h-5 w-5" />
-                Asset Class Distribution
+                Category Distribution
               </CardTitle>
               <CardDescription>
-                Composition over time: Equity, Debt, Hybrid, Others
+                AUM breakdown by asset class
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AssetClassDistribution viewMode={viewMode} />
+              <CategoryDistributionChart selectedQuarter={selectedQuarter} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <BarChart3 className="h-5 w-5" />
-                Current Quarter Breakdown
+                AUM vs AAUM Comparison
               </CardTitle>
               <CardDescription>
-                Latest quarter asset allocation ({latestQuarter ? new Date(latestQuarter).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : 'Loading...'})
+                Quarter-end vs average AUM
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <CategoryBreakdownChart />
+              <AumAaumComparisonChart selectedQuarter={selectedQuarter} />
             </CardContent>
           </Card>
         </div>
 
-        {/* Active vs Passive Trend */}
+        {/* Bottom Row: Full-Width Trend Chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Active vs Passive Investment Trend
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <TrendingUp className="h-5 w-5" />
+              Quarterly Trend Analysis
             </CardTitle>
             <CardDescription>
-              Growth of passive funds (Index Funds & ETFs) vs actively managed funds
+              Last 8 quarters AUM growth by category
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ActiveVsPassiveChart viewMode={viewMode} />
+            <QuarterlyTrendChart selectedQuarter={selectedQuarter} />
           </CardContent>
         </Card>
-
-        {/* Fund Flow Heatmap */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Category Performance Heatmap</CardTitle>
-            <CardDescription>
-              Quarter-over-quarter growth rates across all categories
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FundFlowHeatmap />
-          </CardContent>
-        </Card>
-
-        {/* Investor Behavior Insights */}
-        <InvestorBehaviorInsights />
       </div>
     </div>
   );

@@ -33,6 +33,46 @@ export class QuarterlyAUMTransformer {
     const records: Omit<QuarterlyAUMData, 'id' | 'created_at' | 'updated_at'>[] = [];
 
     for (const row of parsedFile.rows) {
+      // Handle subtotal and grand total rows differently
+      if (row.is_subtotal || row.is_grand_total) {
+        const categoryCode = row.category_name
+          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .replace(/\s+/g, '_')
+          .toUpperCase();
+        
+        records.push({
+          quarter_end_date: parsedFile.quarter_end_date,
+          quarter_label: parsedFile.quarter_label,
+          fiscal_year: parsedFile.fiscal_year,
+          
+          category_level_1: null,
+          category_level_2: null,
+          category_level_3: null,
+          category_level_4: null,
+          category_level_5: null,
+          
+          category_code: categoryCode,
+          category_display_name: row.category_name,
+          parent_category: row.parent_category || 'Other',
+          scheme_type: null,
+          
+          data_format_version: parsedFile.data_format_version,
+          
+          aum_crore: row.aum_crore,
+          aaum_crore: row.aaum_crore,
+          
+          qoq_change_crore: null,
+          qoq_change_percent: null,
+          yoy_change_crore: null,
+          yoy_change_percent: null,
+          
+          is_subtotal: row.is_subtotal || false,
+          is_total: row.is_grand_total || false,
+          notes: null
+        });
+        continue;
+      }
+      
       // Find matching category mapping (creates automatic mapping if not found)
       const mapping = this.findCategoryMapping(row.category_name, parsedFile.data_format_version);
 

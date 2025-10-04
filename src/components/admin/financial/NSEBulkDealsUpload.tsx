@@ -113,7 +113,7 @@ export function NSEBulkDealsUpload() {
           console.log(`Removed ${parsedData.length - uniqueData.length} exact duplicates. Uploading ${uniqueData.length} unique records.`);
           const data = uniqueData;
 
-          // Get unique dates in the upload
+
           const uniqueDates = [...new Set(data.map((d: any) => d.date))];
           console.log(`Deleting existing data for ${uniqueDates.length} dates...`);
 

@@ -348,8 +348,21 @@ export function QuarterlyAUMUpload() {
                   </thead>
                   <tbody>
                     {parsedData.rows.slice(0, 10).map((row, idx) => (
-                      <tr key={idx} className="border-t">
-                        <td className="p-2">{row.category_name}</td>
+                      <tr 
+                        key={idx} 
+                        className={`border-t ${
+                          row.is_grand_total 
+                            ? 'bg-blue-50 font-bold border-t-2 border-blue-300' 
+                            : row.is_subtotal 
+                            ? 'bg-green-50 font-semibold border-t-2 border-green-200' 
+                            : ''
+                        }`}
+                      >
+                        <td className="p-2">
+                          {row.is_grand_total && '🏆 '}
+                          {row.is_subtotal && '📊 '}
+                          {row.category_name}
+                        </td>
                         <td className="text-right p-2">{row.aum_crore.toLocaleString('en-IN')}</td>
                         <td className="text-right p-2">{row.aaum_crore.toLocaleString('en-IN')}</td>
                       </tr>

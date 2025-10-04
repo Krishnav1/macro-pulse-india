@@ -81,6 +81,9 @@ export interface ParsedAUMRow {
   category_level_2?: string;
   category_level_3?: string;
   category_level_4?: string;
+  is_subtotal?: boolean;
+  is_grand_total?: boolean;
+  parent_category?: 'Equity' | 'Debt' | 'Hybrid' | 'Other';
 }
 
 export interface ParsedAUMFile {
