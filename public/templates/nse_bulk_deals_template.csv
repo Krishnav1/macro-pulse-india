@@ -1,0 +1,5 @@
+Date,Symbol,Stock Name,Client Name,Deal Type,Quantity,Avg Price,Exchange
+2025-01-15,RELIANCE,Reliance Industries,ABC Investments Pvt Ltd,buy,50000,2450.50,NSE
+2025-01-15,RELIANCE,Reliance Industries,XYZ Fund,sell,30000,2455.80,NSE
+2025-01-15,TCS,Tata Consultancy Services,PQR Capital,buy,25000,3650.75,NSE
+2025-01-15,HDFCBANK,HDFC Bank,LMN Investments,buy,100000,1580.40,NSE

@@ -3,15 +3,11 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, PieChart, DollarSign, Globe, Rocket, BarChart3, Building2, LineChart, Users } from 'lucide-react';
-import { MarketBreadthUpload } from './MarketBreadthUpload';
+import { BarChart3, LineChart, Users, Activity, PieChart } from 'lucide-react';
 import MutualFundDataAdmin from './MutualFundDataAdmin';
-import AMCDataAdmin from './AMCDataAdmin';
-import { FIIDIIUpload } from './FIIDIIUpload';
-import { IPOUpload } from './IPOUpload';
-import { SectorMetricsUpload } from './SectorMetricsUpload';
 import { QuarterlyAUMAdmin } from './QuarterlyAUMAdmin';
 import { InvestorBehaviorAdmin } from './InvestorBehaviorAdmin';
+import { EquityMarketsAdmin } from './EquityMarketsAdmin';
 
 export function FinancialMarketsAdmin() {
   return (
@@ -30,8 +26,12 @@ export function FinancialMarketsAdmin() {
       </Card>
 
       {/* Data Upload Tabs */}
-      <Tabs defaultValue="quarterly-aum" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+      <Tabs defaultValue="equity-markets" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="equity-markets" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            <span className="hidden sm:inline">Equity Markets</span>
+          </TabsTrigger>
           <TabsTrigger value="quarterly-aum" className="flex items-center gap-2">
             <LineChart className="h-4 w-4" />
             <span className="hidden sm:inline">Quarterly AUM</span>
@@ -40,29 +40,9 @@ export function FinancialMarketsAdmin() {
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Investor Behavior</span>
           </TabsTrigger>
-          <TabsTrigger value="market-breadth" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            <span className="hidden sm:inline">Market Breadth</span>
-          </TabsTrigger>
           <TabsTrigger value="mutual-funds" className="flex items-center gap-2">
             <PieChart className="h-4 w-4" />
             <span className="hidden sm:inline">Mutual Funds</span>
-          </TabsTrigger>
-          <TabsTrigger value="amc-data" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">AMC Data</span>
-          </TabsTrigger>
-          <TabsTrigger value="fii-dii" className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            <span className="hidden sm:inline">FII/DII</span>
-          </TabsTrigger>
-          <TabsTrigger value="ipo" className="flex items-center gap-2">
-            <Rocket className="h-4 w-4" />
-            <span className="hidden sm:inline">IPO Data</span>
-          </TabsTrigger>
-          <TabsTrigger value="sector-metrics" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            <span className="hidden sm:inline">Sector Metrics</span>
           </TabsTrigger>
         </TabsList>
 
@@ -74,28 +54,12 @@ export function FinancialMarketsAdmin() {
           <InvestorBehaviorAdmin />
         </TabsContent>
 
-        <TabsContent value="market-breadth">
-          <MarketBreadthUpload />
-        </TabsContent>
-
         <TabsContent value="mutual-funds">
           <MutualFundDataAdmin />
         </TabsContent>
 
-        <TabsContent value="amc-data">
-          <AMCDataAdmin />
-        </TabsContent>
-
-        <TabsContent value="fii-dii">
-          <FIIDIIUpload />
-        </TabsContent>
-
-        <TabsContent value="ipo">
-          <IPOUpload />
-        </TabsContent>
-
-        <TabsContent value="sector-metrics">
-          <SectorMetricsUpload />
+        <TabsContent value="equity-markets">
+          <EquityMarketsAdmin />
         </TabsContent>
       </Tabs>
     </div>

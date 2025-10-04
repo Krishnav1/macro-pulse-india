@@ -37,6 +37,8 @@ const IPOMarketsPage = lazy(() => import('./pages/financial/IPOMarketsPage'));
 const IndicesDashboard = lazy(() => import('./pages/financial_markets/equity/IndicesDashboard'));
 const IndexDetail = lazy(() => import('./pages/financial_markets/equity/IndexDetail'));
 const BulkBlockDeals = lazy(() => import('./pages/financial_markets/equity/BulkBlockDeals'));
+const SectorAnalysis = lazy(() => import('./pages/financial_markets/equity/SectorAnalysis'));
+const IndexComparison = lazy(() => import('./pages/financial_markets/equity/IndexComparison'));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -71,10 +73,12 @@ const App = () => (
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/indicator/:slug" element={<Admin />} />
               <Route path="/financial-markets" element={<FinancialMarketsPage />} />
-              <Route path="/financial-markets/equity-markets" element={<SectoralHeatmapPage />} />
-              <Route path="/financial-markets/equity-markets/indices" element={<IndicesDashboard />} />
+              <Route path="/financial-markets/equity-markets" element={<IndicesDashboard />} />
+              <Route path="/financial-markets/equity-markets/sectors" element={<SectoralHeatmapPage />} />
               <Route path="/financial-markets/equity-markets/index/:slug" element={<IndexDetail />} />
               <Route path="/financial-markets/equity-markets/bulk-deals" element={<BulkBlockDeals />} />
+              <Route path="/financial-markets/equity-markets/sector-analysis" element={<SectorAnalysis />} />
+              <Route path="/financial-markets/equity-markets/comparison" element={<IndexComparison />} />
               <Route path="/financial-markets/mutual-funds" element={<MutualFundsPage />} />
               <Route path="/financial-markets/mutual-funds/amc/:amcCode" element={<AMCDetailPage />} />
               <Route path="/financial-markets/mutual-funds/scheme/:schemeCode" element={<SchemeDetailPage />} />

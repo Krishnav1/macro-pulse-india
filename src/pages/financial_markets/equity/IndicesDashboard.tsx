@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Activity, BarChart3 } from 'lucide-react';
 import { CompactMarketTicker } from '@/components/financial/CompactMarketTicker';
 import { IndexCard } from '@/components/equity/IndexCard';
 import { MarketSummary } from '@/components/equity/MarketSummary';
@@ -138,7 +138,7 @@ export default function IndicesDashboard() {
         </div>
 
         {/* Quick Links */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link
             to="/financial-markets/equity-markets/bulk-deals"
             className="group dashboard-card hover:border-primary transition-all"
@@ -174,7 +174,7 @@ export default function IndicesDashboard() {
           </Link>
 
           <Link
-            to="/financial-markets/equity-markets/sectors"
+            to="/financial-markets/equity-markets/sector-analysis"
             className="group dashboard-card hover:border-primary transition-all"
           >
             <div className="flex items-center gap-4">
@@ -185,7 +185,24 @@ export default function IndicesDashboard() {
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                   Sector Analysis
                 </h3>
-                <p className="text-sm text-muted-foreground">Sectoral performance heatmap</p>
+                <p className="text-sm text-muted-foreground">Detailed sector performance</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/financial-markets/equity-markets/comparison"
+            className="group dashboard-card hover:border-primary transition-all"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors">
+                <BarChart3 className="h-6 w-6 text-purple-500" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                  Compare Indices
+                </h3>
+                <p className="text-sm text-muted-foreground">Side-by-side comparison</p>
               </div>
             </div>
           </Link>
