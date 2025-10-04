@@ -1,4 +1,4 @@
-==================================================
+// =====================================================
 // QUARTERLY TREND CHART
 // Line chart showing last 8 quarters trend by category
 // =====================================================
@@ -7,9 +7,12 @@ import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { error } from 'console';
 
 interface QuarterlyTrendChartProps {
-  selectedQuarter: string;
+  selectedQuarter?: string;
+  selectedYear?: string;
+  viewMode: 'quarter' | 'year';
 }
 
 interface TrendData {
@@ -27,7 +30,7 @@ const COLORS = {
   Other: '#8b5cf6'
 };
 
-export function QuarterlyTrendChart({ selectedQuarter }: QuarterlyTrendChartProps) {
+export function QuarterlyTrendChart({ selectedQuarter, selectedYear, viewMode }: QuarterlyTrendChartProps) {
   const [data, setData] = useState<TrendData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [visibleLines, setVisibleLines] = useState<Record<string, boolean>>({
@@ -38,6 +41,9 @@ export function QuarterlyTrendChart({ selectedQuarter }: QuarterlyTrendChartProp
   });
 
   useEffect(() => {
+    const period = viewMode === 'quarter' ? selectedQuarter : selectedYear;
+    if (!period) return;
+    
     const fetchData = async () => {
       setIsLoading(true);
       try {
@@ -59,7 +65,12 @@ export function QuarterlyTrendChart({ selectedQuarter }: QuarterlyTrendChartProp
         const trendData: TrendData[] = [];
 
         for (const quarter of uniqueQuarters) {
- .ilike('category_display_name', '%- TOTAL');
+          const q = quarter as any;
+          const { data: subtotals, error } = await (supabase as any)
+            .from('quarterly_aum_data')
+            .select('*')
+            .eq('quarter_end_date', q.quarter_end_date)
+            .ilike('category_display_name', '%- TOTAL');
 
           if (error) continue;
 
@@ -91,7 +102,7 @@ export function QuarterlyTrendChart({ selectedQuarter }: QuarterlyTrendChartProp
     };
 
     fetchData();
-  }, [selectedQuarter]);
+  }, [selectedQuarter, selectedYear, viewMode]);
 
   const toggleLine = (category: string) => {
     setVisibleLines(prev => ({

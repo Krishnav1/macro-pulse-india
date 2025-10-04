@@ -9,7 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface AumAaumComparisonChartProps {
-  selectedQuarter: string;
+  selectedQuarter?: string;
+  selectedYear?: string;
+  viewMode: 'quarter' | 'year';
 }
 
 interface ComparisonData {
@@ -18,12 +20,13 @@ interface ComparisonData {
   AAUM: number;
 }
 
-export function AumAaumComparisonChart({ selectedQuarter }: AumAaumComparisonChartProps) {
+export function AumAaumComparisonChart({ selectedQuarter, selectedYear, viewMode }: AumAaumComparisonChartProps) {
   const [data, setData] = useState<ComparisonData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!selectedQuarter) return;
+    const period = viewMode === 'quarter' ? selectedQuarter : selectedYear;
+    if (!period) return;
 
     const fetchData = async () => {
       setIsLoading(true);
@@ -32,7 +35,7 @@ export function AumAaumComparisonChart({ selectedQuarter }: AumAaumComparisonCha
         const { data: subtotals, error } = await (supabase as any)
           .from('quarterly_aum_data')
           .select('*')
-          .eq('quarter_end_date', selectedQuarter)
+          .eq(viewMode === 'quarter' ? 'quarter_end_date' : 'fiscal_year', period)
           .ilike('category_display_name', '%- TOTAL')
           .not('category_display_name', 'ilike', '%Grand TOTAL%');
 
@@ -60,7 +63,7 @@ export function AumAaumComparisonChart({ selectedQuarter }: AumAaumComparisonCha
     };
 
     fetchData();
-  }, [selectedQuarter]);
+  }, [selectedQuarter, selectedYear, viewMode]);
 
   if (isLoading) {
     return (
