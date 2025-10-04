@@ -41,16 +41,18 @@ export function NSEBulkDealsUpload() {
         header: true,
         skipEmptyLines: true,
         complete: async (results) => {
-          const data = results.data.map((row: any) => ({
-            date: row['Date'],
-            symbol: row['Symbol'],
-            stock_name: row['Stock Name'],
-            client_name: row['Client Name'],
-            deal_type: row['Deal Type'].toLowerCase(),
-            quantity: parseInt(row['Quantity']),
-            avg_price: parseFloat(row['Avg Price']),
-            exchange: row['Exchange'] || 'NSE',
-          }));
+          const data = results.data
+            .filter((row: any) => row['Date'] && row['Symbol']) // Filter out empty rows
+            .map((row: any) => ({
+              date: row['Date'],
+              symbol: row['Symbol'],
+              stock_name: row['Stock Name'] || '',
+              client_name: row['Client Name'] || '',
+              deal_type: (row['buy / sell'] || row['Deal Type'] || 'buy').toLowerCase().trim(),
+              quantity: parseInt(row['Quantity']) || 0,
+              avg_price: parseFloat(row['Trade Price'] || row['Avg Price']) || 0,
+              exchange: row['Exchange'] || 'NSE',
+            }));
 
           const { error } = await (supabase as any)
             .from('bulk_deals')
@@ -146,8 +148,8 @@ export function NSEBulkDealsUpload() {
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="pt-6">
           <p className="text-sm text-foreground">
-            <strong>Note:</strong> CSV should contain: Date, Symbol, Stock Name, Client Name, Deal Type (buy/sell), Quantity, Avg Price, Exchange.
-            Deal Type should be either 'buy' or 'sell'.
+            <strong>Note:</strong> CSV should contain: Date, Symbol, Stock Name, Client Name, buy / sell, Quantity, Trade Price, Exchange.
+            The 'buy / sell' column should contain either 'buy' or 'sell'.
           </p>
         </CardContent>
       </Card>

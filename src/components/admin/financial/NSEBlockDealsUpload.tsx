@@ -41,15 +41,18 @@ export function NSEBlockDealsUpload() {
         header: true,
         skipEmptyLines: true,
         complete: async (results) => {
-          const data = results.data.map((row: any) => ({
-            date: row['Date'],
-            symbol: row['Symbol'],
-            stock_name: row['Stock Name'],
-            client_name: row['Client Name'],
-            quantity: parseInt(row['Quantity']),
-            trade_price: parseFloat(row['Trade Price']),
-            exchange: row['Exchange'] || 'NSE',
-          }));
+          const data = results.data
+            .filter((row: any) => row['Date'] && row['Symbol']) // Filter out empty rows
+            .map((row: any) => ({
+              date: row['Date'],
+              symbol: row['Symbol'],
+              stock_name: row['Stock Name'] || '',
+              client_name: row['Client Name'] || '',
+              deal_type: (row['buy / sell'] || 'buy').toLowerCase().trim(),
+              quantity: parseInt(row['Quantity']) || 0,
+              trade_price: parseFloat(row['Trade Price']) || 0,
+              exchange: row['Exchange'] || 'NSE',
+            }));
 
           const { error } = await (supabase as any)
             .from('block_deals')
@@ -145,8 +148,8 @@ export function NSEBlockDealsUpload() {
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="pt-6">
           <p className="text-sm text-foreground">
-            <strong>Note:</strong> CSV should contain: Date, Symbol, Stock Name, Client Name, Quantity, Trade Price, Exchange.
-            Block deals are large private transactions negotiated between parties.
+            <strong>Note:</strong> CSV should contain: Date, Symbol, Stock Name, Client Name, buy / sell, Quantity, Trade Price, Exchange.
+            The 'buy / sell' column should contain either 'buy' or 'sell'. Block deals are large private transactions between parties.
           </p>
         </CardContent>
       </Card>

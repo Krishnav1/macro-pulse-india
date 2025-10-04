@@ -1,5 +1,5 @@
-Date,Symbol,Stock Name,Client Name,Deal Type,Quantity,Avg Price,Exchange
-2025-01-15,RELIANCE,Reliance Industries,ABC Investments Pvt Ltd,buy,50000,2450.50,NSE
-2025-01-15,RELIANCE,Reliance Industries,XYZ Fund,sell,30000,2455.80,NSE
-2025-01-15,TCS,Tata Consultancy Services,PQR Capital,buy,25000,3650.75,NSE
-2025-01-15,HDFCBANK,HDFC Bank,LMN Investments,buy,100000,1580.40,NSE
+Date,Symbol,Stock Name,Client Name,buy / sell,Quantity,Trade Price,Exchange
+10/08/2024,TRENT,Trent Ltd.,DODONA HOLDINGS LIMITED,sell,1088120,7940.00,NSE
+10/08/2024,TRENT,Trent Ltd.,SIDDHARTHA YOG,buy,1068120,7940.00,NSE
+10/14/2024,TARIL,Transform ADVANCED SERIES TRUST,buy,24796,780.3,NSE
+10/14/2024,TARIL,Transform JITENDRA VIRENDRA SHAH,sell,2700000,780.3,NSE
