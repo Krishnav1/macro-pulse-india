@@ -1,11 +1,15 @@
-import { Search, TrendingUp, BarChart3, Calendar, Info, Map, LineChart, Activity } from "lucide-react";
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Search, TrendingUp, BarChart3, Calendar, Info, Map, LineChart, Activity, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FinancialMarketsMenu } from "./navigation/FinancialMarketsMenu";
+
 const Navigation = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isFinancialMenuOpen, setIsFinancialMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
@@ -15,11 +19,21 @@ const Navigation = () => {
     // { path: '/financial-markets/industry-trends', label: 'Industry Trends', icon: Activity }, // Temporarily disabled - access via financial markets
   ];
 
+  // Close menu when route changes
+  useEffect(() => {
+    setIsFinancialMenuOpen(false);
+  }, [location.pathname]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
+  };
+
+  const handleFinancialMarketsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsFinancialMenuOpen(!isFinancialMenuOpen);
   };
 
   return (
@@ -36,19 +50,36 @@ const Navigation = () => {
 
           {/* Navigation Links */}
           <div className="flex items-center space-x-4 md:space-x-8">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `nav-link ${isActive ? "active" : ""}`
-                }
-                end={item.path === "/"}
-              >
-                <item.icon className="h-4 w-4 mr-1 md:mr-2 inline" />
-                <span className="text-sm md:text-base">{item.label}</span>
-              </NavLink>
-            ))}
+            {navItems.map((item) => {
+              // Special handling for Financial Markets
+              if (item.path === '/financial-markets') {
+                return (
+                  <button
+                    key={item.path}
+                    onClick={handleFinancialMarketsClick}
+                    className={`nav-link ${location.pathname.startsWith('/financial-markets') ? 'active' : ''} flex items-center`}
+                  >
+                    <item.icon className="h-4 w-4 mr-1 md:mr-2 inline" />
+                    <span className="text-sm md:text-base">{item.label}</span>
+                    <ChevronDown className={`h-3 w-3 ml-1 transition-transform duration-200 ${isFinancialMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                );
+              }
+              
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `nav-link ${isActive ? "active" : ""}`
+                  }
+                  end={item.path === "/"}
+                >
+                  <item.icon className="h-4 w-4 mr-1 md:mr-2 inline" />
+                  <span className="text-sm md:text-base">{item.label}</span>
+                </NavLink>
+              );
+            })}
           </div>
 
           {/* Search */}
@@ -69,6 +100,12 @@ const Navigation = () => {
           </form>
         </div>
       </div>
+
+      {/* Financial Markets Mega Menu */}
+      <FinancialMarketsMenu 
+        isOpen={isFinancialMenuOpen} 
+        onClose={() => setIsFinancialMenuOpen(false)} 
+      />
     </nav>
   );
 };
