@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, TrendingUp, TrendingDown, BarChart3, PieChart, Activity, Target, Calendar, DollarSign } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, BarChart3, PieChart, Activity, Target, Calendar, DollarSign, IndianRupee } from 'lucide-react';
 import { useGdpData } from '@/hooks/useGdpData';
 import { useUsdConversion } from '@/hooks/useUsdConversion';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, Area, AreaChart } from 'recharts';
@@ -13,11 +13,32 @@ export const GdpInsightsPage = () => {
   const [viewType, setViewType] = useState<'annual' | 'quarterly'>('annual');
   const [currency, setCurrency] = useState<'inr' | 'usd'>('inr');
   
-  // Get both annual and quarterly data
-  const { data: annualData, availableFYs } = useGdpData('value', 'constant', currency, 'annual', selectedPeriod, null);
-  const { data: growthData } = useGdpData('growth', 'constant', currency, 'annual', selectedPeriod, null);
-  const { data: quarterlyData } = useGdpData('value', 'constant', currency, 'quarterly', 'all', selectedFY);
-  const { formatValue: formatUsdValue, getUnitLabel, getCurrencySymbol } = useUsdConversion();
+  // Get both annual and quarterly data - respect FY selection
+  const { data: annualData, availableFYs } = useGdpData(
+    'value', 
+    'constant', 
+    currency, 
+    'annual', 
+    selectedFY ? 'all' : selectedPeriod, 
+    selectedFY
+  );
+  const { data: growthData } = useGdpData(
+    'growth', 
+    'constant', 
+    currency, 
+    'annual', 
+    selectedFY ? 'all' : selectedPeriod, 
+    selectedFY
+  );
+  const { data: quarterlyData } = useGdpData(
+    'value', 
+    'constant', 
+    currency, 
+    'quarterly', 
+    'all', 
+    selectedFY
+  );
+  const { convertToUsd, getUnitLabel, getCurrencySymbol } = useUsdConversion();
 
   // Calculate key insights
   const insights = useMemo(() => {
@@ -107,9 +128,10 @@ export const GdpInsightsPage = () => {
 
   const formatValue = (value: number, date?: string) => {
     if (currency === 'usd' && date) {
-      return formatUsdValue(value, currency, date);
+      const usdValue = convertToUsd(value, date, 'trillion');
+      return usdValue !== null ? `$${usdValue.toFixed(2)} Trillion` : `$0.00`;
     }
-    return `${getCurrencySymbol(currency)}${(value / 100000).toFixed(2)}`;
+    return `${getCurrencySymbol(currency)}${(value / 100000).toFixed(2)} Trillion`;
   };
   const formatPercent = (value: number) => `${value.toFixed(1)}%`;
 
@@ -229,9 +251,9 @@ export const GdpInsightsPage = () => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Current GDP</p>
                   <p className="text-2xl font-bold">{formatValue(insights.latest.gdp, insights.latest.year)}</p>
-                  <p className="text-xs text-muted-foreground">FY {insights.latest.year} • {getUnitLabel(currency)}</p>
+                  <p className="text-xs text-muted-foreground">FY {insights.latest.year}</p>
                 </div>
-                <DollarSign className="h-8 w-8 text-primary" />
+                {currency === 'inr' ? <IndianRupee className="h-8 w-8 text-primary" /> : <DollarSign className="h-8 w-8 text-primary" />}
               </div>
             </CardContent>
           </Card>

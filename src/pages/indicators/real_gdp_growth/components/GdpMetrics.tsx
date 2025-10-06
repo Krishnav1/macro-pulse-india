@@ -2,8 +2,10 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Minus, Eye } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Eye, DollarSign, IndianRupee } from 'lucide-react';
 import { useGdpData, DataType, PriceType, CurrencyType, ViewType } from '@/hooks/useGdpData';
+import { useUsdConversion } from '@/hooks/useUsdConversion';
+import { useNavigate } from 'react-router-dom';
 
 interface GdpMetricsProps {
   dataType: DataType;
@@ -15,7 +17,9 @@ interface GdpMetricsProps {
 }
 
 export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY, timeframe }: GdpMetricsProps) => {
+  const navigate = useNavigate();
   const { data, loading } = useGdpData(dataType, priceType, currency, viewType, 'all', selectedFY);
+  const { convertToUsd, getCurrencySymbol } = useUsdConversion();
 
   const displayData = useMemo(() => {
     if (!data?.length) {
@@ -46,11 +50,17 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
     return data[data.length - 2];
   }, [data]);
 
-  const formatValue = (value: number) => {
+  const formatValue = (value: number, date?: string) => {
     if (dataType === 'growth') {
       return `${value.toFixed(1)}%`;
     }
-    return `₹${(value / 100000).toFixed(2)} Trillion`;
+    
+    if (currency === 'usd' && date) {
+      const usdValue = convertToUsd(value, date, 'trillion');
+      return usdValue !== null ? `$${usdValue.toFixed(2)} Trillion` : `$0.00`;
+    }
+    
+    return `${getCurrencySymbol(currency)}${(value / 100000).toFixed(2)} Trillion`;
   };
 
   const getActualChange = (current: number, field: string) => {
@@ -138,11 +148,14 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
                 </span>
               </Badge>
             </div>
-            <div className="text-2xl font-bold">
-              {formatValue(displayData.gdp)}
+            <div className="flex items-center gap-2">
+              {currency === 'inr' ? <IndianRupee className="h-5 w-5 text-primary" /> : <DollarSign className="h-5 w-5 text-primary" />}
+              <div className="text-2xl font-bold">
+                {formatValue(displayData.gdp, displayData.year)}
+              </div>
             </div>
             <div className="text-sm text-muted-foreground mt-1">
-              {priceType === 'constant' ? 'Constant Prices' : 'Current Prices'} • INR
+              {priceType === 'constant' ? 'Constant Prices' : 'Current Prices'} • {currency.toUpperCase()}
             </div>
           </div>
 
@@ -160,7 +173,7 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
                 </div>
               </div>
               <div className="text-lg font-semibold">
-                {formatValue(displayData.pfce)}
+                {formatValue(displayData.pfce, displayData.year)}
               </div>
             </div>
 
@@ -176,7 +189,7 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
                 </div>
               </div>
               <div className="text-lg font-semibold">
-                {formatValue(displayData.gfce)}
+                {formatValue(displayData.gfce, displayData.year)}
               </div>
             </div>
 
@@ -192,7 +205,7 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
                 </div>
               </div>
               <div className="text-lg font-semibold">
-                {formatValue(displayData.gfcf)}
+                {formatValue(displayData.gfcf, displayData.year)}
               </div>
             </div>
 
@@ -208,7 +221,7 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
                 </div>
               </div>
               <div className="text-lg font-semibold">
-                {formatValue(displayData.exports)}
+                {formatValue(displayData.exports, displayData.year)}
               </div>
             </div>
           </div>
@@ -216,22 +229,14 @@ export const GdpMetrics = ({ dataType, priceType, currency, viewType, selectedFY
         </CardContent>
       </Card>
       
-      {/* View Full Insights Button */}
-      <Card>
-        <CardContent className="pt-6">
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={() => {
-              // Navigate to full insights page
-              window.location.href = '/indicators/real-gdp-growth/insights';
-            }}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            View Full Insights
-          </Button>
-        </CardContent>
-      </Card>
+      {/* View Full Insights Button - Modern Style */}
+      <button 
+        onClick={() => navigate('/indicators/real-gdp-growth/insights')}
+        className="w-full px-4 py-3 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+      >
+        <Eye className="h-4 w-4" />
+        View Full Insights
+      </button>
     </div>
   );
 };

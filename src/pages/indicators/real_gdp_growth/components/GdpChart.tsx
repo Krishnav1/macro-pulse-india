@@ -170,10 +170,19 @@ export const GdpChart = ({
     
     if (currency === 'usd' && dateForConversion) {
       const usdValue = convertToUsd(value, dateForConversion, 'trillion');
-      return usdValue !== null ? `$${usdValue.toFixed(2)}` : `$0.00`;
+      return usdValue !== null ? `$${usdValue.toFixed(2)}T` : `$0.00`;
     }
     
-    return `${getCurrencySymbol(currency)}${(value / 100000).toFixed(2)}`;
+    return `${getCurrencySymbol(currency)}${(value / 100000).toFixed(2)}T`;
+  };
+
+  // Format Y-axis values - convert to appropriate scale
+  const formatYAxis = (value: number) => {
+    if (dataType === 'growth') {
+      return value.toFixed(0);
+    }
+    // Convert crores to trillions for display
+    return (value / 100000).toFixed(1);
   };
 
   const toggleImpact = (impact: string) => {
@@ -254,13 +263,14 @@ export const GdpChart = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
+          {/* Left: Title + Growth/Value + Price Type */}
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
               Real GDP Growth
             </div>
             
-            {/* Growth/Value Toggle - moved to title area */}
+            {/* Growth/Value Toggle */}
             <div className="flex bg-muted rounded-lg p-1">
               <Button
                 variant={dataType === 'growth' ? 'default' : 'ghost'}
@@ -279,9 +289,29 @@ export const GdpChart = ({
                 Value
               </Button>
             </div>
+
+            {/* Price Type (no label) */}
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={priceType === 'constant' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPriceType('constant')}
+                className="h-8 px-3"
+              >
+                Constant
+              </Button>
+              <Button
+                variant={priceType === 'current' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPriceType('current')}
+                className="h-8 px-3"
+              >
+                Current
+              </Button>
+            </div>
           </div>
           
-          {/* Timeline Options */}
+          {/* Right: Timeline Options */}
           <div className="flex gap-2 items-center">
             <Button variant={timeframe === '1Y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('1Y')}>1Y</Button>
             <Button variant={timeframe === '5Y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('5Y')}>5Y</Button>
@@ -290,32 +320,40 @@ export const GdpChart = ({
           </div>
         </CardTitle>
 
-        {/* Row 2: FY Dropdown and Period Toggle */}
+        {/* Row 2: FY Dropdown + Period Toggle + Currency + Event Filters */}
         <div className="flex justify-between items-center mt-3 flex-wrap gap-3">
-          {/* Left: FY Dropdown */}
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <select
-              value={selectedFY || 'all'}
-              onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
-              className="bg-background border border-input rounded-md px-2 py-1 text-sm h-8 min-w-[120px]"
-            >
-              <option value="all">All Years</option>
-              {availableFYs?.map(fy => (
-                <option key={fy} value={fy}>FY {fy}</option>
-              ))}
-            </select>
-          </div>
+          {/* Left: FY + Period + Currency */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* FY Dropdown */}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <select
+                value={selectedFY || 'all'}
+                onChange={(e) => {
+                  const newFY = e.target.value === 'all' ? null : e.target.value;
+                  setSelectedFY(newFY);
+                  // Auto-switch to quarterly when FY is selected
+                  if (newFY) {
+                    setViewType('quarterly');
+                  }
+                }}
+                className="bg-background border border-input rounded-md px-2 py-1 text-sm h-8 min-w-[120px]"
+              >
+                <option value="all">All Years</option>
+                {availableFYs?.map(fy => (
+                  <option key={fy} value={fy}>FY {fy}</option>
+                ))}
+              </select>
+            </div>
 
-          {/* Right: Period Toggle */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Period:</span>
+            {/* Period Toggle (no label) */}
             <div className="flex bg-muted rounded-lg p-1">
               <Button
                 variant={viewType === 'annual' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewType('annual')}
-                className="h-7 px-2 text-xs"
+                className="h-8 px-3"
+                disabled={!!selectedFY || priceType === 'current'}
               >
                 Annual
               </Button>
@@ -323,49 +361,20 @@ export const GdpChart = ({
                 variant={viewType === 'quarterly' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewType('quarterly')}
-                className="h-7 px-2 text-xs"
+                className="h-8 px-3"
                 disabled={priceType === 'current'}
               >
                 Quarterly
               </Button>
             </div>
-          </div>
-        </div>
 
-        {/* Row 3: Price Type and Currency Toggle */}
-        <div className="flex gap-4 mt-3 flex-wrap items-center">
-          {/* Price Type */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Price:</span>
-            <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={priceType === 'constant' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setPriceType('constant')}
-                className="h-7 px-2 text-xs"
-              >
-                Constant
-              </Button>
-              <Button
-                variant={priceType === 'current' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setPriceType('current')}
-                className="h-7 px-2 text-xs"
-              >
-                Current
-              </Button>
-            </div>
-          </div>
-
-          {/* Currency Toggle */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Currency:</span>
+            {/* Currency Toggle */}
             <div className="flex bg-muted rounded-lg p-1">
               <Button
                 variant={currency === 'inr' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrency('inr')}
-                className="h-7 px-2 text-xs"
+                className="h-8 px-3"
               >
                 INR
               </Button>
@@ -373,33 +382,33 @@ export const GdpChart = ({
                 variant={currency === 'usd' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setCurrency('usd')}
-                className="h-7 px-2 text-xs"
+                className="h-8 px-3"
               >
                 USD
               </Button>
             </div>
           </div>
-        </div>
 
-        {/* Row 4: Event Filters */}
-        <div className="flex gap-2 mt-3 items-center flex-wrap">
-          <span className="text-sm text-muted-foreground">Show Events:</span>
-          {[{ key: 'high', label: 'High', color: '#ef4444' }, 
-            { key: 'medium', label: 'Med', color: '#f59e0b' }, 
-            { key: 'low', label: 'Low', color: '#22c55e' }].map(impact => (
-            <button
-              key={impact.key}
-              className={`px-2 py-1 text-xs rounded border transition-colors ${
-                selectedImpacts.includes(impact.key)
-                  ? 'text-white border-transparent'
-                  : 'bg-background text-foreground border-border hover:bg-accent'
-              }`}
-              style={selectedImpacts.includes(impact.key) ? { backgroundColor: impact.color } : {}}
-              onClick={() => toggleImpact(impact.key)}
-            >
-              {impact.label}
-            </button>
-          ))}
+          {/* Right: Event Filters */}
+          <div className="flex gap-2 items-center flex-wrap">
+            <span className="text-sm text-muted-foreground">Show Events:</span>
+            {[{ key: 'high', label: 'High', color: '#ef4444' }, 
+              { key: 'medium', label: 'Med', color: '#f59e0b' }, 
+              { key: 'low', label: 'Low', color: '#22c55e' }].map(impact => (
+              <button
+                key={impact.key}
+                className={`px-2 py-1 text-xs rounded border transition-colors ${
+                  selectedImpacts.includes(impact.key)
+                    ? 'text-white border-transparent'
+                    : 'bg-background text-foreground border-border hover:bg-accent'
+                }`}
+                style={selectedImpacts.includes(impact.key) ? { backgroundColor: impact.color } : {}}
+                onClick={() => toggleImpact(impact.key)}
+              >
+                {impact.label}
+              </button>
+            ))}
+          </div>
         </div>
       </CardHeader>
 
@@ -409,7 +418,7 @@ export const GdpChart = ({
           <div className="absolute top-2 left-2 z-10 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded border">
             {dataType === 'growth' 
               ? 'Growth Rate (%)' 
-              : `Data in ${currency === 'inr' ? '₹ Lakh Crore' : '$ Trillion'}`
+              : `Data in ${currency === 'inr' ? '₹ Trillion' : '$ Trillion'}`
             }
           </div>
 
@@ -431,7 +440,7 @@ export const GdpChart = ({
                 <YAxis 
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
-                  tickFormatter={(value) => value.toFixed(0)}
+                  tickFormatter={formatYAxis}
                 />
                 <Tooltip 
                   contentStyle={{
