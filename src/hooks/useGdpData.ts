@@ -133,8 +133,8 @@ export const useGdpData = (
 
         // Filter by FY if selected
         if (selectedFY) {
-          // Handle both formats: "2023-24" and "2023-24   " (with spaces)
-          query = query.or(`year.eq.${selectedFY},year.eq.${selectedFY.padEnd(10)}`);
+          // Use exact match with trimmed year
+          query = query.eq('year', selectedFY.trim());
         }
 
         // Apply timeframe filter for non-FY views

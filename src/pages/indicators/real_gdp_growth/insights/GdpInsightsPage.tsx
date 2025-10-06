@@ -4,15 +4,20 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, TrendingUp, TrendingDown, BarChart3, PieChart, Activity, Target, Calendar, DollarSign } from 'lucide-react';
 import { useGdpData } from '@/hooks/useGdpData';
+import { useUsdConversion } from '@/hooks/useUsdConversion';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, Area, AreaChart } from 'recharts';
 
 export const GdpInsightsPage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'3Y' | '5Y' | '10Y' | 'all'>('5Y');
+  const [selectedFY, setSelectedFY] = useState<string | null>(null);
+  const [viewType, setViewType] = useState<'annual' | 'quarterly'>('annual');
+  const [currency, setCurrency] = useState<'inr' | 'usd'>('inr');
   
   // Get both annual and quarterly data
-  const { data: annualData } = useGdpData('value', 'constant', 'inr', 'annual', selectedPeriod, null);
-  const { data: growthData } = useGdpData('growth', 'constant', 'inr', 'annual', selectedPeriod, null);
-  const { data: quarterlyData } = useGdpData('value', 'constant', 'inr', 'quarterly', 'all', null);
+  const { data: annualData, availableFYs } = useGdpData('value', 'constant', currency, 'annual', selectedPeriod, null);
+  const { data: growthData } = useGdpData('growth', 'constant', currency, 'annual', selectedPeriod, null);
+  const { data: quarterlyData } = useGdpData('value', 'constant', currency, 'quarterly', 'all', selectedFY);
+  const { formatValue: formatUsdValue, getUnitLabel, getCurrencySymbol } = useUsdConversion();
 
   // Calculate key insights
   const insights = useMemo(() => {
@@ -100,7 +105,12 @@ export const GdpInsightsPage = () => {
     };
   }, [quarterlyData]);
 
-  const formatValue = (value: number) => `₹${(value / 100000).toFixed(2)} Trillion`;
+  const formatValue = (value: number, date?: string) => {
+    if (currency === 'usd' && date) {
+      return formatUsdValue(value, currency, date);
+    }
+    return `${getCurrencySymbol(currency)}${(value / 100000).toFixed(2)}`;
+  };
   const formatPercent = (value: number) => `${value.toFixed(1)}%`;
 
   if (!insights) {
@@ -118,33 +128,97 @@ export const GdpInsightsPage = () => {
       <div className="max-w-[1600px] mx-auto px-6 py-6">
         
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold">Real GDP Growth - Comprehensive Analysis</h1>
+            <p className="text-sm text-muted-foreground">Deep insights into India's economic performance</p>
+          </div>
           <Button 
             variant="outline" 
             size="sm"
             onClick={() => window.history.back()}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to GDP Dashboard
+            Back
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Real GDP Growth - Comprehensive Analysis</h1>
-            <p className="text-muted-foreground">Deep insights into India's economic performance</p>
-          </div>
         </div>
 
-        {/* Period Selector */}
-        <div className="flex gap-2 mb-6">
-          {['3Y', '5Y', '10Y', 'all'].map((period) => (
-            <Button
-              key={period}
-              variant={selectedPeriod === period ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedPeriod(period as any)}
+        {/* Controls Row */}
+        <div className="flex flex-wrap gap-3 mb-6 items-center">
+          {/* Period Selector */}
+          <div className="flex gap-2">
+            {['3Y', '5Y', '10Y', 'all'].map((period) => (
+              <Button
+                key={period}
+                variant={selectedPeriod === period ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedPeriod(period as any)}
+              >
+                {period === 'all' ? 'All Years' : period}
+              </Button>
+            ))}
+          </div>
+
+          {/* FY Dropdown */}
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={selectedFY || 'all'}
+              onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
+              className="bg-background border border-input rounded-md px-2 py-1 text-sm h-8 min-w-[120px]"
             >
-              {period === 'all' ? 'All Years' : period}
-            </Button>
-          ))}
+              <option value="all">All Years</option>
+              {availableFYs?.map(fy => (
+                <option key={fy} value={fy}>FY {fy}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* View Type Toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">View:</span>
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={viewType === 'annual' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewType('annual')}
+                className="h-7 px-2 text-xs"
+              >
+                Annual
+              </Button>
+              <Button
+                variant={viewType === 'quarterly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewType('quarterly')}
+                className="h-7 px-2 text-xs"
+              >
+                Quarterly
+              </Button>
+            </div>
+          </div>
+
+          {/* Currency Toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Currency:</span>
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={currency === 'inr' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrency('inr')}
+                className="h-7 px-2 text-xs"
+              >
+                INR
+              </Button>
+              <Button
+                variant={currency === 'usd' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrency('usd')}
+                className="h-7 px-2 text-xs"
+              >
+                USD
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Key Performance Indicators */}
@@ -154,8 +228,8 @@ export const GdpInsightsPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Current GDP</p>
-                  <p className="text-2xl font-bold">{formatValue(insights.latest.gdp)}</p>
-                  <p className="text-xs text-muted-foreground">FY {insights.latest.year}</p>
+                  <p className="text-2xl font-bold">{formatValue(insights.latest.gdp, insights.latest.year)}</p>
+                  <p className="text-xs text-muted-foreground">FY {insights.latest.year} • {getUnitLabel(currency)}</p>
                 </div>
                 <DollarSign className="h-8 w-8 text-primary" />
               </div>
@@ -353,56 +427,6 @@ export const GdpInsightsPage = () => {
           </Card>
         )}
 
-        {/* Economic Insights & Analysis */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Key Economic Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold mb-3">Growth Drivers</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                    <span className="text-sm">Private Consumption (PFCE)</span>
-                    <Badge variant="secondary">{((insights.avgPFCE / insights.latest.gdp) * 100).toFixed(1)}% of GDP</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                    <span className="text-sm">Investment (GFCF)</span>
-                    <Badge variant="secondary">{((insights.avgGFCF / insights.latest.gdp) * 100).toFixed(1)}% of GDP</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                    <span className="text-sm">Government Spending (GFCE)</span>
-                    <Badge variant="secondary">{((insights.avgGFCE / insights.latest.gdp) * 100).toFixed(1)}% of GDP</Badge>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold mb-3">Performance Summary</h4>
-                <div className="space-y-3">
-                  <div className="p-3 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">Current Economic Size</p>
-                    <p className="font-semibold">{formatValue(insights.latest.gdp)}</p>
-                  </div>
-                  <div className="p-3 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">Year-over-Year Growth</p>
-                    <p className="font-semibold text-green-600">+{formatPercent(insights.yearOverYearChange)}</p>
-                  </div>
-                  <div className="p-3 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">Growth Consistency</p>
-                    <p className="font-semibold">
-                      {quarterlyInsights ? 
-                        `${quarterlyInsights.volatility < 2 ? 'Stable' : quarterlyInsights.volatility < 4 ? 'Moderate' : 'Volatile'} (${formatPercent(quarterlyInsights.volatility)} volatility)` 
-                        : 'Calculating...'
-                      }
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

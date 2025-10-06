@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lightbulb } from 'lucide-react';
 import { useIndicatorInsights } from '@/hooks/useIndicatorInsights';
 import { DataType, PriceType } from '@/hooks/useGdpData';
@@ -9,39 +9,7 @@ interface GDPInsightsProps {
 }
 
 export const GDPInsights = ({ dataType, priceType }: GDPInsightsProps) => {
-  const { insights, loading, error } = useIndicatorInsights('real_gdp_growth');
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5" />
-            Key Insights
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-muted-foreground">Loading insights...</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5" />
-            Key Insights
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center text-red-500">Error loading insights: {error}</div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const { insights, loading } = useIndicatorInsights('real_gdp_growth');
 
   // Show first 3 insights, or fallback content if none available
   const displayInsights = insights.length > 0 
@@ -71,25 +39,24 @@ export const GDPInsights = ({ dataType, priceType }: GDPInsightsProps) => {
           <Lightbulb className="h-5 w-5" />
           Key Insights
         </CardTitle>
+        <CardDescription>
+          Analysis and trends in GDP growth
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {displayInsights.map((insight, index) => (
-            <div key={insight.id || index} className="border-l-4 border-blue-200 pl-4">
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {insight.content}
-              </p>
-            </div>
-          ))}
-          
-          {insights.length > 3 && (
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground text-center">
-                Showing 3 of {insights.length} insights
-              </p>
-            </div>
-          )}
-        </div>
+        {loading ? (
+          <div className="text-center py-4 text-muted-foreground">Loading insights...</div>
+        ) : (
+          <div className="space-y-4">
+            {displayInsights.map((insight, index) => (
+              <div key={insight.id || index} className="p-3 bg-muted/30 rounded-lg">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {insight.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

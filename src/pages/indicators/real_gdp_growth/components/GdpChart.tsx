@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ReferenceDot } from 'recharts';
-import { Calendar, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
+import { Calendar, TrendingUp } from 'lucide-react';
 import { useGdpData, DataType, PriceType, CurrencyType, ViewType } from '@/hooks/useGdpData';
 import { useIndicatorEvents } from '@/hooks/useIndicatorEvents';
+import { useUsdConversion } from '@/hooks/useUsdConversion';
 
 interface GdpChartProps {
   timeframe: string;
@@ -42,12 +43,16 @@ export const GdpChart = ({
   const { data: gdpData, loading, availableFYs } = useGdpData(
     dataType,
     priceType,
-    'inr', // Always use INR since we removed currency toggle
+    currency,
     viewType,
     selectedFY ? 'all' : timeframe,
     selectedFY
   );
   const { data: events } = useIndicatorEvents('real_gdp_growth');
+  const { convertToUsd, getUnitLabel, getCurrencySymbol } = useUsdConversion();
+  
+  // State for event filtering
+  const [selectedImpacts, setSelectedImpacts] = useState<string[]>(['high', 'medium', 'low']);
 
   // Define available components for selection
   const components = [
@@ -77,6 +82,9 @@ export const GdpChart = ({
     if (!events?.length) return [];
     
     return events.filter(event => {
+      // Filter by impact
+      if (!selectedImpacts.includes(event.impact)) return false;
+      
       if (timeframe === 'all') return true;
       
       const eventDate = new Date(event.date);
@@ -90,7 +98,7 @@ export const GdpChart = ({
       
       return true;
     });
-  }, [events, timeframe]);
+  }, [events, timeframe, selectedImpacts]);
 
   // Function to get Y position for event markers on the trend line
   const getEventYPosition = (eventDate: string) => {
@@ -155,12 +163,25 @@ export const GdpChart = ({
     return `${fyYear} ${quarter}`;
   };
 
-  const formatValue = (value: number) => {
+  const formatValue = (value: number, dateForConversion?: string) => {
     if (dataType === 'growth') {
       return `${value.toFixed(1)}%`;
     }
     
-    return `₹${(value / 100000).toFixed(2)} Trillion`;
+    if (currency === 'usd' && dateForConversion) {
+      const usdValue = convertToUsd(value, dateForConversion, 'trillion');
+      return usdValue !== null ? `$${usdValue.toFixed(2)}` : `$0.00`;
+    }
+    
+    return `${getCurrencySymbol(currency)}${(value / 100000).toFixed(2)}`;
+  };
+
+  const toggleImpact = (impact: string) => {
+    setSelectedImpacts(prev => 
+      prev.includes(impact) 
+        ? prev.filter(i => i !== impact)
+        : [...prev, impact]
+    );
   };
 
   const formatTooltip = (value: any, name: string) => {
@@ -261,55 +282,32 @@ export const GdpChart = ({
           </div>
           
           {/* Timeline Options */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Button variant={timeframe === '1Y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('1Y')}>1Y</Button>
             <Button variant={timeframe === '5Y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('5Y')}>5Y</Button>
             <Button variant={timeframe === '10Y' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('10Y')}>10Y</Button>
             <Button variant={timeframe === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setTimeframe('all')}>MAX</Button>
-            
-            {/* Financial Year Dropdown - moved here */}
-            <div className="flex items-center gap-2 ml-4">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <select
-                value={selectedFY || 'all'}
-                onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
-                className="bg-background border border-input rounded-md px-2 py-1 text-xs h-7 min-w-[100px]"
-              >
-                <option value="all">All Years</option>
-                {availableFYs?.map(fy => (
-                  <option key={fy} value={fy}>FY{fy}</option>
-                ))}
-              </select>
-            </div>
           </div>
         </CardTitle>
 
-        {/* Price and Period Toggles - moved below years section */}
-        <div className="flex gap-3 mt-3 flex-wrap items-center">
-          {/* Price Type */}
+        {/* Row 2: FY Dropdown and Period Toggle */}
+        <div className="flex justify-between items-center mt-3 flex-wrap gap-3">
+          {/* Left: FY Dropdown */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Price:</span>
-            <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={priceType === 'constant' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setPriceType('constant')}
-                className="h-7 px-2 text-xs"
-              >
-                Constant
-              </Button>
-              <Button
-                variant={priceType === 'current' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setPriceType('current')}
-                className="h-7 px-2 text-xs"
-              >
-                Current
-              </Button>
-            </div>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={selectedFY || 'all'}
+              onChange={(e) => setSelectedFY(e.target.value === 'all' ? null : e.target.value)}
+              className="bg-background border border-input rounded-md px-2 py-1 text-sm h-8 min-w-[120px]"
+            >
+              <option value="all">All Years</option>
+              {availableFYs?.map(fy => (
+                <option key={fy} value={fy}>FY {fy}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Period Type */}
+          {/* Right: Period Toggle */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Period:</span>
             <div className="flex bg-muted rounded-lg p-1">
@@ -333,34 +331,94 @@ export const GdpChart = ({
             </div>
           </div>
         </div>
+
+        {/* Row 3: Price Type and Currency Toggle */}
+        <div className="flex gap-4 mt-3 flex-wrap items-center">
+          {/* Price Type */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Price:</span>
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={priceType === 'constant' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPriceType('constant')}
+                className="h-7 px-2 text-xs"
+              >
+                Constant
+              </Button>
+              <Button
+                variant={priceType === 'current' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPriceType('current')}
+                className="h-7 px-2 text-xs"
+              >
+                Current
+              </Button>
+            </div>
+          </div>
+
+          {/* Currency Toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Currency:</span>
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={currency === 'inr' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrency('inr')}
+                className="h-7 px-2 text-xs"
+              >
+                INR
+              </Button>
+              <Button
+                variant={currency === 'usd' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrency('usd')}
+                className="h-7 px-2 text-xs"
+              >
+                USD
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 4: Event Filters */}
+        <div className="flex gap-2 mt-3 items-center flex-wrap">
+          <span className="text-sm text-muted-foreground">Show Events:</span>
+          {[{ key: 'high', label: 'High', color: '#ef4444' }, 
+            { key: 'medium', label: 'Med', color: '#f59e0b' }, 
+            { key: 'low', label: 'Low', color: '#22c55e' }].map(impact => (
+            <button
+              key={impact.key}
+              className={`px-2 py-1 text-xs rounded border transition-colors ${
+                selectedImpacts.includes(impact.key)
+                  ? 'text-white border-transparent'
+                  : 'bg-background text-foreground border-border hover:bg-accent'
+              }`}
+              style={selectedImpacts.includes(impact.key) ? { backgroundColor: impact.color } : {}}
+              onClick={() => toggleImpact(impact.key)}
+            >
+              {impact.label}
+            </button>
+          ))}
+        </div>
       </CardHeader>
 
       <CardContent>
-        <div className="h-80">
+        <div className="h-80 relative">
+          {/* Corner Data Note */}
+          <div className="absolute top-2 left-2 z-10 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded border">
+            {dataType === 'growth' 
+              ? 'Growth Rate (%)' 
+              : `Data in ${currency === 'inr' ? '₹ Lakh Crore' : '$ Trillion'}`
+            }
+          </div>
+
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-muted-foreground">Loading GDP data...</div>
             </div>
-          ) : selectedFY && chartData.length > 0 ? (
-            // Show bar chart for FY selection instead of pie chart
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[chartData[chartData.length - 1]]}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="year" />
-                <YAxis 
-                  tickFormatter={formatValue}
-                  label={{ value: `GDP (in ₹ Trillion)`, angle: -90, position: 'insideLeft' }}
-                />
-                <Tooltip formatter={formatTooltip} />
-                <Bar dataKey="pfce" fill="#22c55e" name="PFCE" />
-                <Bar dataKey="gfce" fill="#f59e0b" name="GFCE" />
-                <Bar dataKey="gfcf" fill="#3b82f6" name="GFCF" />
-                <Bar dataKey="exports" fill="#ef4444" name="Exports" />
-                <Bar dataKey="imports" fill="#8b5cf6" name="Imports" />
-              </BarChart>
-            </ResponsiveContainer>
           ) : (
-            // Show line chart for all other cases
+            // Always show line chart - for both FY selection and all years
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -373,8 +431,7 @@ export const GdpChart = ({
                 <YAxis 
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
-                  tickFormatter={formatValue}
-                  label={{ value: `GDP (in ₹ Trillion)`, angle: -90, position: 'insideLeft' }}
+                  tickFormatter={(value) => value.toFixed(0)}
                 />
                 <Tooltip 
                   contentStyle={{
@@ -393,13 +450,16 @@ export const GdpChart = ({
                     ? getEventQuarter(event.date)
                     : getEventDisplayDate(event.date);
                   
+                  const eventColor = event.impact === 'high' ? '#ef4444' : 
+                                   event.impact === 'medium' ? '#f59e0b' : '#22c55e';
+                  
                   return (
                     <ReferenceDot
                       key={`event-${event.id || index}`}
                       x={eventDisplayDate}
                       y={getEventYPosition(event.date)}
-                      r={6}
-                      fill="#ef4444"
+                      r={5}
+                      fill={eventColor}
                       stroke="#ffffff"
                       strokeWidth={2}
                       style={{ cursor: 'pointer' }}

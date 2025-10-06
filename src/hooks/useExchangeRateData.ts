@@ -47,7 +47,7 @@ export const useExchangeRateData = ({
         .from('indicator_series')
         .select('*')
         .eq('indicator_slug', 'inr_exchange_rate')
-        .in('series_code', currencies)
+        .in('component', currencies)
         .order('period_date', { ascending: true });
 
       if (startDate) {
@@ -65,10 +65,10 @@ export const useExchangeRateData = ({
         throw fetchError;
       }
 
-      // Transform data to include currency field from series_code
+      // Transform data to include currency field from component
       const transformedData = (exchangeData || []).map((item: any) => ({
         ...item,
-        currency: item.series_code || 'USD'
+        currency: item.component || 'USD'
       }));
 
       setData(transformedData);
