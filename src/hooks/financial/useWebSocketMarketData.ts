@@ -55,12 +55,18 @@ export function useWebSocketMarketData() {
     return day >= 1 && day <= 5 && currentTime >= marketOpen && currentTime <= marketClose;
   }, []);
 
-  // Fetch initial data via REST API
+  // Fetch initial data via Edge Function (bypasses CORS)
   const fetchInitialData = useCallback(async () => {
     try {
-      const symbolsParam = SYMBOLS.join(',');
       const response = await fetch(
-        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolsParam}`
+        'https://fhcddkfgqhwwfvqymqow.supabase.co/functions/v1/fetch-yahoo-finance',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ symbols: SYMBOLS }),
+        }
       );
       const data = await response.json();
       

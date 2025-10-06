@@ -93,23 +93,14 @@ export function NSEBulkDealsUpload() {
 
           console.log('Parsed data:', parsedData);
           
-          // Remove TRUE duplicates - check ALL columns
-          const uniqueData = parsedData.reduce((acc: any[], curr: any) => {
-            const isDuplicate = acc.some((item: any) => 
-              item.date === curr.date &&
-              item.symbol === curr.symbol &&
-              item.stock_name === curr.stock_name &&
-              item.client_name === curr.client_name &&
-              item.deal_type === curr.deal_type &&
-              item.quantity === curr.quantity &&
-              item.avg_price === curr.avg_price &&
-              item.exchange === curr.exchange
-            );
-            if (!isDuplicate) {
-              acc.push(curr);
-            }
-            return acc;
-          }, []);
+          // Remove duplicates based on ALL columns (keep last occurrence)
+          const uniqueMap = new Map();
+          parsedData.forEach((row: any) => {
+            // Create key from ALL columns to identify true duplicates
+            const key = `${row.date}|${row.symbol}|${row.stock_name}|${row.client_name}|${row.deal_type}|${row.quantity}|${row.avg_price}|${row.exchange}`;
+            uniqueMap.set(key, row); // This will overwrite if exact duplicate exists
+          });
+          const uniqueData = Array.from(uniqueMap.values());
           
           console.log(`Removed ${parsedData.length - uniqueData.length} exact duplicates. Uploading ${uniqueData.length} unique records.`);
           const data = uniqueData;
