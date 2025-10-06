@@ -2,14 +2,14 @@
 
 import { useState, useMemo } from 'react';
 import { ArrowUpDown, TrendingUp, TrendingDown } from 'lucide-react';
-import type { BulkDeal } from '@/types/equity-markets.types';
+import { Deal } from '@/hooks/equity/useDealsAnalysis';
 
 interface BulkDealsTableProps {
-  deals: BulkDeal[];
+  deals: Deal[];
   loading: boolean;
 }
 
-type SortField = 'date' | 'symbol' | 'quantity' | 'avg_price';
+type SortField = 'date' | 'symbol' | 'quantity' | 'price';
 
 export function BulkDealsTable({ deals, loading }: BulkDealsTableProps) {
   const [sortField, setSortField] = useState<SortField>('date');
@@ -51,15 +51,22 @@ export function BulkDealsTable({ deals, loading }: BulkDealsTableProps) {
       if (aVal === null || aVal === undefined) aVal = sortOrder === 'asc' ? Infinity : -Infinity;
       if (bVal === null || bVal === undefined) bVal = sortOrder === 'asc' ? Infinity : -Infinity;
 
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return sortOrder === 'asc' 
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
+      switch (sortField) {
+        case 'price':
+        case 'quantity':
+          return sortOrder === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+        case 'date':
+          return sortOrder === 'asc' 
+            ? new Date(aVal as string).getTime() - new Date(bVal as string).getTime()
+            : new Date(bVal as string).getTime() - new Date(aVal as string).getTime();
+        default:
+          if (typeof aVal === 'string' && typeof bVal === 'string') {
+            return sortOrder === 'asc' 
+              ? aVal.localeCompare(bVal)
+              : bVal.localeCompare(aVal);
+          }
+          return 0;
       }
-
-      return sortOrder === 'asc' 
-        ? (aVal as number) - (bVal as number)
-        : (bVal as number) - (aVal as number);
     });
   }, [deals, sortField, sortOrder, searchTerm, dealTypeFilter]);
 
@@ -145,7 +152,7 @@ export function BulkDealsTable({ deals, loading }: BulkDealsTableProps) {
               </th>
               <th className="text-right py-3 px-4">
                 <button
-                  onClick={() => handleSort('avg_price')}
+                  onClick={() => handleSort('price')}
                   className="flex items-center gap-2 ml-auto text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Avg Price
@@ -160,7 +167,7 @@ export function BulkDealsTable({ deals, loading }: BulkDealsTableProps) {
           <tbody>
             {filteredAndSortedDeals.map((deal) => {
               const isBuy = deal.deal_type === 'buy';
-              const value = ((deal.quantity || 0) * (deal.avg_price || 0)) / 10000000;
+              const value = deal.value / 10000000;
               
               return (
                 <tr key={deal.id} className="border-b border-border hover:bg-muted/50 transition-colors">
@@ -197,7 +204,7 @@ export function BulkDealsTable({ deals, loading }: BulkDealsTableProps) {
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="text-sm text-foreground">
-                      ₹{deal.avg_price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      ₹{deal.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                     </div>
                   </td>
                   <td className="py-3 px-4 text-right">

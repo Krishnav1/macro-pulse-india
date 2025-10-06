@@ -2,14 +2,14 @@
 
 import { useState, useMemo } from 'react';
 import { ArrowUpDown, Shield } from 'lucide-react';
-import type { BlockDeal } from '@/types/equity-markets.types';
+import { Deal } from '@/hooks/equity/useDealsAnalysis';
 
 interface BlockDealsTableProps {
-  deals: BlockDeal[];
+  deals: Deal[];
   loading: boolean;
 }
 
-type SortField = 'date' | 'symbol' | 'quantity' | 'trade_price';
+type SortField = 'date' | 'symbol' | 'quantity' | 'price';
 
 export function BlockDealsTable({ deals, loading }: BlockDealsTableProps) {
   const [sortField, setSortField] = useState<SortField>('date');
@@ -119,7 +119,7 @@ export function BlockDealsTable({ deals, loading }: BlockDealsTableProps) {
               </th>
               <th className="text-right py-3 px-4">
                 <button
-                  onClick={() => handleSort('trade_price')}
+                  onClick={() => handleSort('price')}
                   className="flex items-center gap-2 ml-auto text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Trade Price
@@ -133,7 +133,7 @@ export function BlockDealsTable({ deals, loading }: BlockDealsTableProps) {
           </thead>
           <tbody>
             {filteredAndSortedDeals.map((deal) => {
-              const value = ((deal.quantity || 0) * (deal.trade_price || 0)) / 10000000;
+              const value = deal.value / 10000000;
               
               return (
                 <tr key={deal.id} className="border-b border-border hover:bg-muted/50 transition-colors">
@@ -163,7 +163,7 @@ export function BlockDealsTable({ deals, loading }: BlockDealsTableProps) {
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="text-sm text-foreground">
-                      ₹{deal.trade_price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      ₹{deal.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                     </div>
                   </td>
                   <td className="py-3 px-4 text-right">
@@ -194,7 +194,7 @@ export function BlockDealsTable({ deals, loading }: BlockDealsTableProps) {
           <div className="text-sm text-muted-foreground">
             Total Value:{' '}
             <span className="font-semibold text-primary">
-              ₹{(filteredAndSortedDeals.reduce((sum, d) => sum + ((d.quantity || 0) * (d.trade_price || 0)), 0) / 10000000).toFixed(2)} Cr
+              ₹{(filteredAndSortedDeals.reduce((sum, d) => sum + d.value, 0) / 10000000).toFixed(2)} Cr
             </span>
           </div>
         </div>

@@ -36,7 +36,7 @@ const FIIDIIActivityPage = lazy(() => import('./pages/financial/FIIDIIActivityPa
 const IPOMarketsPage = lazy(() => import('./pages/financial/IPOMarketsPage'));
 const IndicesDashboard = lazy(() => import('./pages/financial_markets/equity/IndicesDashboard'));
 const IndexDetail = lazy(() => import('./pages/financial_markets/equity/IndexDetail'));
-const BulkBlockDeals = lazy(() => import('./pages/financial_markets/equity/BulkBlockDeals'));
+const BulkBlockDeals = lazy(() => import('./pages/financial_markets/equity/BulkBlockDealsNew'));
 const IndexComparison = lazy(() => import('./pages/financial_markets/equity/IndexComparison'));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
