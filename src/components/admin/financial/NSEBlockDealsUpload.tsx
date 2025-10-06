@@ -12,6 +12,7 @@ export function NSEBlockDealsUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<any[]>([]);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,29 +114,40 @@ export function NSEBlockDealsUpload() {
           console.log(`Removed ${parsedData.length - uniqueData.length} exact duplicates. Uploading ${uniqueData.length} unique records.`);
           const data = uniqueData;
 
+          setUploadStatus('Preparing data...');
+
           // Get unique dates in the upload
           const uniqueDates = [...new Set(data.map((d: any) => d.date))];
-          console.log(`Deleting existing data for ${uniqueDates.length} dates...`);
+          console.log(`Processing ${uniqueDates.length} unique dates...`);
+
+          setUploadStatus(`Deleting existing data for ${uniqueDates.length} dates...`);
 
           // Delete existing data for these dates
-          const { error: deleteError } = await (supabase as any)
+          const { error: deleteError} = await (supabase as any)
             .from('block_deals')
             .delete()
             .in('date', uniqueDates);
 
           if (deleteError) {
-            console.warn('Delete error (might be no existing data):', deleteError);
+            console.warn('Delete warning:', deleteError);
           }
 
-          // Wait a bit for deletion to complete
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Wait for deletion to complete
+          await new Promise(resolve => setTimeout(resolve, 2000));
 
-          // Insert new data
+          setUploadStatus(`Uploading ${data.length} records...`);
+
+          // Use UPSERT to handle any remaining conflicts
           const { error } = await (supabase as any)
             .from('block_deals')
-            .insert(data);
+            .upsert(data, { 
+              onConflict: 'date,symbol,client_name,quantity',
+              ignoreDuplicates: false 
+            });
 
           if (error) throw error;
+
+          setUploadStatus('Upload complete!');
 
           toast({
             title: 'Upload Successful',
@@ -144,6 +156,7 @@ export function NSEBlockDealsUpload() {
 
           setFile(null);
           setPreview([]);
+          setTimeout(() => setUploadStatus(''), 3000);
         },
       });
     } catch (error) {
@@ -213,6 +226,12 @@ export function NSEBlockDealsUpload() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {uploadStatus && (
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 mb-4">
+              <p className="text-sm text-primary font-medium">{uploadStatus}</p>
             </div>
           )}
 
