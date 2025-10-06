@@ -208,7 +208,7 @@ export default function BulkBlockDealsNew() {
             <div className="text-sm text-foreground">
               <p className="font-medium mb-1">Smart Money Analysis</p>
               <p className="text-muted-foreground">
-                Track institutional activity and smart money movements. Bulk deals (>0.5% equity) and 
+                Track institutional activity and smart money movements. Bulk deals (&gt;0.5% equity) and 
                 block deals (large private transactions) provide insights into institutional sentiment. 
                 Data updates daily after market close (6 PM IST).
               </p>
