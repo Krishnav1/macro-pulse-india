@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Upload, Download, RefreshCw, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import Papa from 'papaparse';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface InvestorData {

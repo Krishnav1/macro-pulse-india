@@ -217,4 +217,3 @@ export function BulkDealsTable({ deals, loading }: BulkDealsTableProps) {
     </div>
   );
 }
-
