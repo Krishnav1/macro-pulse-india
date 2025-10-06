@@ -93,12 +93,13 @@ export function NSEBulkDealsUpload() {
 
           console.log('Parsed data:', parsedData);
           
-          // Remove duplicates based on ALL columns (keep last occurrence)
+          // Remove duplicates based on UNIQUE CONSTRAINT (keep last occurrence)
+          // Unique constraint: date + symbol + client_name + deal_type
           const uniqueMap = new Map();
           parsedData.forEach((row: any) => {
-            // Create key from ALL columns to identify true duplicates
-            const key = `${row.date}|${row.symbol}|${row.stock_name}|${row.client_name}|${row.deal_type}|${row.quantity}|${row.avg_price}|${row.exchange}`;
-            uniqueMap.set(key, row); // This will overwrite if exact duplicate exists
+            // Create key from unique constraint columns only
+            const key = `${row.date}|${row.symbol}|${row.client_name}|${row.deal_type}`;
+            uniqueMap.set(key, row); // This will keep the last occurrence
           });
           const uniqueData = Array.from(uniqueMap.values());
           
