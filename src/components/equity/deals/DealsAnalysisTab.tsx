@@ -22,9 +22,14 @@ import {
   SectorData, 
   StockData, 
   TrendData, 
-  RepeatActivity 
+  RepeatActivity,
+  Deal
 } from '@/hooks/equity/useDealsAnalysis';
 import { DateRange } from '@/utils/financialYearUtils';
+import { DealSizeBreakdown } from './DealSizeBreakdown';
+import { TopMovers } from './TopMovers';
+import { UnusualActivityAlerts } from './UnusualActivityAlerts';
+import { SectorMomentumTracker } from './SectorMomentumTracker';
 
 interface DealsAnalysisTabProps {
   kpiData: KPIData;
@@ -34,6 +39,7 @@ interface DealsAnalysisTabProps {
   repeatActivity: RepeatActivity[];
   loading: boolean;
   dateRange: DateRange;
+  allDeals?: Deal[];
 }
 
 const COLORS = [
@@ -56,7 +62,8 @@ export function DealsAnalysisTab({
   trendData,
   repeatActivity,
   loading,
-  dateRange
+  dateRange,
+  allDeals = []
 }: DealsAnalysisTabProps) {
   const [selectedChart, setSelectedChart] = useState<'stocks' | 'sectors'>('stocks');
 
@@ -456,6 +463,21 @@ export function DealsAnalysisTab({
           </div>
         </div>
       </div>
+
+      {/* New Enhanced Components */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Deal Size Breakdown */}
+        <DealSizeBreakdown deals={allDeals} loading={loading} />
+        
+        {/* Unusual Activity Alerts */}
+        <UnusualActivityAlerts deals={allDeals} loading={loading} />
+      </div>
+
+      {/* Top Movers - Full Width */}
+      <TopMovers deals={allDeals} loading={loading} />
+
+      {/* Sector Momentum Tracker */}
+      <SectorMomentumTracker deals={allDeals} loading={loading} />
 
       {/* Market Insights */}
       <div className="dashboard-card">

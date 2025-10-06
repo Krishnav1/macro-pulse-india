@@ -1,0 +1,6 @@
+Symbol,Company Name,Sector,Industry,Market Cap (INR Cr),ISIN,Series,PE Ratio,PB Ratio,Data Source
+RELIANCE,Reliance Industries Limited,Oil & Gas,Refineries,1678945,INE002A01018,EQ,24.5,2.1,moneycontrol
+TCS,Tata Consultancy Services Limited,IT,IT - Software,1345678,INE467B01029,EQ,28.3,12.5,moneycontrol
+HDFCBANK,HDFC Bank Limited,Banking,Banks,945678,INE040A01034,EQ,18.5,2.8,moneycontrol
+INFY,Infosys Limited,IT,IT - Software,678945,INE009A01021,EQ,25.6,8.9,moneycontrol
+ICICIBANK,ICICI Bank Limited,Banking,Banks,689234,INE090A01021,EQ,16.2,2.3,moneycontrol

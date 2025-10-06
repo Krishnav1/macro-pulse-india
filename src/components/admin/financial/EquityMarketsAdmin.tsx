@@ -10,6 +10,8 @@ import { NSEBulkDealsUpload } from './NSEBulkDealsUpload';
 import { NSEBlockDealsUpload } from './NSEBlockDealsUpload';
 import { NSEFIIDIIUpload } from './NSEFIIDIIUpload';
 import { NSEMarketBreadthUpload } from './NSEMarketBreadthUpload';
+import { StockMasterUpload } from './StockMasterUpload';
+import { InvestorMasterUpload } from './InvestorMasterUpload';
 
 export function EquityMarketsAdmin() {
   return (
@@ -29,10 +31,18 @@ export function EquityMarketsAdmin() {
 
       {/* Tabs */}
       <Tabs defaultValue="auto-sync" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="auto-sync" className="flex items-center gap-2">
             <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline">Auto Sync</span>
+          </TabsTrigger>
+          <TabsTrigger value="stock-master" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            <span className="hidden sm:inline">Stock Master</span>
+          </TabsTrigger>
+          <TabsTrigger value="investor-master" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            <span className="hidden sm:inline">Investor Master</span>
           </TabsTrigger>
           <TabsTrigger value="indices" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
@@ -65,7 +75,17 @@ export function EquityMarketsAdmin() {
           <NSEDataSyncAdmin />
         </TabsContent>
 
-        {/* Tab 2: Indices Upload */}
+        {/* Tab 2: Stock Master Upload */}
+        <TabsContent value="stock-master">
+          <StockMasterUpload />
+        </TabsContent>
+
+        {/* Tab 3: Investor Master Upload */}
+        <TabsContent value="investor-master">
+          <InvestorMasterUpload />
+        </TabsContent>
+
+        {/* Tab 4: Indices Upload */}
         <TabsContent value="indices">
           <NSEIndicesUpload />
         </TabsContent>

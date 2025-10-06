@@ -1,8 +1,9 @@
-// KPI Cards component for Bulk & Block Deals
+// KPI Cards component for Bulk & Block Deals - Compact Rectangular Design
 
 import { TrendingUp, TrendingDown, BarChart3, Star } from 'lucide-react';
 import { KPIData } from '@/hooks/equity/useDealsAnalysis';
 import { DateRange } from '@/utils/financialYearUtils';
+import { formatDealValue, formatQuantity } from '@/utils/currencyFormatter';
 
 interface DealsKPICardsProps {
   kpiData: KPIData;
@@ -11,26 +12,13 @@ interface DealsKPICardsProps {
 }
 
 export function DealsKPICards({ kpiData, loading, dateRange }: DealsKPICardsProps) {
-  const formatValue = (value: number) => {
-    if (value >= 10000000) { // 1 crore
-      return `₹${(value / 10000000).toFixed(2)} Cr`;
-    } else if (value >= 100000) { // 1 lakh
-      return `₹${(value / 100000).toFixed(2)} L`;
-    } else {
-      return `₹${value.toFixed(0)}`;
-    }
-  };
-
-  const formatNumber = (value: number) => {
-    return value.toLocaleString('en-IN');
-  };
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="dashboard-card animate-pulse">
-            <div className="h-16 bg-muted rounded"></div>
+          <div key={i} className="dashboard-card animate-pulse p-3">
+            <div className="h-14 bg-muted rounded"></div>
           </div>
         ))}
       </div>
@@ -40,109 +28,90 @@ export function DealsKPICards({ kpiData, loading, dateRange }: DealsKPICardsProp
   const cards = [
     {
       title: 'Total Buying',
-      value: formatValue(kpiData.totalBuying),
-      subtitle: `${formatNumber(kpiData.buyDeals)} deals`,
+      value: formatDealValue(kpiData.totalBuying),
+      subtitle: `${kpiData.buyDeals} deals`,
       icon: TrendingUp,
       iconColor: 'text-success',
-      bgColor: 'bg-success/5',
-      borderColor: 'border-success/20',
-      trend: kpiData.totalBuying > 0 ? 'positive' : 'neutral'
+      bgColor: 'bg-success/10',
+      borderColor: 'border-l-4 border-success',
+      sentiment: 'Bullish'
     },
     {
       title: 'Total Selling',
-      value: formatValue(kpiData.totalSelling),
-      subtitle: `${formatNumber(kpiData.sellDeals)} deals`,
+      value: formatDealValue(kpiData.totalSelling),
+      subtitle: `${kpiData.sellDeals} deals`,
       icon: TrendingDown,
       iconColor: 'text-destructive',
-      bgColor: 'bg-destructive/5',
-      borderColor: 'border-destructive/20',
-      trend: kpiData.totalSelling > 0 ? 'negative' : 'neutral'
+      bgColor: 'bg-destructive/10',
+      borderColor: 'border-l-4 border-destructive',
+      sentiment: 'Bearish'
     },
     {
       title: 'Net Flow',
-      value: formatValue(Math.abs(kpiData.netFlow)),
+      value: formatDealValue(Math.abs(kpiData.netFlow)),
       subtitle: kpiData.netFlow >= 0 ? 'Net Buying' : 'Net Selling',
       icon: BarChart3,
       iconColor: kpiData.netFlow >= 0 ? 'text-success' : 'text-destructive',
-      bgColor: kpiData.netFlow >= 0 ? 'bg-success/5' : 'bg-destructive/5',
-      borderColor: kpiData.netFlow >= 0 ? 'border-success/20' : 'border-destructive/20',
-      trend: kpiData.netFlow >= 0 ? 'positive' : 'negative'
+      bgColor: kpiData.netFlow >= 0 ? 'bg-success/10' : 'bg-destructive/10',
+      borderColor: kpiData.netFlow >= 0 ? 'border-l-4 border-success' : 'border-l-4 border-destructive',
+      sentiment: kpiData.netFlow >= 0 ? 'Bullish' : 'Bearish'
     },
     {
       title: 'Most Active',
       value: kpiData.mostActiveStock?.symbol || 'N/A',
       subtitle: kpiData.mostActiveStock 
-        ? `${formatNumber(kpiData.mostActiveStock.dealCount)} deals`
+        ? `${kpiData.mostActiveStock.dealCount} deals • ${formatDealValue(kpiData.mostActiveStock.totalValue)}`
         : 'No data',
       icon: Star,
       iconColor: 'text-primary',
-      bgColor: 'bg-primary/5',
-      borderColor: 'border-primary/20',
-      trend: 'neutral'
+      bgColor: 'bg-primary/10',
+      borderColor: 'border-l-4 border-primary',
+      sentiment: null
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
       {cards.map((card, index) => {
         const Icon = card.icon;
         
         return (
           <div
             key={index}
-            className={`dashboard-card ${card.bgColor} ${card.borderColor} hover:shadow-md transition-all duration-200`}
+            className={`dashboard-card p-3 ${card.bgColor} ${card.borderColor} hover:shadow-lg transition-all duration-200 cursor-pointer group`}
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className={`p-2 rounded-lg ${card.bgColor}`}>
-                <Icon className={`h-5 w-5 ${card.iconColor}`} />
+            {/* Compact Horizontal Layout */}
+            <div className="flex items-center justify-between">
+              {/* Left: Icon + Content */}
+              <div className="flex items-center gap-3 flex-1">
+                <div className={`p-2 rounded-lg ${card.iconColor} bg-background/50`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">
+                    {card.title}
+                  </div>
+                  <div className={`text-lg font-bold ${card.iconColor} truncate`}>
+                    {card.value}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground truncate">
+                    {card.subtitle}
+                  </div>
+                </div>
               </div>
               
-              {/* Trend Indicator */}
-              {card.trend !== 'neutral' && (
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                  card.trend === 'positive' 
+              {/* Right: Sentiment Badge */}
+              {card.sentiment && (
+                <div className={`px-2 py-1 rounded-md text-[10px] font-semibold whitespace-nowrap ${
+                  card.sentiment === 'Bullish' 
                     ? 'bg-success/20 text-success' 
                     : 'bg-destructive/20 text-destructive'
                 }`}>
-                  {card.trend === 'positive' ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3" />
-                  )}
-                  {card.trend === 'positive' ? 'Bullish' : 'Bearish'}
+                  {card.sentiment}
                 </div>
               )}
             </div>
-
-            <div className="space-y-1">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {card.title}
-              </div>
-              
-              <div className={`text-xl font-bold ${
-                card.trend === 'positive' ? 'text-success' :
-                card.trend === 'negative' ? 'text-destructive' :
-                'text-foreground'
-              }`}>
-                {card.value}
-              </div>
-              
-              <div className="text-xs text-muted-foreground">
-                {card.subtitle}
-              </div>
-            </div>
-
-            {/* Additional Info for Most Active Stock */}
-            {index === 3 && kpiData.mostActiveStock && (
-              <div className="mt-2 pt-2 border-t border-border">
-                <div className="text-xs text-muted-foreground">
-                  {kpiData.mostActiveStock.stock_name}
-                </div>
-                <div className="text-xs font-medium text-primary">
-                  {formatValue(kpiData.mostActiveStock.totalValue)} total value
-                </div>
-              </div>
-            )}
           </div>
         );
       })}

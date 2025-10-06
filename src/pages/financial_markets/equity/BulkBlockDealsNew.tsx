@@ -158,6 +158,7 @@ export default function BulkBlockDealsNew() {
               repeatActivity={repeatActivity}
               loading={loading}
               dateRange={dateRange}
+              allDeals={allDeals}
             />
           )}
           

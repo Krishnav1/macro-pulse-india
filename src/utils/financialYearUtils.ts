@@ -97,7 +97,7 @@ export function getDateRangeFromPeriod(
       };
       
     case 'month':
-      if (value) {
+      if (value && value.includes('-')) {
         const [year, month] = value.split('-');
         const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
         const endDate = new Date(parseInt(year), parseInt(month), 0); // Last day of month
@@ -110,9 +110,10 @@ export function getDateRangeFromPeriod(
       break;
       
     case 'quarter':
-      if (value) {
+      if (value && value.includes('-FY')) {
         // Parse Q1-FY24-25 format
         const [quarter, fy] = value.split('-FY');
+        if (!fy || !fy.includes('-')) break;
         const [startYear, endYear] = fy.split('-').map(y => 2000 + parseInt(y));
         
         let startMonth, endMonth, year;
@@ -155,9 +156,11 @@ export function getDateRangeFromPeriod(
       break;
       
     case 'year':
-      if (value) {
+      if (value && value.includes('-')) {
         // Parse FY24-25 format
-        const [startYear, endYear] = value.replace('FY', '').split('-').map(y => 2000 + parseInt(y));
+        const cleaned = value.replace('FY', '');
+        if (!cleaned.includes('-')) break;
+        const [startYear, endYear] = cleaned.split('-').map(y => 2000 + parseInt(y));
         const startDate = new Date(startYear, 3, 1); // April 1
         const endDate = new Date(endYear, 2, 31);    // March 31
         
