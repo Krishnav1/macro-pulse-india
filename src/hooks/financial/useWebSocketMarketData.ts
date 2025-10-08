@@ -58,12 +58,14 @@ export function useWebSocketMarketData() {
   // Fetch initial data via Edge Function (bypasses CORS)
   const fetchInitialData = useCallback(async () => {
     try {
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const response = await fetch(
         'https://fhcddkfgqhwwfvqymqow.supabase.co/functions/v1/fetch-yahoo-finance',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${anonKey}`,
           },
           body: JSON.stringify({ symbols: SYMBOLS }),
         }
