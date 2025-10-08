@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useCashProvisionalData, useFIIDIIFinancialYears, useFIIDIIMonths, useFIICashData, useDIICashData } from '@/hooks/financial/useFIIDIIDataNew';
+import { useCashProvisionalData, useFIIDIIFinancialYears, useFIIDIIMonths, useFIIDIIQuarters, useFIICashData, useDIICashData } from '@/hooks/financial/useFIIDIIDataNew';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FIIDIIKPICards } from '@/components/financial/fii-dii/FIIDIIKPICards';
 import { MoneyFlowChart } from '@/components/financial/fii-dii/MoneyFlowChart';
 import { AssetAllocationCharts } from '@/components/financial/fii-dii/AssetAllocationCharts';
@@ -12,10 +13,12 @@ import { FlowHeatmapCalendar } from '@/components/financial/fii-dii/FlowHeatmapC
 import { ComparisonTools } from '@/components/financial/fii-dii/ComparisonTools';
 import { SegmentAnalysisTabs } from '@/components/financial/fii-dii/SegmentAnalysisTabs';
 import { ContextualHelp } from '@/components/financial/fii-dii/ContextualHelp';
+import { FilterBreadcrumb } from '@/components/financial/fii-dii/FilterBreadcrumb';
 
 export default function FIIDIIActivityPage() {
   const [view, setView] = useState<'yearly' | 'monthly' | 'weekly' | 'daily'>('monthly');
   const [selectedFY, setSelectedFY] = useState<string>('');
+  const [selectedQuarter, setSelectedQuarter] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
@@ -24,20 +27,24 @@ export default function FIIDIIActivityPage() {
   const [datasetLabel, setDatasetLabel] = useState<string>('Cash Provisional (FII+DII)');
 
   const { years, loading: yearsLoading } = useFIIDIIFinancialYears();
+  const { quarters } = useFIIDIIQuarters(selectedFY);
   const { months } = useFIIDIIMonths(selectedFY);
   
   const { data: cashProvisionalData, loading } = useCashProvisionalData({
     financialYear: selectedFY,
+    quarter: selectedQuarter,
     month: selectedMonth,
   });
 
   const { data: fiiCashData } = useFIICashData({
     financialYear: selectedFY,
+    quarter: selectedQuarter,
     month: selectedMonth,
   });
 
   const { data: diiCashData } = useDIICashData({
     financialYear: selectedFY,
+    quarter: selectedQuarter,
     month: selectedMonth,
   });
 
@@ -62,18 +69,31 @@ export default function FIIDIIActivityPage() {
     }
   }, [months, selectedMonth]);
 
-  // Update period display based on view and selection
+  // Filter data based on selected date
+  const filteredData = useMemo(() => {
+    if (selectedDate) {
+      return cashProvisionalData.filter(item => item.date === selectedDate);
+    }
+    return cashProvisionalData;
+  }, [cashProvisionalData, selectedDate]);
+
+  // Update period display based on selection
   useEffect(() => {
     if (selectedDate) {
-      setPeriodDisplay(selectedDate);
+      const dateObj = new Date(selectedDate);
+      const day = dateObj.getDate();
+      const monthName = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      setPeriodDisplay(`${day} ${monthName}`);
     } else if (selectedMonth) {
       setPeriodDisplay(selectedMonth);
+    } else if (selectedQuarter) {
+      setPeriodDisplay(`${selectedQuarter} ${selectedFY}`);
     } else if (selectedFY) {
       setPeriodDisplay(selectedFY);
     }
-  }, [selectedFY, selectedMonth, selectedDate]);
+  }, [selectedFY, selectedQuarter, selectedMonth, selectedDate]);
 
-  // Get available dates for selected month
+  // Get available dates for selected month (trading days only)
   const availableDates = useMemo(() => {
     if (!selectedMonth || !cashProvisionalData.length) return [];
     return cashProvisionalData.map(item => ({
@@ -82,6 +102,14 @@ export default function FIIDIIActivityPage() {
       fullDate: item.date
     }));
   }, [selectedMonth, cashProvisionalData]);
+
+  // Determine granularity level
+  const granularity = useMemo(() => {
+    if (selectedDate) return 'daily';
+    if (selectedMonth) return 'monthly';
+    if (selectedQuarter) return 'quarterly';
+    return 'yearly';
+  }, [selectedDate, selectedMonth, selectedQuarter]);
 
   if (loading || yearsLoading) {
     return (
@@ -102,12 +130,26 @@ export default function FIIDIIActivityPage() {
           <div className="flex items-center justify-between py-4">
             <div className="flex items-center gap-4">
               <div>
-                <h1 className="text-2xl font-bold">FII/DII Activity</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold">FII/DII Activity</h1>
+                  <ContextualHelp data={filteredData} view={view} />
+                </div>
                 {periodDisplay && (
                   <p className="text-sm text-muted-foreground mt-1">{periodDisplay}</p>
                 )}
+                <div className="mt-2">
+                  <FilterBreadcrumb
+                    selectedFY={selectedFY}
+                    selectedQuarter={selectedQuarter}
+                    selectedMonth={selectedMonth}
+                    selectedDate={selectedDate}
+                    onClearFY={() => setSelectedFY('')}
+                    onClearQuarter={() => setSelectedQuarter('')}
+                    onClearMonth={() => setSelectedMonth('')}
+                    onClearDate={() => setSelectedDate('')}
+                  />
+                </div>
               </div>
-              <ContextualHelp data={cashProvisionalData} view={view} />
             </div>
             
             <div className="flex items-center gap-2">
@@ -143,12 +185,35 @@ export default function FIIDIIActivityPage() {
                 ))}
               </select>
 
+              {quarters.length > 0 && (
+                <select
+                  value={selectedQuarter}
+                  onChange={(e) => {
+                    setSelectedQuarter(e.target.value);
+                    setSelectedMonth(''); // Clear month when quarter changes
+                    setSelectedDate(''); // Clear date when quarter changes
+                  }}
+                  className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
+                >
+                  <option value="">All Quarters</option>
+                  {quarters.map((quarter) => (
+                    <option key={quarter} value={quarter}>
+                      {quarter}
+                    </option>
+                  ))}
+                </select>
+              )}
+
               {months.length > 0 && (
                 <select
                   value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedMonth(e.target.value);
+                    setSelectedDate(''); // Clear date when month changes
+                  }}
                   className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
                 >
+                  <option value="">All Months</option>
                   {months.map((month) => (
                     <option key={month.value} value={month.label}>
                       {month.label}
@@ -188,12 +253,56 @@ export default function FIIDIIActivityPage() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <p className="text-sm text-muted-foreground">
-              📊 Dataset: {datasetLabel} | All values in ₹ Crore
-            </p>
-            <FIIDIIKPICards data={cashProvisionalData} view={view} />
-            <MoneyFlowChart data={cashProvisionalData} />
-            <CumulativeFlowChart data={cashProvisionalData} />
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                📊 Dataset: {datasetLabel} | Granularity: {granularity.charAt(0).toUpperCase() + granularity.slice(1)} | All values in ₹ Crore
+              </p>
+              {selectedDate && (
+                <p className="text-xs text-muted-foreground">
+                  Showing single day analysis. Other tabs show monthly context.
+                </p>
+              )}
+            </div>
+            <FIIDIIKPICards data={filteredData} view={selectedDate ? 'daily' : view} />
+            {!selectedDate && <MoneyFlowChart data={filteredData} />}
+            {!selectedDate && <CumulativeFlowChart data={filteredData} />}
+            {selectedDate && filteredData.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Single Day Breakdown</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-blue-500/10 rounded-lg">
+                          <p className="text-sm text-muted-foreground">FII Net</p>
+                          <p className="text-2xl font-bold text-blue-600">₹{filteredData[0].fii_net.toFixed(0)} Cr</p>
+                        </div>
+                        <div className="p-4 bg-orange-500/10 rounded-lg">
+                          <p className="text-sm text-muted-foreground">DII Net</p>
+                          <p className="text-2xl font-bold text-orange-600">₹{filteredData[0].dii_net.toFixed(0)} Cr</p>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-green-500/10 rounded-lg">
+                        <p className="text-sm text-muted-foreground">Total Flow</p>
+                        <p className="text-2xl font-bold text-green-600">₹{(filteredData[0].fii_net + filteredData[0].dii_net).toFixed(0)} Cr</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>30-Day Context</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      View Cash Market or F&O Market tabs to see detailed segment analysis for the selected month.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="cash" className="space-y-6">
