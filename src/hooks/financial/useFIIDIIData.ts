@@ -78,7 +78,7 @@ export function useFIIDIIData(options: UseFIIDIIDataOptions) {
   };
 
   const fetchMonthlyData = async () => {
-    let query = supabase
+    let query = (supabase as any)
       .from('fii_dii_monthly_data')
       .select('*')
       .order('date', { ascending: true });
@@ -90,11 +90,11 @@ export function useFIIDIIData(options: UseFIIDIIDataOptions) {
     const { data, error: dbError } = await query;
 
     if (dbError) throw dbError;
-    setMonthlyData(data || []);
+    setMonthlyData((data || []) as MonthlyFIIDIIData[]);
   };
 
   const fetchDailyData = async () => {
-    let query = supabase
+    let query = (supabase as any)
       .from('fii_dii_daily_data')
       .select('*')
       .order('date', { ascending: true });
@@ -116,7 +116,7 @@ export function useFIIDIIData(options: UseFIIDIIDataOptions) {
     const { data, error: dbError } = await query;
 
     if (dbError) throw dbError;
-    setDailyData(data || []);
+    setDailyData((data || []) as DailyFIIDIIData[]);
   };
 
   const fetchQuarterlyData = async () => {
@@ -125,7 +125,7 @@ export function useFIIDIIData(options: UseFIIDIIDataOptions) {
   };
 
   const fetchDerivativesData = async (date?: string) => {
-    let query = supabase
+    let query = (supabase as any)
       .from('fii_dii_derivatives_data')
       .select('*')
       .order('date', { ascending: true });
@@ -137,7 +137,7 @@ export function useFIIDIIData(options: UseFIIDIIDataOptions) {
     const { data, error: dbError } = await query;
 
     if (dbError) throw dbError;
-    setDerivativesData(data || []);
+    setDerivativesData((data || []) as DerivativesFIIDIIData[]);
   };
 
   return {
@@ -162,15 +162,15 @@ export function useFIIDIIFinancialYears() {
 
   const fetchYears = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('fii_dii_monthly_data')
         .select('financial_year')
         .order('financial_year', { ascending: false });
 
       if (error) throw error;
 
-      const uniqueYears = [...new Set(data?.map(d => d.financial_year) || [])];
-      setYears(uniqueYears);
+      const uniqueYears = [...new Set((data as any[])?.map(d => d.financial_year) || [])];
+      setYears(uniqueYears as string[]);
     } catch (err) {
       console.error('Error fetching financial years:', err);
     } finally {
@@ -194,7 +194,7 @@ export function useFIIDIIMonths(financialYear?: string) {
 
   const fetchMonths = async () => {
     try {
-      let query = supabase
+      let query = (supabase as any)
         .from('fii_dii_monthly_data')
         .select('date, month_name')
         .order('date', { ascending: true });
@@ -207,7 +207,7 @@ export function useFIIDIIMonths(financialYear?: string) {
 
       if (error) throw error;
 
-      const monthsData = data?.map(d => ({
+      const monthsData = (data as any[])?.map(d => ({
         value: d.date,
         label: d.month_name,
       })) || [];
