@@ -1,16 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
-import type { MonthlyFIIDIIData } from '@/hooks/financial/useFIIDIIData';
+import type { CashProvisionalData } from '@/types/fii-dii';
 
 interface MoneyFlowChartProps {
-  data: MonthlyFIIDIIData[];
+  data: CashProvisionalData[];
 }
 
 export function MoneyFlowChart({ data }: MoneyFlowChartProps) {
   const chartData = data.map(item => ({
     month: item.month_name,
-    fiiNet: item.fii_total,
-    diiNet: item.dii_total,
+    fiiNet: item.fii_net,
+    diiNet: item.dii_net,
   }));
 
   return (

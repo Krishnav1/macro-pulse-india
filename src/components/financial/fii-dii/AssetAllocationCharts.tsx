@@ -1,63 +1,51 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import type { MonthlyFIIDIIData } from '@/hooks/financial/useFIIDIIData';
+import type { CashProvisionalData } from '@/types/fii-dii';
 
 interface AssetAllocationChartsProps {
-  data: MonthlyFIIDIIData[];
+  data: CashProvisionalData[];
 }
 
-const COLORS = {
-  equity: 'hsl(200, 98%, 39%)',
-  debt: 'hsl(142, 76%, 36%)',
-  derivatives: 'hsl(280, 65%, 60%)',
-};
+const COLORS = ['hsl(200, 98%, 39%)', 'hsl(25, 95%, 53%)'];
 
 export function AssetAllocationCharts({ data }: AssetAllocationChartsProps) {
   if (!data || data.length === 0) return null;
 
   const latestData = data[data.length - 1];
 
-  const fiiData = [
-    { name: 'Equity', value: Math.abs(latestData.fii_equity), color: COLORS.equity },
-    { name: 'Debt', value: Math.abs(latestData.fii_debt), color: COLORS.debt },
-    { name: 'Derivatives', value: Math.abs(latestData.fii_derivatives), color: COLORS.derivatives },
+  const flowData = [
+    { name: 'FII Net', value: Math.abs(latestData.fii_net), color: COLORS[0] },
+    { name: 'DII Net', value: Math.abs(latestData.dii_net), color: COLORS[1] },
   ].filter(item => item.value > 0);
 
-  const diiData = [
-    { name: 'Equity', value: Math.abs(latestData.dii_equity), color: COLORS.equity },
-    { name: 'Debt', value: Math.abs(latestData.dii_debt), color: COLORS.debt },
-    { name: 'Derivatives', value: Math.abs(latestData.dii_derivatives), color: COLORS.derivatives },
+  const activityData = [
+    { name: 'FII Gross', value: latestData.fii_gross_purchase + latestData.fii_gross_sales, color: COLORS[0] },
+    { name: 'DII Gross', value: latestData.dii_gross_purchase + latestData.dii_gross_sales, color: COLORS[1] },
   ].filter(item => item.value > 0);
 
-  const fiiTotal = fiiData.reduce((sum, item) => sum + item.value, 0);
-  const diiTotal = diiData.reduce((sum, item) => sum + item.value, 0);
-
-  const renderCustomLabel = (entry: any, total: number) => {
-    const percent = ((entry.value / total) * 100).toFixed(0);
-    return `${percent}%`;
-  };
+  const flowTotal = flowData.reduce((sum, item) => sum + item.value, 0);
+  const activityTotal = activityData.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* FII Asset Allocation */}
       <Card>
         <CardHeader>
-          <CardTitle>FII Asset Allocation</CardTitle>
+          <CardTitle>Net Flow Distribution</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={fiiData}
+                data={flowData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
                 outerRadius={100}
                 paddingAngle={5}
                 dataKey="value"
-                label={(entry) => renderCustomLabel(entry, fiiTotal)}
+                label={(entry) => `${((entry.value / flowTotal) * 100).toFixed(0)}%`}
               >
-                {fiiData.map((entry, index) => (
+                {flowData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -73,11 +61,11 @@ export function AssetAllocationCharts({ data }: AssetAllocationChartsProps) {
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-4 space-y-2">
-            {fiiData.map((item) => (
+            {flowData.map((item) => (
               <div key={item.name} className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{item.name}:</span>
                 <span className="font-medium">
-                  {((item.value / fiiTotal) * 100).toFixed(1)}% | ₹{item.value.toFixed(0)} Cr
+                  {((item.value / flowTotal) * 100).toFixed(1)}% | ₹{item.value.toFixed(0)} Cr
                 </span>
               </div>
             ))}
@@ -85,25 +73,24 @@ export function AssetAllocationCharts({ data }: AssetAllocationChartsProps) {
         </CardContent>
       </Card>
 
-      {/* DII Asset Allocation */}
       <Card>
         <CardHeader>
-          <CardTitle>DII Asset Allocation</CardTitle>
+          <CardTitle>Gross Activity Distribution</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={diiData}
+                data={activityData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
                 outerRadius={100}
                 paddingAngle={5}
                 dataKey="value"
-                label={(entry) => renderCustomLabel(entry, diiTotal)}
+                label={(entry) => `${((entry.value / activityTotal) * 100).toFixed(0)}%`}
               >
-                {diiData.map((entry, index) => (
+                {activityData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -119,11 +106,11 @@ export function AssetAllocationCharts({ data }: AssetAllocationChartsProps) {
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-4 space-y-2">
-            {diiData.map((item) => (
+            {activityData.map((item) => (
               <div key={item.name} className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{item.name}:</span>
                 <span className="font-medium">
-                  {((item.value / diiTotal) * 100).toFixed(1)}% | ₹{item.value.toFixed(0)} Cr
+                  {((item.value / activityTotal) * 100).toFixed(1)}% | ₹{item.value.toFixed(0)} Cr
                 </span>
               </div>
             ))}

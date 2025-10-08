@@ -1,9 +1,9 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
-import type { MonthlyFIIDIIData } from '@/hooks/financial/useFIIDIIData';
+import type { CashProvisionalData } from '@/types/fii-dii';
 
 interface FIIDIIKPICardsProps {
-  data: MonthlyFIIDIIData[];
+  data: CashProvisionalData[];
   view: 'monthly' | 'daily' | 'quarterly';
 }
 
@@ -15,8 +15,8 @@ export function FIIDIIKPICards({ data, view }: FIIDIIKPICardsProps) {
   const latestData = data[data.length - 1];
   const previousData = data[data.length - 2];
 
-  const fiiNetFlow = latestData.fii_total;
-  const diiNetFlow = latestData.dii_total;
+  const fiiNetFlow = latestData.fii_net;
+  const diiNetFlow = latestData.dii_net;
   const totalNetFlow = fiiNetFlow + diiNetFlow;
   const fiiDiiDifference = fiiNetFlow - diiNetFlow;
 
@@ -25,9 +25,9 @@ export function FIIDIIKPICards({ data, view }: FIIDIIKPICardsProps) {
     return ((current - previous) / Math.abs(previous)) * 100;
   };
 
-  const fiiChange = previousData ? calculateChange(fiiNetFlow, previousData.fii_total) : 0;
-  const diiChange = previousData ? calculateChange(diiNetFlow, previousData.dii_total) : 0;
-  const totalChange = previousData ? calculateChange(totalNetFlow, previousData.fii_total + previousData.dii_total) : 0;
+  const fiiChange = previousData ? calculateChange(fiiNetFlow, previousData.fii_net) : 0;
+  const diiChange = previousData ? calculateChange(diiNetFlow, previousData.dii_net) : 0;
+  const totalChange = previousData ? calculateChange(totalNetFlow, previousData.fii_net + previousData.dii_net) : 0;
 
   const formatValue = (value: number) => {
     const absValue = Math.abs(value);

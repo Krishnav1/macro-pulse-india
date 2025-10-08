@@ -1,9 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
-import type { MonthlyFIIDIIData } from '@/hooks/financial/useFIIDIIData';
+import type { CashProvisionalData } from '@/types/fii-dii';
 
 interface CumulativeFlowChartProps {
-  data: MonthlyFIIDIIData[];
+  data: CashProvisionalData[];
 }
 
 export function CumulativeFlowChart({ data }: CumulativeFlowChartProps) {
@@ -11,8 +11,8 @@ export function CumulativeFlowChart({ data }: CumulativeFlowChartProps) {
   let diiCumulative = 0;
 
   const chartData = data.map(item => {
-    fiiCumulative += item.fii_total;
-    diiCumulative += item.dii_total;
+    fiiCumulative += item.fii_net;
+    diiCumulative += item.dii_net;
     const netTotal = fiiCumulative + diiCumulative;
 
     return {

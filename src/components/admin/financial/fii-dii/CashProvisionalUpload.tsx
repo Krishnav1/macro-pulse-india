@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, Download, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getFinancialYear, getMonthName, getQuarter, parseCSVValue, isValidDate } from '@/utils/fii-dii-utils';
+import { filterNewRecords, batchInsert } from '@/utils/upload-helpers';
 
 interface ParsedRow {
   date: string;
@@ -109,56 +109,33 @@ export function CashProvisionalUpload() {
         };
       });
 
-      // Check for existing dates
-      const dates = records.map(r => r.date);
-      const { data: existing } = await (supabase as any)
-        .from('fii_dii_cash_provisional')
-        .select('date')
-        .in('date', dates);
+      // Check for existing dates and filter to only new dates
+      const { newRecords, existingCount } = await filterNewRecords('fii_dii_cash_provisional', records);
 
-      if (existing && existing.length > 0) {
-        const existingDates = existing.map((e: any) => e.date);
+      if (newRecords.length === 0) {
         toast({
-          title: 'Duplicate dates found',
-          description: `${existingDates.length} dates already exist. They will be replaced.`,
+          title: 'No new data',
+          description: 'All dates in the file already exist in the database.',
           variant: 'default',
         });
-
-        // Delete existing records
-        await (supabase as any)
-          .from('fii_dii_cash_provisional')
-          .delete()
-          .in('date', existingDates);
-
-        // Wait for deletion
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setUploading(false);
+        return;
       }
 
-      // Insert in batches of 100
-      const batchSize = 100;
-      for (let i = 0; i < records.length; i += batchSize) {
-        const batch = records.slice(i, i + batchSize);
-        const { error } = await (supabase as any)
-          .from('fii_dii_cash_provisional')
-          .insert(batch);
-
-        if (error) throw error;
-      }
-
-      // Log upload
-      await (supabase as any)
-        .from('fii_dii_uploads')
-        .insert({
-          upload_type: 'cash_provisional',
-          file_name: file.name,
-          records_count: records.length,
-          date_range_start: records[0].date,
-          date_range_end: records[records.length - 1].date,
+      if (existingCount > 0) {
+        toast({
+          title: 'Skipping existing dates',
+          description: `${existingCount} dates already exist. Uploading ${newRecords.length} new records.`,
+          variant: 'default',
         });
+      }
+
+      // Insert only new records in batches
+      await batchInsert('fii_dii_cash_provisional', newRecords);
 
       toast({
         title: 'Upload successful',
-        description: `${records.length} records uploaded successfully`,
+        description: `${newRecords.length} new records uploaded successfully`,
       });
 
       setFile(null);

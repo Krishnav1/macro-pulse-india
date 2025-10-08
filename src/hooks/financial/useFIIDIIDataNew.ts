@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { dataCache } from '@/utils/data-cache';
 import type { 
   CashProvisionalData, 
   FIICashData, 
@@ -496,39 +497,36 @@ export function useFIIDIIMonths(financialYear?: string) {
 // =====================================================
 // Hook 10: Get Available Quarters for FY
 // =====================================================
-export function useFIIDIIQuarters(financialYear?: string) {
+export function useFIIDIIQuarters(financialYear: string) {
   const [quarters, setQuarters] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchQuarters = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await (supabase as any)
+          .from('fii_dii_cash_provisional')
+          .select('quarter')
+          .eq('financial_year', financialYear)
+          .order('quarter', { ascending: false });
+
+        if (error) throw error;
+
+        const uniqueQuarters = [...new Set(data?.map((item: any) => item.quarter) || [])] as string[];
+        setQuarters(uniqueQuarters);
+      } catch (error) {
+        console.error('Error fetching quarters:', error);
+        setQuarters([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (financialYear) {
       fetchQuarters();
     }
   }, [financialYear]);
-
-  const fetchQuarters = async () => {
-    try {
-      let query = (supabase as any)
-        .from('fii_dii_cash_provisional')
-        .select('quarter')
-        .order('quarter', { ascending: true });
-
-      if (financialYear) {
-        query = query.eq('financial_year', financialYear);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      const uniqueQuarters = [...new Set((data as any[])?.map(d => d.quarter) || [])];
-      setQuarters(uniqueQuarters as string[]);
-    } catch (err) {
-      console.error('Error fetching quarters:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return { quarters, loading };
 }
