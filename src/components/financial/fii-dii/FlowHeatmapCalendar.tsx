@@ -1,20 +1,23 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { CashProvisionalData } from '@/types/fii-dii';
 
 interface FlowHeatmapCalendarProps {
   data: CashProvisionalData[];
-  type: 'fii' | 'dii' | 'total';
 }
 
-export function FlowHeatmapCalendar({ data, type }: FlowHeatmapCalendarProps) {
+export function FlowHeatmapCalendar({ data }: FlowHeatmapCalendarProps) {
+  const [flowType, setFlowType] = useState<'fii' | 'dii' | 'total' | 'difference'>('total');
   const getValue = (item: CashProvisionalData) => {
-    switch (type) {
+    switch (flowType) {
       case 'fii':
         return item.fii_net;
       case 'dii':
         return item.dii_net;
       case 'total':
         return item.fii_net + item.dii_net;
+      case 'difference':
+        return item.fii_net - item.dii_net;
     }
   };
 
@@ -53,21 +56,37 @@ export function FlowHeatmapCalendar({ data, type }: FlowHeatmapCalendarProps) {
   };
 
   const getTitle = () => {
-    switch (type) {
+    switch (flowType) {
       case 'fii':
         return 'FII Flow Heatmap';
       case 'dii':
         return 'DII Flow Heatmap';
       case 'total':
         return 'Total Flow Heatmap';
+      case 'difference':
+        return 'FII-DII Difference Heatmap';
     }
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{getTitle()}</CardTitle>
-        <CardDescription>Daily flow intensity visualization (₹ Crores)</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>{getTitle()}</CardTitle>
+            <CardDescription>Daily flow intensity visualization (₹ Crores)</CardDescription>
+          </div>
+          <select
+            value={flowType}
+            onChange={(e) => setFlowType(e.target.value as any)}
+            className="px-3 py-2 text-sm border border-border rounded-md bg-background"
+          >
+            <option value="total">Total Flow</option>
+            <option value="fii">FII Only</option>
+            <option value="dii">DII Only</option>
+            <option value="difference">FII-DII Difference</option>
+          </select>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

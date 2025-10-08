@@ -15,7 +15,9 @@ export default function FIIDIIActivityPage() {
   const [view, setView] = useState<'monthly' | 'daily' | 'quarterly'>('monthly');
   const [selectedFY, setSelectedFY] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedQuarter, setSelectedQuarter] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [periodDisplay, setPeriodDisplay] = useState<string>('');
 
   const { years, loading: yearsLoading } = useFIIDIIFinancialYears();
   const { months } = useFIIDIIMonths(selectedFY);
@@ -26,11 +28,34 @@ export default function FIIDIIActivityPage() {
     month: selectedMonth,
   });
 
+  // Set defaults on page load - latest data
   useEffect(() => {
     if (years.length > 0 && !selectedFY) {
       setSelectedFY(years[0]);
     }
-  }, [years]);
+  }, [years, selectedFY]);
+
+  // Auto-select latest month when months are loaded
+  useEffect(() => {
+    if (months.length > 0 && !selectedMonth) {
+      const latestMonth = months[months.length - 1]; // Last month is latest
+      setSelectedMonth(latestMonth.label);
+      setPeriodDisplay(latestMonth.label);
+    }
+  }, [months, selectedMonth]);
+
+  // Update period display based on view and selection
+  useEffect(() => {
+    if (view === 'monthly' && selectedMonth) {
+      setPeriodDisplay(selectedMonth);
+    } else if (view === 'quarterly' && selectedQuarter) {
+      setPeriodDisplay(selectedQuarter);
+    } else if (view === 'quarterly' && selectedFY) {
+      setPeriodDisplay(selectedFY);
+    } else if (selectedFY) {
+      setPeriodDisplay(selectedFY);
+    }
+  }, [view, selectedFY, selectedMonth, selectedQuarter]);
 
   if (loading || yearsLoading) {
     return (
@@ -51,26 +76,12 @@ export default function FIIDIIActivityPage() {
             <h1 className="text-xl font-semibold">FII/DII Activity</h1>
             
             <div className="flex items-center gap-3">
-              {view === 'daily' && (
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
-                >
-                  <option value="">Select Month</option>
-                  {months.map((month) => (
-                    <option key={month.value} value={month.value}>
-                      {month.label}
-                    </option>
-                  ))}
-                </select>
-              )}
-
               <select
                 value={selectedFY}
                 onChange={(e) => setSelectedFY(e.target.value)}
                 className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
               >
+                <option value="">Select FY</option>
                 {years.map((year) => (
                   <option key={year} value={year}>
                     {year}
@@ -78,18 +89,33 @@ export default function FIIDIIActivityPage() {
                 ))}
               </select>
 
+              {view === 'monthly' && months.length > 0 && (
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
+                >
+                  {months.map((month) => (
+                    <option key={month.value} value={month.label}>
+                      {month.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+
               <select
                 value={view}
                 onChange={(e) => setView(e.target.value as 'monthly' | 'daily' | 'quarterly')}
                 className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
               >
+                <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
+                <option value="daily">Daily</option>
               </select>
             </div>
           </div>
         </div>
       </div>
-
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -116,7 +142,7 @@ export default function FIIDIIActivityPage() {
 
           <TabsContent value="heatmap" className="space-y-6">
             <div className="grid grid-cols-1 gap-6">
-              <FlowHeatmapCalendar data={cashProvisionalData} type="total" />
+              <FlowHeatmapCalendar data={cashProvisionalData} />
             </div>
           </TabsContent>
 

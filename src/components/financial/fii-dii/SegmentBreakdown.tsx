@@ -14,28 +14,43 @@ export function SegmentBreakdown({ financialYear }: SegmentBreakdownProps) {
   const { data: fiiCashData } = useFIICashData({ financialYear });
   const { data: diiCashData } = useDIICashData({ financialYear });
 
-  // Equity vs Debt breakdown
-  const equityDebtData = fiiCashData.slice(-6).map((item, idx) => ({
-    month: item.month_name,
-    fiiEquity: item.equity_net,
-    fiiDebt: item.debt_net,
-    diiEquity: diiCashData[idx]?.equity_net || 0,
-    diiDebt: diiCashData[idx]?.debt_net || 0,
-  }));
+  // Get last 6 months of data
+  const last6MonthsFII = fiiCashData.slice(-6);
+  const last6MonthsDII = diiCashData.slice(-6);
+
+  // Equity vs Debt breakdown - combine FII and DII by matching months
+  const equityDebtData = last6MonthsFII.map((fiiItem) => {
+    const diiItem = last6MonthsDII.find(d => d.month_name === fiiItem.month_name);
+    const monthShort = fiiItem.month_name.split(' ')[0]; // "September 2025" -> "September"
+    
+    return {
+      month: monthShort,
+      fiiEquity: fiiItem.equity_net,
+      fiiDebt: fiiItem.debt_net,
+      diiEquity: diiItem?.equity_net || 0,
+      diiDebt: diiItem?.debt_net || 0,
+    };
+  });
 
   // FII breakdown
-  const fiiBreakdown = fiiCashData.slice(-6).map(item => ({
-    month: item.month_name,
-    equity: item.equity_net,
-    debt: item.debt_net,
-  }));
+  const fiiBreakdown = last6MonthsFII.map(item => {
+    const monthShort = item.month_name.split(' ')[0];
+    return {
+      month: monthShort,
+      equity: item.equity_net,
+      debt: item.debt_net,
+    };
+  });
 
   // DII breakdown
-  const diiBreakdown = diiCashData.slice(-6).map(item => ({
-    month: item.month_name,
-    equity: item.equity_net,
-    debt: item.debt_net,
-  }));
+  const diiBreakdown = last6MonthsDII.map(item => {
+    const monthShort = item.month_name.split(' ')[0];
+    return {
+      month: monthShort,
+      equity: item.equity_net,
+      debt: item.debt_net,
+    };
+  });
 
   return (
     <Card>

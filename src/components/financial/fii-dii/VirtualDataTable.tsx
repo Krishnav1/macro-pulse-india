@@ -11,6 +11,7 @@ interface VirtualDataTableProps {
 
 type SortField = 'date' | 'fii_net' | 'dii_net' | 'total';
 type SortOrder = 'asc' | 'desc';
+type DatasetType = 'cash_provisional' | 'fii_cash' | 'dii_cash';
 
 const ROW_HEIGHT = 48;
 const VISIBLE_ROWS = 15;
@@ -21,6 +22,7 @@ export function VirtualDataTable({ data }: VirtualDataTableProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [scrollTop, setScrollTop] = useState(0);
   const [filters, setFilters] = useState<FilterCriteria | null>(null);
+  const [selectedDataset, setSelectedDataset] = useState<DatasetType>('cash_provisional');
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleSort = (field: SortField) => {
@@ -119,6 +121,15 @@ export function VirtualDataTable({ data }: VirtualDataTableProps) {
         <div className="flex items-center justify-between gap-4">
           <CardTitle>Detailed Flow Data ({filteredAndSortedData.length} records)</CardTitle>
           <div className="flex items-center gap-2">
+            <select
+              value={selectedDataset}
+              onChange={(e) => setSelectedDataset(e.target.value as DatasetType)}
+              className="px-3 py-2 text-sm border border-border rounded-md bg-background"
+            >
+              <option value="cash_provisional">Cash Provisional (FII+DII)</option>
+              <option value="fii_cash">FII Cash (Equity+Debt)</option>
+              <option value="dii_cash">DII Cash (Equity+Debt)</option>
+            </select>
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
