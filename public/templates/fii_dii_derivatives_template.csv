@@ -1,0 +1,9 @@
+Date,Investor_Type,Instrument,Market_Type,Gross_Purchase,Gross_Sales,Net_Purchase_Sales
+2025-09-18,FII,Futures,Indices,82861.3,84450.7,-1589.4
+2025-09-18,FII,Options,Indices,107216.3,35763538.7,107216.3
+2025-09-18,FII,Futures,Stocks,753044.2,753996.9,-952.8
+2025-09-18,FII,Options,Stocks,0,1810.4,-1810.4
+2025-09-18,DII,Futures,Indices,18878.4,16683.9,2194.5
+2025-09-18,DII,Options,Indices,2903.1,7638.5,2903.1
+2025-09-18,DII,Futures,Stocks,222523.7,225714.2,-3190.5
+2025-09-18,DII,Options,Stocks,0,14689.4,-14689.4

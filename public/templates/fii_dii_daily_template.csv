@@ -1,0 +1,9 @@
+Date,Investor_Type,Segment,Asset_Class,Gross_Purchase,Gross_Sales,Net_Purchase_Sales
+2025-09-18,FII,Cash,Equity,308483.7,327411.6,-18927.9
+2025-09-18,FII,Cash,Debt,2886.2,0,2886.2
+2025-09-18,FII,Derivatives,Futures,82861.3,84450.7,-1589.4
+2025-09-18,FII,Derivatives,Options,107216.3,0,107216.3
+2025-09-18,DII,Cash,Equity,219673.4,175091.2,44582.2
+2025-09-18,DII,Cash,Debt,0,52812.7,-52812.7
+2025-09-18,DII,Derivatives,Futures,18878.4,16683.9,2194.5
+2025-09-18,DII,Derivatives,Options,2903.1,0,2903.1

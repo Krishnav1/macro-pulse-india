@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, LineChart, Users, Activity, PieChart } from 'lucide-react';
+import { BarChart3, LineChart, Users, Activity, PieChart, TrendingUp } from 'lucide-react';
 import MutualFundDataAdmin from './MutualFundDataAdmin';
 import { QuarterlyAUMAdmin } from './QuarterlyAUMAdmin';
 import { InvestorBehaviorAdmin } from './InvestorBehaviorAdmin';
 import { EquityMarketsAdmin } from './EquityMarketsAdmin';
+import { FIIDIIActivityAdmin } from './FIIDIIActivityAdmin';
 
 export function FinancialMarketsAdmin() {
   return (
@@ -27,10 +28,14 @@ export function FinancialMarketsAdmin() {
 
       {/* Data Upload Tabs */}
       <Tabs defaultValue="equity-markets" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="equity-markets" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">Equity Markets</span>
+          </TabsTrigger>
+          <TabsTrigger value="fii-dii" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            <span className="hidden sm:inline">FII/DII</span>
           </TabsTrigger>
           <TabsTrigger value="quarterly-aum" className="flex items-center gap-2">
             <LineChart className="h-4 w-4" />
@@ -46,6 +51,14 @@ export function FinancialMarketsAdmin() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="equity-markets">
+          <EquityMarketsAdmin />
+        </TabsContent>
+
+        <TabsContent value="fii-dii">
+          <FIIDIIActivityAdmin />
+        </TabsContent>
+
         <TabsContent value="quarterly-aum">
           <QuarterlyAUMAdmin />
         </TabsContent>
@@ -56,10 +69,6 @@ export function FinancialMarketsAdmin() {
 
         <TabsContent value="mutual-funds">
           <MutualFundDataAdmin />
-        </TabsContent>
-
-        <TabsContent value="equity-markets">
-          <EquityMarketsAdmin />
         </TabsContent>
       </Tabs>
     </div>
