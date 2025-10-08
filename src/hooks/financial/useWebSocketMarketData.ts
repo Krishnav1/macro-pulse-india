@@ -24,11 +24,7 @@ const SYMBOLS = [
   '^NSEI',      // NIFTY 50
   '^BSESN',     // SENSEX
   '^NSEBANK',   // BANK NIFTY
-  'USDINR=X',   // USD/INR
-  '^CNXIT',     // NIFTY IT
-  '^CNXAUTO',   // NIFTY AUTO
-  '^CNXPHARMA', // NIFTY PHARMA
-  '^CNXFMCG',   // NIFTY FMCG
+  'INR=X',      // USD/INR (correct Yahoo Finance symbol)
 ];
 
 export function useWebSocketMarketData() {
@@ -70,6 +66,13 @@ export function useWebSocketMarketData() {
           body: JSON.stringify({ symbols: SYMBOLS }),
         }
       );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Edge Function error:', response.status, errorData);
+        return;
+      }
+
       const data = await response.json();
       
       if (data.quoteResponse?.result) {
@@ -85,6 +88,8 @@ export function useWebSocketMarketData() {
           });
         });
         setQuotes(newQuotes);
+      } else {
+        console.warn('No quote data received from Yahoo Finance');
       }
     } catch (error) {
       console.error('Error fetching initial market data:', error);

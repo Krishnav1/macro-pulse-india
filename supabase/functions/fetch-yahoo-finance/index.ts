@@ -25,6 +25,7 @@ serve(async (req) => {
     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolsStr}`;
 
     console.log('Fetching from Yahoo Finance:', url);
+    console.log('Symbols requested:', symbols);
 
     const response = await fetch(url, {
       headers: {
@@ -36,16 +37,19 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Yahoo Finance API error:', response.status, errorText);
       throw new Error(`Yahoo Finance API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('Yahoo Finance response:', JSON.stringify(data).substring(0, 200));
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error details:', error);
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Unknown error',

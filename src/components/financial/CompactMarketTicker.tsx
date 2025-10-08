@@ -5,18 +5,14 @@ const SYMBOL_LABELS: Record<string, string> = {
   '^NSEI': 'NIFTY 50',
   '^BSESN': 'SENSEX',
   '^NSEBANK': 'BANK NIFTY',
-  'USDINR=X': 'USD/INR',
-  '^CNXIT': 'NIFTY IT',
-  '^CNXAUTO': 'NIFTY AUTO',
-  '^CNXPHARMA': 'NIFTY PHARMA',
-  '^CNXFMCG': 'NIFTY FMCG',
+  'INR=X': 'USD/INR',
 };
 
 export function CompactMarketTicker() {
   const { quotes, isLive } = useWebSocketMarketData();
 
   const formatPrice = (price: number, symbol: string) => {
-    if (symbol === 'USDINR=X') {
+    if (symbol === 'INR=X') {
       return `₹${price.toFixed(2)}`;
     }
     return price.toLocaleString('en-IN', { maximumFractionDigits: 2 });

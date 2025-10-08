@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Yahoo Finance Edge Function</title>
+</head>
+<body>
+    <h1>Yahoo Finance Edge Function Test</h1>
+    <button onclick="testEdgeFunction()">Test Edge Function</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testEdgeFunction() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Testing...';
+
+            try {
+                const response = await fetch(
+                    'https://fhcddkfgqhwwfvqymqow.supabase.co/functions/v1/fetch-yahoo-finance',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoY2Rka2ZncWh3d2Z2cXltcW93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY5MTg4NjQsImV4cCI6MjA0MjQ5NDg2NH0.pQBfZyaGfMuXbYTdBvxKKFH0OIqvPXMCUQCZmFQQdIo',
+                        },
+                        body: JSON.stringify({ 
+                            symbols: ['^NSEI', '^BSESN', '^NSEBANK', 'INR=X'] 
+                        }),
+                    }
+                );
+
+                const data = await response.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
