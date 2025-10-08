@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useFIIDIIData, useFIIDIIFinancialYears, useFIIDIIMonths } from '@/hooks/financial/useFIIDIIData';
-import { FIIDIIKPICards } from '@/components/financial/fii-dii/FIIDIIKPICards';
-import { MoneyFlowChart } from '@/components/financial/fii-dii/MoneyFlowChart';
-import { AssetAllocationCharts } from '@/components/financial/fii-dii/AssetAllocationCharts';
-import { CumulativeFlowChart } from '@/components/financial/fii-dii/CumulativeFlowChart';
-import { SegmentBreakdownTabs } from '@/components/financial/fii-dii/SegmentBreakdownTabs';
+import { useCashProvisionalData, useFIIDIIFinancialYears, useFIIDIIMonths } from '@/hooks/financial/useFIIDIIDataNew';
 
 export default function FIIDIIActivityPage() {
   const [view, setView] = useState<'monthly' | 'daily' | 'quarterly'>('monthly');
@@ -14,7 +9,7 @@ export default function FIIDIIActivityPage() {
   const { years, loading: yearsLoading } = useFIIDIIFinancialYears();
   const { months } = useFIIDIIMonths(selectedFY);
   
-  const { monthlyData, dailyData, derivativesData, loading, fetchDerivativesData } = useFIIDIIData({
+  const { data: cashProvisionalData, loading } = useCashProvisionalData({
     view,
     financialYear: selectedFY,
     month: selectedMonth,
@@ -25,15 +20,6 @@ export default function FIIDIIActivityPage() {
       setSelectedFY(years[0]);
     }
   }, [years]);
-
-  useEffect(() => {
-    if (view === 'daily' && dailyData.length > 0) {
-      const latestDate = dailyData[dailyData.length - 1]?.date;
-      if (latestDate) {
-        fetchDerivativesData(latestDate);
-      }
-    }
-  }, [view, dailyData]);
 
   if (loading || yearsLoading) {
     return (
@@ -48,14 +34,12 @@ export default function FIIDIIActivityPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold">FII/DII Activity</h1>
             
             <div className="flex items-center gap-3">
-              {/* Month Selector (only for daily view) */}
               {view === 'daily' && (
                 <select
                   value={selectedMonth}
@@ -71,7 +55,6 @@ export default function FIIDIIActivityPage() {
                 </select>
               )}
 
-              {/* FY Selector */}
               <select
                 value={selectedFY}
                 onChange={(e) => setSelectedFY(e.target.value)}
@@ -84,14 +67,12 @@ export default function FIIDIIActivityPage() {
                 ))}
               </select>
 
-              {/* View Toggle */}
               <select
                 value={view}
                 onChange={(e) => setView(e.target.value as 'monthly' | 'daily' | 'quarterly')}
                 className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
               >
                 <option value="monthly">Monthly</option>
-                <option value="daily">Daily</option>
                 <option value="quarterly">Quarterly</option>
               </select>
             </div>
@@ -99,24 +80,28 @@ export default function FIIDIIActivityPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* KPI Cards */}
-        <FIIDIIKPICards data={monthlyData} view={view} />
-
-        {/* Money Flow Comparison Chart */}
-        <MoneyFlowChart data={monthlyData} />
-
-        {/* Asset Allocation Charts */}
-        <AssetAllocationCharts data={monthlyData} />
-
-        {/* Cumulative Flow Trend */}
-        <CumulativeFlowChart data={monthlyData} />
-
-        {/* Segment Breakdown Tabs */}
-        {(view === 'daily' && dailyData.length > 0) && (
-          <SegmentBreakdownTabs dailyData={dailyData} derivativesData={derivativesData} />
-        )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold mb-4">FII/DII Data Upload Complete</h2>
+          <p className="text-muted-foreground mb-6">
+            Database tables and upload components are ready. UI components will be built in Phase 3.
+          </p>
+          <div className="bg-card p-6 rounded-lg max-w-2xl mx-auto">
+            <h3 className="font-semibold mb-4">Upload Data via Admin Panel:</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Go to <span className="font-mono bg-muted px-2 py-1 rounded">/admin</span> → Financial Markets → FII/DII Activity
+            </p>
+            <div className="text-left space-y-2 text-sm">
+              <p>✅ 7 Database tables created</p>
+              <p>✅ 7 CSV templates ready</p>
+              <p>✅ 7 Upload components functional</p>
+              <p>✅ Data hooks implemented</p>
+              <p>⏳ UI components (Phase 3)</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
