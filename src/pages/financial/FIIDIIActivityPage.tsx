@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useCashProvisionalData, useFIIDIIFinancialYears, useFIIDIIMonths } from '@/hooks/financial/useFIIDIIDataNew';
+import { useCashProvisionalData, useFIIDIIFinancialYears, useFIIDIIMonths, useFIICashData, useDIICashData } from '@/hooks/financial/useFIIDIIDataNew';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FIIDIIKPICards } from '@/components/financial/fii-dii/FIIDIIKPICards';
 import { MoneyFlowChart } from '@/components/financial/fii-dii/MoneyFlowChart';
@@ -10,23 +10,41 @@ import { LazyChartWrapper } from '@/components/financial/fii-dii/LazyChartWrappe
 import { SegmentBreakdown } from '@/components/financial/fii-dii/SegmentBreakdown';
 import { FlowHeatmapCalendar } from '@/components/financial/fii-dii/FlowHeatmapCalendar';
 import { ComparisonTools } from '@/components/financial/fii-dii/ComparisonTools';
+import { SegmentAnalysisTabs } from '@/components/financial/fii-dii/SegmentAnalysisTabs';
+import { ContextualHelp } from '@/components/financial/fii-dii/ContextualHelp';
 
 export default function FIIDIIActivityPage() {
-  const [view, setView] = useState<'monthly' | 'daily' | 'quarterly'>('monthly');
+  const [view, setView] = useState<'yearly' | 'monthly' | 'weekly' | 'daily'>('monthly');
   const [selectedFY, setSelectedFY] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('');
-  const [selectedQuarter, setSelectedQuarter] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
   const [periodDisplay, setPeriodDisplay] = useState<string>('');
+  const [periodBadge, setPeriodBadge] = useState<string>('');
+  const [selectedDataset, setSelectedDataset] = useState<'cash_provisional' | 'fii_cash' | 'dii_cash'>('cash_provisional');
 
   const { years, loading: yearsLoading } = useFIIDIIFinancialYears();
   const { months } = useFIIDIIMonths(selectedFY);
   
   const { data: cashProvisionalData, loading } = useCashProvisionalData({
-    view,
     financialYear: selectedFY,
     month: selectedMonth,
   });
+
+  const { data: fiiCashData } = useFIICashData({
+    financialYear: selectedFY,
+    month: selectedMonth,
+  });
+
+  const { data: diiCashData } = useDIICashData({
+    financialYear: selectedFY,
+    month: selectedMonth,
+  });
+
+  // Get current dataset based on selection
+  const currentTableData = selectedDataset === 'fii_cash' ? fiiCashData : 
+                           selectedDataset === 'dii_cash' ? diiCashData : 
+                           cashProvisionalData;
 
   // Set defaults on page load - latest data
   useEffect(() => {
@@ -46,16 +64,20 @@ export default function FIIDIIActivityPage() {
 
   // Update period display based on view and selection
   useEffect(() => {
-    if (view === 'monthly' && selectedMonth) {
+    if (view === 'daily' && selectedDate) {
+      setPeriodDisplay(selectedDate);
+      setPeriodBadge('Daily');
+    } else if (view === 'weekly' && selectedMonth) {
+      setPeriodDisplay(`Week of ${selectedMonth}`);
+      setPeriodBadge('Weekly');
+    } else if (view === 'monthly' && selectedMonth) {
       setPeriodDisplay(selectedMonth);
-    } else if (view === 'quarterly' && selectedQuarter) {
-      setPeriodDisplay(selectedQuarter);
-    } else if (view === 'quarterly' && selectedFY) {
+      setPeriodBadge('Monthly');
+    } else if (view === 'yearly' && selectedFY) {
       setPeriodDisplay(selectedFY);
-    } else if (selectedFY) {
-      setPeriodDisplay(selectedFY);
+      setPeriodBadge('Yearly');
     }
-  }, [view, selectedFY, selectedMonth, selectedQuarter]);
+  }, [view, selectedFY, selectedMonth, selectedDate]);
 
   if (loading || yearsLoading) {
     return (
@@ -70,10 +92,18 @@ export default function FIIDIIActivityPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold">FII/DII Activity</h1>
+      {/* Header */}
+      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">FII/DII Activity</h1>
+              {periodDisplay && (
+                <span className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary rounded-full">
+                  {periodDisplay}
+                </span>
+              )}
+            </div>
             
             <div className="flex items-center gap-3">
               <select
@@ -105,11 +135,12 @@ export default function FIIDIIActivityPage() {
 
               <select
                 value={view}
-                onChange={(e) => setView(e.target.value as 'monthly' | 'daily' | 'quarterly')}
+                onChange={(e) => setView(e.target.value as any)}
                 className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
               >
+                <option value="yearly">Yearly</option>
                 <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
+                <option value="weekly">Weekly</option>
                 <option value="daily">Daily</option>
               </select>
             </div>
@@ -118,10 +149,15 @@ export default function FIIDIIActivityPage() {
       </div>
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <ContextualHelp data={cashProvisionalData} view={view} />
+        </div>
+        
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="segments">Segments</TabsTrigger>
+            <TabsTrigger value="analysis">Analysis</TabsTrigger>
             <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
             <TabsTrigger value="comparison">Comparison</TabsTrigger>
             <TabsTrigger value="data">Data Table</TabsTrigger>
@@ -140,6 +176,10 @@ export default function FIIDIIActivityPage() {
             <SegmentBreakdown financialYear={selectedFY} />
           </TabsContent>
 
+          <TabsContent value="analysis" className="space-y-6">
+            <SegmentAnalysisTabs financialYear={selectedFY} view={view} />
+          </TabsContent>
+
           <TabsContent value="heatmap" className="space-y-6">
             <div className="grid grid-cols-1 gap-6">
               <FlowHeatmapCalendar data={cashProvisionalData} />
@@ -151,7 +191,11 @@ export default function FIIDIIActivityPage() {
           </TabsContent>
 
           <TabsContent value="data" className="space-y-6">
-            <VirtualDataTable data={cashProvisionalData} />
+            <VirtualDataTable 
+              data={currentTableData} 
+              selectedDataset={selectedDataset}
+              onDatasetChange={setSelectedDataset}
+            />
           </TabsContent>
         </Tabs>
       </div>

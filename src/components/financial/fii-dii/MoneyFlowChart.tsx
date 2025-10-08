@@ -7,11 +7,18 @@ interface MoneyFlowChartProps {
 }
 
 export function MoneyFlowChart({ data }: MoneyFlowChartProps) {
-  const chartData = data.map(item => ({
-    month: item.month_name,
-    fiiNet: item.fii_net,
-    diiNet: item.dii_net,
-  }));
+  const chartData = data.map(item => {
+    const date = new Date(item.date);
+    const day = date.getDate();
+    const monthShort = item.month_name.split(' ')[0].substring(0, 3); // "Sep"
+    
+    return {
+      date: day, // Just the day number
+      label: `${day} ${monthShort}`, // "15 Sep"
+      fiiNet: item.fii_net,
+      diiNet: item.dii_net,
+    };
+  });
 
   return (
     <Card>
@@ -24,9 +31,10 @@ export function MoneyFlowChart({ data }: MoneyFlowChartProps) {
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
-              dataKey="month" 
+              dataKey="date" 
               stroke="hsl(var(--muted-foreground))" 
               fontSize={12}
+              label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
             />
             <YAxis 
               stroke="hsl(var(--muted-foreground))" 

@@ -6,23 +6,23 @@ import type { CashProvisionalData } from '@/types/fii-dii';
 import { AdvancedFilters, FilterCriteria } from './AdvancedFilters';
 
 interface VirtualDataTableProps {
-  data: CashProvisionalData[];
+  data: any[];
+  selectedDataset: 'cash_provisional' | 'fii_cash' | 'dii_cash';
+  onDatasetChange: (dataset: 'cash_provisional' | 'fii_cash' | 'dii_cash') => void;
 }
 
 type SortField = 'date' | 'fii_net' | 'dii_net' | 'total';
 type SortOrder = 'asc' | 'desc';
-type DatasetType = 'cash_provisional' | 'fii_cash' | 'dii_cash';
 
 const ROW_HEIGHT = 48;
 const VISIBLE_ROWS = 15;
 
-export function VirtualDataTable({ data }: VirtualDataTableProps) {
+export function VirtualDataTable({ data, selectedDataset, onDatasetChange }: VirtualDataTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [scrollTop, setScrollTop] = useState(0);
   const [filters, setFilters] = useState<FilterCriteria | null>(null);
-  const [selectedDataset, setSelectedDataset] = useState<DatasetType>('cash_provisional');
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleSort = (field: SortField) => {
@@ -123,7 +123,7 @@ export function VirtualDataTable({ data }: VirtualDataTableProps) {
           <div className="flex items-center gap-2">
             <select
               value={selectedDataset}
-              onChange={(e) => setSelectedDataset(e.target.value as DatasetType)}
+              onChange={(e) => onDatasetChange(e.target.value as any)}
               className="px-3 py-2 text-sm border border-border rounded-md bg-background"
             >
               <option value="cash_provisional">Cash Provisional (FII+DII)</option>
