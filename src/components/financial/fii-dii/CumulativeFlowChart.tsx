@@ -1,25 +1,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import type { CashProvisionalData } from '@/types/fii-dii';
-
 interface CumulativeFlowChartProps {
   data: CashProvisionalData[];
 }
 
 export function CumulativeFlowChart({ data }: CumulativeFlowChartProps) {
-  let fiiCumulative = 0;
-  let diiCumulative = 0;
-
-  const chartData = data.map(item => {
-    fiiCumulative += item.fii_net;
-    diiCumulative += item.dii_net;
-    const netTotal = fiiCumulative + diiCumulative;
+  const chartData = data.map((item, index) => {
+    const cumulativeFII = data.slice(0, index + 1).reduce((sum, d) => sum + d.fii_net, 0);
+    const cumulativeDII = data.slice(0, index + 1).reduce((sum, d) => sum + d.dii_net, 0);
+    const date = new Date(item.date);
+    const day = date.getDate();
 
     return {
+      date: day,
       month: item.month_name,
-      fiiCumulative,
-      diiCumulative,
-      netTotal,
+      cumulativeFII,
+      cumulativeDII,
+      cumulativeTotal: cumulativeFII + cumulativeDII,
     };
   });
 
@@ -34,7 +32,7 @@ export function CumulativeFlowChart({ data }: CumulativeFlowChartProps) {
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
-              dataKey="month" 
+              dataKey="date" 
               stroke="hsl(var(--muted-foreground))" 
               fontSize={12}
             />
@@ -51,19 +49,11 @@ export function CumulativeFlowChart({ data }: CumulativeFlowChartProps) {
               }}
               formatter={(value: number) => [`₹${value.toFixed(0)} Cr`, '']}
             />
-            <Legend 
-              onClick={(e) => {
-                // Toggle line visibility on legend click
-                const chart = e.target as any;
-                if (chart && chart.dataKey) {
-                  // This will be handled by Recharts internally
-                }
-              }}
-            />
+            <Legend />
             <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1} />
             <Line
               type="monotone"
-              dataKey="fiiCumulative"
+              dataKey="cumulativeFII"
               name="FII Cumulative"
               stroke="hsl(200, 98%, 39%)"
               strokeWidth={2}
@@ -72,7 +62,7 @@ export function CumulativeFlowChart({ data }: CumulativeFlowChartProps) {
             />
             <Line
               type="monotone"
-              dataKey="diiCumulative"
+              dataKey="cumulativeDII"
               name="DII Cumulative"
               stroke="hsl(25, 95%, 50%)"
               strokeWidth={2}
@@ -81,7 +71,7 @@ export function CumulativeFlowChart({ data }: CumulativeFlowChartProps) {
             />
             <Line
               type="monotone"
-              dataKey="netTotal"
+              dataKey="cumulativeTotal"
               name="Net Total"
               stroke="hsl(142, 76%, 36%)"
               strokeWidth={3}

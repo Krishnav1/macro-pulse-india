@@ -15,15 +15,39 @@ const COLORS = ['#3B82F6', '#F97316', '#10B981', '#8B5CF6'];
 export function SegmentAnalysisTabs({ financialYear, view }: SegmentAnalysisTabsProps) {
   const [activeTab, setActiveTab] = useState('cash-market');
 
-  const { data: fiiCashData } = useFIICashData({ financialYear });
-  const { data: diiCashData } = useDIICashData({ financialYear });
-  const { data: fiiIndicesData } = useFIIFOIndicesData({ financialYear });
-  const { data: fiiStocksData } = useFIIFOStocksData({ financialYear });
-  const { data: diiIndicesData } = useDIIFOIndicesData({ financialYear });
-  const { data: diiStocksData } = useDIIFOStocksData({ financialYear });
+  const { data: fiiCashData = [], loading: fiiCashLoading } = useFIICashData({ financialYear });
+  const { data: diiCashData = [], loading: diiCashLoading } = useDIICashData({ financialYear });
+  const { data: fiiIndicesData = [], loading: fiiIndicesLoading } = useFIIFOIndicesData({ financialYear });
+  const { data: fiiStocksData = [], loading: fiiStocksLoading } = useFIIFOStocksData({ financialYear });
+  const { data: diiIndicesData = [], loading: diiIndicesLoading } = useDIIFOIndicesData({ financialYear });
+  const { data: diiStocksData = [], loading: diiStocksLoading } = useDIIFOStocksData({ financialYear });
+
+  const isLoading = fiiCashLoading || diiCashLoading || fiiIndicesLoading || fiiStocksLoading || diiIndicesLoading || diiStocksLoading;
+  const hasData = fiiCashData.length > 0 && diiCashData.length > 0;
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading segment data...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!hasData) {
+    return (
+      <Card>
+        <CardContent className="p-12 text-center">
+          <p className="text-muted-foreground">No data available for the selected period</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Cash Market Analysis
-  const cashAnalysis = fiiCashData.slice(-6).map((fiiItem, idx) => {
+  const cashAnalysis = fiiCashData.slice(-30).map((fiiItem, idx) => {
     const diiItem = diiCashData[idx];
     const date = new Date(fiiItem.date);
     const label = view === 'monthly' ? date.getDate().toString() : 
@@ -40,7 +64,7 @@ export function SegmentAnalysisTabs({ financialYear, view }: SegmentAnalysisTabs
   });
 
   // F&O Market Analysis
-  const foAnalysis = fiiIndicesData.slice(-6).map((fiiIndItem, idx) => {
+  const foAnalysis = fiiIndicesData.slice(-30).map((fiiIndItem, idx) => {
     const fiiStockItem = fiiStocksData[idx];
     const diiIndItem = diiIndicesData[idx];
     const diiStockItem = diiStocksData[idx];
@@ -73,15 +97,15 @@ export function SegmentAnalysisTabs({ financialYear, view }: SegmentAnalysisTabs
   });
 
   // Segment Distribution (Pie Chart Data)
-  const latestCash = cashAnalysis[cashAnalysis.length - 1];
-  const latestFO = foAnalysis[foAnalysis.length - 1];
+  const latestCash = cashAnalysis.length > 0 ? cashAnalysis[cashAnalysis.length - 1] : null;
+  const latestFO = foAnalysis.length > 0 ? foAnalysis[foAnalysis.length - 1] : null;
   
-  const segmentDistribution = [
-    { name: 'FII Equity', value: Math.abs(latestCash.fiiEquity), color: COLORS[0] },
-    { name: 'FII Debt', value: Math.abs(latestCash.fiiDebt), color: COLORS[1] },
-    { name: 'FII F&O', value: Math.abs(latestFO.fiiIndices + latestFO.fiiStocks), color: COLORS[2] },
-    { name: 'DII Total', value: Math.abs(latestCash.diiEquity + latestCash.diiDebt + latestFO.diiIndices + latestFO.diiStocks), color: COLORS[3] },
-  ].filter(item => item.value > 0);
+  const segmentDistribution = latestCash && latestFO ? [
+    { name: 'FII Equity', value: Math.abs(latestCash.fiiEquity || 0), color: COLORS[0] },
+    { name: 'FII Debt', value: Math.abs(latestCash.fiiDebt || 0), color: COLORS[1] },
+    { name: 'FII F&O', value: Math.abs((latestFO.fiiIndices || 0) + (latestFO.fiiStocks || 0)), color: COLORS[2] },
+    { name: 'DII Total', value: Math.abs((latestCash.diiEquity || 0) + (latestCash.diiDebt || 0) + (latestFO.diiIndices || 0) + (latestFO.diiStocks || 0)), color: COLORS[3] },
+  ].filter(item => item.value > 0) : [];
 
   return (
     <Card>

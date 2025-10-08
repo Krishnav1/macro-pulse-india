@@ -82,17 +82,6 @@ export function FIIDIIKPICards({ data, view }: FIIDIIKPICardsProps) {
   };
 
   const metrics = getMetrics();
-  const latestData = data[data.length - 1];
-  const previousData = data[data.length - 2];
-
-  const calculateChange = (current: number, previous: number) => {
-    if (!previous || previous === 0) return 0;
-    return ((current - previous) / Math.abs(previous)) * 100;
-  };
-
-  const fiiChange = previousData ? calculateChange(metrics.total, previousData.fii_net) : 0;
-  const diiChange = previousData ? calculateChange(metrics.difference, previousData.dii_net) : 0;
-  const totalChange = previousData ? calculateChange(metrics.primary, previousData.fii_net + previousData.dii_net) : 0;
 
   const formatValue = (value: number) => {
     const absValue = Math.abs(value);
@@ -124,10 +113,9 @@ export function FIIDIIKPICards({ data, view }: FIIDIIKPICardsProps) {
             <p className={`text-2xl font-bold ${getChangeColor(metrics.primary)}`}>
               {formatValue(metrics.primary)}
             </p>
-            <div className={`flex items-center gap-1 text-xs ${getChangeColor(totalChange)}`}>
-              {getChangeIcon(totalChange)}
-              <span>{Math.abs(totalChange).toFixed(1)}%</span>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              {view === 'daily' ? 'Single Day' : view === 'weekly' ? `${data.length} days` : view === 'monthly' ? `${data.length} days` : '12 months'}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -140,10 +128,9 @@ export function FIIDIIKPICards({ data, view }: FIIDIIKPICardsProps) {
             <p className={`text-2xl font-bold ${getChangeColor(metrics.secondary)}`}>
               {formatValue(metrics.secondary)}
             </p>
-            <div className={`flex items-center gap-1 text-xs ${getChangeColor(fiiChange)}`}>
-              {getChangeIcon(fiiChange)}
-              <span>{Math.abs(fiiChange).toFixed(1)}%</span>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              {view === 'daily' ? 'Per Day' : view === 'weekly' ? 'Per Day' : view === 'monthly' ? 'Per Day' : 'Per Month'}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -156,10 +143,9 @@ export function FIIDIIKPICards({ data, view }: FIIDIIKPICardsProps) {
             <p className={`text-2xl font-bold ${getChangeColor(metrics.total)}`}>
               {formatValue(metrics.total)}
             </p>
-            <div className={`flex items-center gap-1 text-xs ${getChangeColor(diiChange)}`}>
-              {getChangeIcon(diiChange)}
-              <span>{Math.abs(diiChange).toFixed(1)}%</span>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              {metrics.total > 0 ? 'Net Inflow' : metrics.total < 0 ? 'Net Outflow' : 'Neutral'}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -175,7 +161,7 @@ export function FIIDIIKPICards({ data, view }: FIIDIIKPICardsProps) {
             <p className="text-xs text-muted-foreground">
               {view === 'daily' ? 
                 (metrics.difference > 0 ? 'FII Dominant' : metrics.difference < 0 ? 'DII Dominant' : 'Balanced') :
-                `${data.length} ${view === 'weekly' ? 'days' : view === 'monthly' ? 'days' : 'months'}`
+                (metrics.difference > 0 ? 'FII Leading' : metrics.difference < 0 ? 'DII Leading' : 'Balanced')
               }
             </p>
           </div>

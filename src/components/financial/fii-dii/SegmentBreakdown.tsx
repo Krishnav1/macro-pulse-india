@@ -14,17 +14,18 @@ export function SegmentBreakdown({ financialYear }: SegmentBreakdownProps) {
   const { data: fiiCashData } = useFIICashData({ financialYear });
   const { data: diiCashData } = useDIICashData({ financialYear });
 
-  // Get last 6 months of data
-  const last6MonthsFII = fiiCashData.slice(-6);
-  const last6MonthsDII = diiCashData.slice(-6);
+  // Get last 30 days of data
+  const last30DaysFII = fiiCashData.slice(-30);
+  const last30DaysDII = diiCashData.slice(-30);
 
-  // Equity vs Debt breakdown - combine FII and DII by matching months
-  const equityDebtData = last6MonthsFII.map((fiiItem) => {
-    const diiItem = last6MonthsDII.find(d => d.month_name === fiiItem.month_name);
-    const monthShort = fiiItem.month_name.split(' ')[0]; // "September 2025" -> "September"
+  // Equity vs Debt breakdown - combine FII and DII by matching dates
+  const equityDebtData = last30DaysFII.map((fiiItem, idx) => {
+    const diiItem = last30DaysDII[idx];
+    const date = new Date(fiiItem.date);
+    const day = date.getDate();
     
     return {
-      month: monthShort,
+      date: day,
       fiiEquity: fiiItem.equity_net,
       fiiDebt: fiiItem.debt_net,
       diiEquity: diiItem?.equity_net || 0,
@@ -33,20 +34,22 @@ export function SegmentBreakdown({ financialYear }: SegmentBreakdownProps) {
   });
 
   // FII breakdown
-  const fiiBreakdown = last6MonthsFII.map(item => {
-    const monthShort = item.month_name.split(' ')[0];
+  const fiiBreakdown = last30DaysFII.map(item => {
+    const date = new Date(item.date);
+    const day = date.getDate();
     return {
-      month: monthShort,
+      date: day,
       equity: item.equity_net,
       debt: item.debt_net,
     };
   });
 
   // DII breakdown
-  const diiBreakdown = last6MonthsDII.map(item => {
-    const monthShort = item.month_name.split(' ')[0];
+  const diiBreakdown = last30DaysDII.map(item => {
+    const date = new Date(item.date);
+    const day = date.getDate();
     return {
-      month: monthShort,
+      date: day,
       equity: item.equity_net,
       debt: item.debt_net,
     };
@@ -66,10 +69,13 @@ export function SegmentBreakdown({ financialYear }: SegmentBreakdownProps) {
           </TabsList>
 
           <TabsContent value="equity-debt" className="mt-6">
+            <p className="text-sm text-muted-foreground mb-4">
+              Combined FII & DII equity and debt flows (Last 30 days) | Values in ₹ Crore
+            </p>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={equityDebtData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <Tooltip
                   contentStyle={{
@@ -89,10 +95,13 @@ export function SegmentBreakdown({ financialYear }: SegmentBreakdownProps) {
           </TabsContent>
 
           <TabsContent value="fii-breakdown" className="mt-6">
+            <p className="text-sm text-muted-foreground mb-4">
+              FII equity vs debt breakdown (Last 30 days) | Values in ₹ Crore
+            </p>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={fiiBreakdown}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <Tooltip
                   contentStyle={{
@@ -110,10 +119,13 @@ export function SegmentBreakdown({ financialYear }: SegmentBreakdownProps) {
           </TabsContent>
 
           <TabsContent value="dii-breakdown" className="mt-6">
+            <p className="text-sm text-muted-foreground mb-4">
+              DII equity vs debt breakdown (Last 30 days) | Values in ₹ Crore
+            </p>
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={diiBreakdown}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <Tooltip
                   contentStyle={{

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useCashProvisionalData, useFIIDIIFinancialYears, useFIIDIIMonths, useFIICashData, useDIICashData } from '@/hooks/financial/useFIIDIIDataNew';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FIIDIIKPICards } from '@/components/financial/fii-dii/FIIDIIKPICards';
@@ -20,8 +20,8 @@ export default function FIIDIIActivityPage() {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
   const [periodDisplay, setPeriodDisplay] = useState<string>('');
-  const [periodBadge, setPeriodBadge] = useState<string>('');
   const [selectedDataset, setSelectedDataset] = useState<'cash_provisional' | 'fii_cash' | 'dii_cash'>('cash_provisional');
+  const [datasetLabel, setDatasetLabel] = useState<string>('Cash Provisional (FII+DII)');
 
   const { years, loading: yearsLoading } = useFIIDIIFinancialYears();
   const { months } = useFIIDIIMonths(selectedFY);
@@ -64,20 +64,24 @@ export default function FIIDIIActivityPage() {
 
   // Update period display based on view and selection
   useEffect(() => {
-    if (view === 'daily' && selectedDate) {
+    if (selectedDate) {
       setPeriodDisplay(selectedDate);
-      setPeriodBadge('Daily');
-    } else if (view === 'weekly' && selectedMonth) {
-      setPeriodDisplay(`Week of ${selectedMonth}`);
-      setPeriodBadge('Weekly');
-    } else if (view === 'monthly' && selectedMonth) {
+    } else if (selectedMonth) {
       setPeriodDisplay(selectedMonth);
-      setPeriodBadge('Monthly');
-    } else if (view === 'yearly' && selectedFY) {
+    } else if (selectedFY) {
       setPeriodDisplay(selectedFY);
-      setPeriodBadge('Yearly');
     }
-  }, [view, selectedFY, selectedMonth, selectedDate]);
+  }, [selectedFY, selectedMonth, selectedDate]);
+
+  // Get available dates for selected month
+  const availableDates = useMemo(() => {
+    if (!selectedMonth || !cashProvisionalData.length) return [];
+    return cashProvisionalData.map(item => ({
+      value: item.date,
+      label: new Date(item.date).getDate().toString(),
+      fullDate: item.date
+    }));
+  }, [selectedMonth, cashProvisionalData]);
 
   if (loading || yearsLoading) {
     return (
@@ -95,17 +99,37 @@ export default function FIIDIIActivityPage() {
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">FII/DII Activity</h1>
-              {periodDisplay && (
-                <span className="px-3 py-1 text-sm font-medium bg-primary/10 text-primary rounded-full">
-                  {periodDisplay}
-                </span>
-              )}
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold">FII/DII Activity</h1>
+                {periodDisplay && (
+                  <p className="text-sm text-muted-foreground mt-1">{periodDisplay}</p>
+                )}
+              </div>
+              <ContextualHelp data={cashProvisionalData} view={view} />
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedDataset}
+                onChange={(e) => {
+                  const value = e.target.value as any;
+                  setSelectedDataset(value);
+                  const labels: Record<string, string> = {
+                    'cash_provisional': 'Cash Provisional (FII+DII)',
+                    'fii_cash': 'FII Cash Only',
+                    'dii_cash': 'DII Cash Only'
+                  };
+                  setDatasetLabel(labels[value]);
+                }}
+                className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
+              >
+                <option value="cash_provisional">All Markets</option>
+                <option value="fii_cash">FII Cash</option>
+                <option value="dii_cash">DII Cash</option>
+              </select>
+
               <select
                 value={selectedFY}
                 onChange={(e) => setSelectedFY(e.target.value)}
@@ -119,7 +143,7 @@ export default function FIIDIIActivityPage() {
                 ))}
               </select>
 
-              {view === 'monthly' && months.length > 0 && (
+              {months.length > 0 && (
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
@@ -133,64 +157,77 @@ export default function FIIDIIActivityPage() {
                 </select>
               )}
 
-              <select
-                value={view}
-                onChange={(e) => setView(e.target.value as any)}
-                className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
-              >
-                <option value="yearly">Yearly</option>
-                <option value="monthly">Monthly</option>
-                <option value="weekly">Weekly</option>
-                <option value="daily">Daily</option>
-              </select>
+              {availableDates.length > 0 && (
+                <select
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
+                >
+                  <option value="">All Dates</option>
+                  {availableDates.map((date) => (
+                    <option key={date.value} value={date.fullDate}>
+                      {date.label}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
         </div>
       </div>
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6">
-          <ContextualHelp data={cashProvisionalData} view={view} />
-        </div>
-        
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="segments">Segments</TabsTrigger>
-            <TabsTrigger value="analysis">Analysis</TabsTrigger>
-            <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
+            <TabsTrigger value="cash">Cash Market</TabsTrigger>
+            <TabsTrigger value="fo">F&O Market</TabsTrigger>
             <TabsTrigger value="comparison">Comparison</TabsTrigger>
+            <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
             <TabsTrigger value="data">Data Table</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              📊 Dataset: {datasetLabel} | All values in ₹ Crore
+            </p>
             <FIIDIIKPICards data={cashProvisionalData} view={view} />
-            <LazyChartWrapper type="money-flow" data={cashProvisionalData} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <LazyChartWrapper type="allocation" data={cashProvisionalData} />
-            </div>
-            <LazyChartWrapper type="cumulative" data={cashProvisionalData} />
+            <MoneyFlowChart data={cashProvisionalData} />
+            <CumulativeFlowChart data={cashProvisionalData} />
           </TabsContent>
 
-          <TabsContent value="segments" className="space-y-6">
+          <TabsContent value="cash" className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              💰 Cash Market: Delivery-based equity and debt transactions | Values in ₹ Crore
+            </p>
             <SegmentBreakdown financialYear={selectedFY} />
           </TabsContent>
 
-          <TabsContent value="analysis" className="space-y-6">
+          <TabsContent value="fo" className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              📈 F&O Market: Index and stock derivatives (Futures & Options) | Values in ₹ Crore
+            </p>
             <SegmentAnalysisTabs financialYear={selectedFY} view={view} />
           </TabsContent>
 
-          <TabsContent value="heatmap" className="space-y-6">
-            <div className="grid grid-cols-1 gap-6">
-              <FlowHeatmapCalendar data={cashProvisionalData} />
-            </div>
-          </TabsContent>
-
           <TabsContent value="comparison" className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              ⚖️ Market Comparison: Cash vs F&O activity analysis | Values in ₹ Crore
+            </p>
             <ComparisonTools />
           </TabsContent>
 
+          <TabsContent value="heatmap" className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              🗓️ Calendar Heatmap: Daily flow intensity visualization | Values in ₹ Crore
+            </p>
+            <FlowHeatmapCalendar data={cashProvisionalData} />
+          </TabsContent>
+
           <TabsContent value="data" className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              📋 Detailed Data Table | All values in ₹ Crore
+            </p>
             <VirtualDataTable 
               data={currentTableData} 
               selectedDataset={selectedDataset}
