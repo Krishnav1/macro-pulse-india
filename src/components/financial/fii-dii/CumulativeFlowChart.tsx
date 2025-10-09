@@ -3,18 +3,23 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import type { CashProvisionalData } from '@/types/fii-dii';
 interface CumulativeFlowChartProps {
   data: CashProvisionalData[];
+  title?: string;
+  description?: string;
 }
 
-export function CumulativeFlowChart({ data }: CumulativeFlowChartProps) {
+export function CumulativeFlowChart({ data, title, description }: CumulativeFlowChartProps) {
   const chartData = data.map((item, index) => {
     const cumulativeFII = data.slice(0, index + 1).reduce((sum, d) => sum + d.fii_net, 0);
     const cumulativeDII = data.slice(0, index + 1).reduce((sum, d) => sum + d.dii_net, 0);
     const date = new Date(item.date);
     const day = date.getDate();
+    const monthShort = date.toLocaleDateString('en-US', { month: 'short' });
 
     return {
       date: day,
+      dateLabel: `${day} ${monthShort}`,
       month: item.month_name,
+      fullDate: item.date,
       cumulativeFII,
       cumulativeDII,
       cumulativeTotal: cumulativeFII + cumulativeDII,
@@ -24,15 +29,15 @@ export function CumulativeFlowChart({ data }: CumulativeFlowChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cumulative Money Flow Trend</CardTitle>
-        <CardDescription>Running total of FII and DII investments (₹ Crores)</CardDescription>
+        <CardTitle>{title || 'Cumulative Money Flow Trend'}</CardTitle>
+        <CardDescription>{description || 'Running total of FII and DII investments (₹ Crores)'}</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
-              dataKey="date" 
+              dataKey="dateLabel" 
               stroke="hsl(var(--muted-foreground))" 
               fontSize={12}
             />
@@ -47,7 +52,20 @@ export function CumulativeFlowChart({ data }: CumulativeFlowChartProps) {
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
               }}
-              formatter={(value: number) => [`₹${value.toFixed(0)} Cr`, '']}
+              labelFormatter={(value, payload) => {
+                if (payload && payload[0]) {
+                  const dataPoint = payload[0].payload;
+                  if (dataPoint.fullDate) {
+                    return new Date(dataPoint.fullDate).toLocaleDateString('en-US', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    });
+                  }
+                }
+                return value;
+              }}
+              formatter={(value: number, name: string) => [`₹${Number(value).toFixed(0)} Cr`, name]}
             />
             <Legend />
             <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={1} />

@@ -4,37 +4,40 @@ import type { CashProvisionalData } from '@/types/fii-dii';
 
 interface MoneyFlowChartProps {
   data: CashProvisionalData[];
+  title?: string;
+  description?: string;
 }
 
-export function MoneyFlowChart({ data }: MoneyFlowChartProps) {
-  const chartData = data.map(item => {
+export function MoneyFlowChart({ data, title, description }: MoneyFlowChartProps) {
+  const chartData = data.map((item) => {
     const date = new Date(item.date);
     const day = date.getDate();
-    const monthShort = item.month_name.split(' ')[0].substring(0, 3); // "Sep"
+    const monthShort = date.toLocaleDateString('en-US', { month: 'short' });
     
     return {
-      date: day, // Just the day number
-      label: `${day} ${monthShort}`, // "15 Sep"
+      date: day,
+      dateLabel: `${day} ${monthShort}`,
+      fullDate: item.date,
       fiiNet: item.fii_net,
       diiNet: item.dii_net,
+      total: item.fii_net + item.dii_net,
     };
   });
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>FII vs DII Net Flow Comparison</CardTitle>
-        <CardDescription>Monthly net investment flows (₹ Crores)</CardDescription>
+        <CardTitle>{title || 'FII vs DII Net Flow Comparison'}</CardTitle>
+        <CardDescription>{description || 'Net investment flows (₹ Crores)'}</CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
-              dataKey="date" 
+              dataKey="dateLabel" 
               stroke="hsl(var(--muted-foreground))" 
               fontSize={12}
-              label={{ value: 'Date', position: 'insideBottom', offset: -5 }}
             />
             <YAxis 
               stroke="hsl(var(--muted-foreground))" 
@@ -47,7 +50,20 @@ export function MoneyFlowChart({ data }: MoneyFlowChartProps) {
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
               }}
-              formatter={(value: number) => [`₹${value.toFixed(0)} Cr`, '']}
+              labelFormatter={(value, payload) => {
+                if (payload && payload[0]) {
+                  const dataPoint = payload[0].payload;
+                  if (dataPoint.fullDate) {
+                    return new Date(dataPoint.fullDate).toLocaleDateString('en-US', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    });
+                  }
+                }
+                return value;
+              }}
+              formatter={(value: number, name: string) => [`₹${Number(value).toFixed(0)} Cr`, name]}
             />
             <Legend />
             <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeWidth={2} />

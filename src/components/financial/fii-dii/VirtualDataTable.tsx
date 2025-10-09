@@ -5,10 +5,12 @@ import { ArrowUpDown, Search } from 'lucide-react';
 import type { CashProvisionalData } from '@/types/fii-dii';
 import { AdvancedFilters, FilterCriteria } from './AdvancedFilters';
 
+type DatasetType = 'cash_provisional' | 'fii_cash' | 'dii_cash' | 'fii_fo_indices' | 'fii_fo_stocks' | 'dii_fo_indices' | 'dii_fo_stocks';
+
 interface VirtualDataTableProps {
   data: any[];
-  selectedDataset: 'cash_provisional' | 'fii_cash' | 'dii_cash';
-  onDatasetChange: (dataset: 'cash_provisional' | 'fii_cash' | 'dii_cash') => void;
+  selectedDataset: DatasetType;
+  onDatasetChange: (dataset: DatasetType) => void;
 }
 
 type SortField = 'date' | 'fii_net' | 'dii_net' | 'total';

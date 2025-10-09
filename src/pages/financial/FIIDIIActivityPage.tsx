@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useCashProvisionalData, useFIIDIIFinancialYears, useFIIDIIMonths, useFIIDIIQuarters, useFIICashData, useDIICashData } from '@/hooks/financial/useFIIDIIDataNew';
+import { useCashProvisionalData, useFIIDIIFinancialYears, useFIIDIIMonths, useFIIDIIQuarters, useFIICashData, useDIICashData, useFIIFOIndicesData, useFIIFOStocksData, useDIIFOIndicesData, useDIIFOStocksData } from '@/hooks/financial/useFIIDIIDataNew';
+import { getQuarterFromMonth, aggregateToMonthly, getChartDescription, getKPILabels } from '@/utils/fii-dii-helpers';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FIIDIIKPICards } from '@/components/financial/fii-dii/FIIDIIKPICards';
@@ -23,7 +24,7 @@ export default function FIIDIIActivityPage() {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [activeTab, setActiveTab] = useState('overview');
   const [periodDisplay, setPeriodDisplay] = useState<string>('');
-  const [selectedDataset, setSelectedDataset] = useState<'cash_provisional' | 'fii_cash' | 'dii_cash'>('cash_provisional');
+  const [selectedDataset, setSelectedDataset] = useState<'cash_provisional' | 'fii_cash' | 'dii_cash' | 'fii_fo_indices' | 'fii_fo_stocks' | 'dii_fo_indices' | 'dii_fo_stocks'>('cash_provisional');
   const [datasetLabel, setDatasetLabel] = useState<string>('Cash Provisional (FII+DII)');
 
   const { years, loading: yearsLoading } = useFIIDIIFinancialYears();
@@ -48,9 +49,19 @@ export default function FIIDIIActivityPage() {
     month: selectedMonth,
   });
 
+  // Fetch F&O data for data table
+  const { data: fiiIndicesData } = useFIIFOIndicesData({ financialYear: selectedFY, quarter: selectedQuarter, month: selectedMonth });
+  const { data: fiiStocksData } = useFIIFOStocksData({ financialYear: selectedFY, quarter: selectedQuarter, month: selectedMonth });
+  const { data: diiIndicesData } = useDIIFOIndicesData({ financialYear: selectedFY, quarter: selectedQuarter, month: selectedMonth });
+  const { data: diiStocksData } = useDIIFOStocksData({ financialYear: selectedFY, quarter: selectedQuarter, month: selectedMonth });
+
   // Get current dataset based on selection
   const currentTableData = selectedDataset === 'fii_cash' ? fiiCashData : 
-                           selectedDataset === 'dii_cash' ? diiCashData : 
+                           selectedDataset === 'dii_cash' ? diiCashData :
+                           selectedDataset === 'fii_fo_indices' ? fiiIndicesData :
+                           selectedDataset === 'fii_fo_stocks' ? fiiStocksData :
+                           selectedDataset === 'dii_fo_indices' ? diiIndicesData :
+                           selectedDataset === 'dii_fo_stocks' ? diiStocksData :
                            cashProvisionalData;
 
   // Set defaults on page load - latest data
@@ -77,6 +88,16 @@ export default function FIIDIIActivityPage() {
     return cashProvisionalData;
   }, [cashProvisionalData, selectedDate]);
 
+  // Smart filter cascade - auto-detect quarter from month
+  useEffect(() => {
+    if (selectedMonth && !selectedQuarter) {
+      const quarter = getQuarterFromMonth(selectedMonth);
+      if (quarter) {
+        setSelectedQuarter(quarter);
+      }
+    }
+  }, [selectedMonth]);
+
   // Update period display based on selection
   useEffect(() => {
     if (selectedDate) {
@@ -85,7 +106,8 @@ export default function FIIDIIActivityPage() {
       const monthName = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       setPeriodDisplay(`${day} ${monthName}`);
     } else if (selectedMonth) {
-      setPeriodDisplay(selectedMonth);
+      const quarter = getQuarterFromMonth(selectedMonth);
+      setPeriodDisplay(`${selectedMonth} (${quarter})`);
     } else if (selectedQuarter) {
       setPeriodDisplay(`${selectedQuarter} ${selectedFY}`);
     } else if (selectedFY) {
@@ -161,15 +183,23 @@ export default function FIIDIIActivityPage() {
                   const labels: Record<string, string> = {
                     'cash_provisional': 'Cash Provisional (FII+DII)',
                     'fii_cash': 'FII Cash Only',
-                    'dii_cash': 'DII Cash Only'
+                    'dii_cash': 'DII Cash Only',
+                    'fii_fo_indices': 'FII F&O Indices',
+                    'fii_fo_stocks': 'FII F&O Stocks',
+                    'dii_fo_indices': 'DII F&O Indices',
+                    'dii_fo_stocks': 'DII F&O Stocks'
                   };
                   setDatasetLabel(labels[value]);
                 }}
                 className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
               >
-                <option value="cash_provisional">All Markets</option>
+                <option value="cash_provisional">Cash Provisional</option>
                 <option value="fii_cash">FII Cash</option>
                 <option value="dii_cash">DII Cash</option>
+                <option value="fii_fo_indices">FII F&O Indices</option>
+                <option value="fii_fo_stocks">FII F&O Stocks</option>
+                <option value="dii_fo_indices">DII F&O Indices</option>
+                <option value="dii_fo_stocks">DII F&O Stocks</option>
               </select>
 
               <select
@@ -189,8 +219,11 @@ export default function FIIDIIActivityPage() {
                 <select
                   value={selectedQuarter}
                   onChange={(e) => {
-                    setSelectedQuarter(e.target.value);
-                    setSelectedMonth(''); // Clear month when quarter changes
+                    const newQuarter = e.target.value;
+                    setSelectedQuarter(newQuarter);
+                    if (newQuarter) {
+                      setSelectedMonth(''); // Clear month when quarter selected
+                    }
                     setSelectedDate(''); // Clear date when quarter changes
                   }}
                   className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
@@ -264,8 +297,20 @@ export default function FIIDIIActivityPage() {
               )}
             </div>
             <FIIDIIKPICards data={filteredData} view={selectedDate ? 'daily' : view} />
-            {!selectedDate && <MoneyFlowChart data={filteredData} />}
-            {!selectedDate && <CumulativeFlowChart data={filteredData} />}
+            {!selectedDate && (
+              <MoneyFlowChart 
+                data={filteredData}
+                title={`FII vs DII Net Flow - ${periodDisplay}`}
+                description={getChartDescription(selectedDate, selectedMonth, selectedQuarter, selectedFY)}
+              />
+            )}
+            {!selectedDate && (
+              <CumulativeFlowChart 
+                data={filteredData}
+                title={`Cumulative Flow - ${periodDisplay}`}
+                description={getChartDescription(selectedDate, selectedMonth, selectedQuarter, selectedFY)}
+              />
+            )}
             {selectedDate && filteredData.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
