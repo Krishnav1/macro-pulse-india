@@ -72,12 +72,15 @@ export function SectorAnalysis({ ipos }: SectorAnalysisProps) {
     return Object.values(sectors).sort((a, b) => b.avgCurrentGain - a.avgCurrentGain);
   }, [ipos]);
 
-  const pieChartData = sectorData.map(sector => ({
+  // Limit to top 10 industries
+  const top10Sectors = sectorData.slice(0, 10);
+
+  const pieChartData = top10Sectors.map(sector => ({
     name: sector.sector,
     value: sector.ipoCount,
   }));
 
-  const barChartData = sectorData.map(sector => ({
+  const barChartData = top10Sectors.map(sector => ({
     sector: sector.sector.length > 15 ? sector.sector.substring(0, 15) + '...' : sector.sector,
     listingGain: sector.avgListingGain,
     currentGain: sector.avgCurrentGain,

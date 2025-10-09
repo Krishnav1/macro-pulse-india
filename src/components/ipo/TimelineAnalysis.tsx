@@ -284,20 +284,20 @@ export function TimelineAnalysis({ ipos }: TimelineAnalysisProps) {
                     {index + 1}
                   </div>
                   <div>
-                    <div className="font-semibold text-foreground flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-green-600" />
+                    <div className="font-semibold text-green-900 dark:text-green-100 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-green-700 dark:text-green-300" />
                       {month.month}
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-green-800 dark:text-green-200">
                       {month.ipoCount} IPOs | ₹{month.totalIssueSize.toFixed(0)} Cr
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-green-600">
+                  <div className="text-lg font-bold text-green-700 dark:text-green-300">
                     +{month.avgCurrentGain.toFixed(2)}%
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-green-800 dark:text-green-200">
                     Avg Current Gain
                   </div>
                 </div>

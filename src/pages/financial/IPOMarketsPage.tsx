@@ -8,9 +8,10 @@ import { useIPOData, useIPOYears } from '@/hooks/useIPOData';
 import { useIPOStats } from '@/hooks/useIPOStats';
 import { IPOFilters } from '@/types/ipo';
 import { PerformanceDashboard } from '@/components/ipo/PerformanceDashboard';
-import { IPOListingTable } from '@/components/ipo/IPOListingTable';
+import { IPOListingsWithFilters } from '@/components/ipo/IPOListingsWithFilters';
 import { SectorAnalysis } from '@/components/ipo/SectorAnalysis';
 import { TimelineAnalysis } from '@/components/ipo/TimelineAnalysis';
+import { IPOComparison } from '@/components/ipo/IPOComparison';
 
 export default function IPOMarketsPage() {
   const [filters, setFilters] = useState<IPOFilters>({
@@ -57,22 +58,24 @@ export default function IPOMarketsPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Rocket className="h-8 w-8 text-primary" />
+              <Rocket className="h-6 w-6 text-primary" />
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground">IPO Markets</h1>
-                <p className="text-sm text-muted-foreground mt-1">Mainboard & SME IPO Performance Analysis</p>
+                <h1 className="text-xl md:text-2xl font-bold text-foreground">IPO Markets</h1>
+                <p className="text-xs text-muted-foreground">Mainboard & SME IPO Performance Analysis</p>
               </div>
             </div>
             
             {/* Filters */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2">
+              <IPOComparison ipos={ipos} />
+              
               <select
                 value={filters.ipoType}
                 onChange={(e) => setFilters(prev => ({ ...prev, ipoType: e.target.value as any }))}
-                className="px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                className="px-3 py-1.5 rounded-lg border border-border bg-background text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="all">All IPOs</option>
                 <option value="mainboard">Mainboard</option>
@@ -82,7 +85,7 @@ export default function IPOMarketsPage() {
               <select
                 value={filters.year}
                 onChange={(e) => setFilters(prev => ({ ...prev, year: e.target.value === 'all' ? 'all' : parseInt(e.target.value) }))}
-                className="px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                className="px-3 py-1.5 rounded-lg border border-border bg-background text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="all">All Years</option>
                 {years.map(year => (
@@ -94,91 +97,77 @@ export default function IPOMarketsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Key Metrics - 4 Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-l-4 border-l-blue-500">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total IPOs</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Total IPOs</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold text-foreground">{stats.totalIPOs}</div>
-                <Rocket className="h-8 w-8 text-blue-500 opacity-50" />
+              <div className="flex items-center gap-3">
+                <Rocket className="h-6 w-6 text-blue-500" />
+                <div>
+                  <div className="text-2xl font-bold text-foreground">{stats.totalIPOs}</div>
+                  <p className="text-xs text-muted-foreground">{mainboardIPOs.length} MB, {smeIPOs.length} SME</p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {mainboardIPOs.length} Mainboard, {smeIPOs.length} SME
-              </p>
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-green-500">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Issue Size</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Total Issue Size</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold text-foreground">₹{(stats.totalIssueSize / 1000).toFixed(1)}K Cr</div>
-                <DollarSign className="h-8 w-8 text-green-500 opacity-50" />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Combined capital raised</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-purple-500">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Avg Listing Gain</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className={`text-3xl font-bold ${stats.avgListingGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {stats.avgListingGain >= 0 ? '+' : ''}{stats.avgListingGain.toFixed(2)}%
+              <div className="flex items-center gap-3">
+                <DollarSign className="h-6 w-6 text-green-500" />
+                <div>
+                  <div className="text-2xl font-bold text-foreground">₹{(stats.totalIssueSize / 1000).toFixed(1)}K Cr</div>
+                  <p className="text-xs text-muted-foreground">Capital raised</p>
                 </div>
-                {stats.avgListingGain >= 0 ? (
-                  <TrendingUp className="h-8 w-8 text-green-500 opacity-50" />
-                ) : (
-                  <TrendingDown className="h-8 w-8 text-red-500 opacity-50" />
-                )}
               </div>
-              <p className="text-xs text-muted-foreground mt-2">First day returns</p>
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-orange-500">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Avg Current Return</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Avg Current Return</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div className={`text-3xl font-bold ${stats.avgCurrentReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {stats.avgCurrentReturn >= 0 ? '+' : ''}{stats.avgCurrentReturn.toFixed(2)}%
-                </div>
+              <div className="flex items-center gap-3">
                 {stats.avgCurrentReturn >= 0 ? (
-                  <TrendingUp className="h-8 w-8 text-green-500 opacity-50" />
+                  <TrendingUp className="h-6 w-6 text-green-500" />
                 ) : (
-                  <TrendingDown className="h-8 w-8 text-red-500 opacity-50" />
+                  <TrendingDown className="h-6 w-6 text-red-500" />
                 )}
+                <div>
+                  <div className={`text-2xl font-bold ${stats.avgCurrentReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {stats.avgCurrentReturn >= 0 ? '+' : ''}{stats.avgCurrentReturn.toFixed(2)}%
+                  </div>
+                  <p className="text-xs text-muted-foreground">Current performance</p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Current performance</p>
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-indigo-500">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Success Rate</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Success Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
-                <div className={`text-3xl font-bold ${stats.successRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>
-                  {stats.successRate.toFixed(1)}%
+              <div className="flex items-center gap-3">
+                <Target className="h-6 w-6 text-indigo-500" />
+                <div>
+                  <div className={`text-2xl font-bold ${stats.successRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>
+                    {stats.successRate.toFixed(1)}%
+                  </div>
+                  <p className="text-xs text-muted-foreground">Positive gains</p>
                 </div>
-                <Target className="h-8 w-8 text-indigo-500 opacity-50" />
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Positive current gains</p>
             </CardContent>
           </Card>
         </div>
-
 
         {/* Main Content */}
         <Tabs defaultValue="performance" className="space-y-6">
@@ -196,7 +185,7 @@ export default function IPOMarketsPage() {
 
           {/* Listings Tab */}
           <TabsContent value="listings" className="space-y-6">
-            <IPOListingTable ipos={ipos} />
+            <IPOListingsWithFilters ipos={ipos} />
           </TabsContent>
 
           {/* Sectors Tab */}

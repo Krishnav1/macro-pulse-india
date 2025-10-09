@@ -1,20 +1,64 @@
-// IPO Listing Table with sorting and color coding
+// IPO Listings with Search, Filter, and Progressive Loading
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { IPOListing } from '@/types/ipo';
-import { ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, TrendingDown, Search, Filter, X } from 'lucide-react';
 
-interface IPOListingTableProps {
+interface IPOListingsWithFiltersProps {
   ipos: IPOListing[];
 }
 
 type SortField = 'company_name' | 'listing_date' | 'listing_gain_percent' | 'current_gain_percent' | 'market_cap';
 type SortDirection = 'asc' | 'desc';
 
-export function IPOListingTable({ ipos }: IPOListingTableProps) {
+export function IPOListingsWithFilters({ ipos }: IPOListingsWithFiltersProps) {
   const [sortField, setSortField] = useState<SortField>('listing_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('all');
+  const [displayCount, setDisplayCount] = useState(10);
+
+  // Get unique industries
+  const industries = useMemo(() => {
+    const uniqueIndustries = [...new Set(ipos.map(ipo => ipo.main_industry || ipo.sector).filter(Boolean))];
+    return uniqueIndustries.sort();
+  }, [ipos]);
+
+  // Filter IPOs
+  const filteredIPOs = useMemo(() => {
+    return ipos.filter(ipo => {
+      const matchesSearch = ipo.company_name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesIndustry = selectedIndustry === 'all' || 
+        ipo.main_industry === selectedIndustry || 
+        ipo.sector === selectedIndustry;
+      return matchesSearch && matchesIndustry;
+    });
+  }, [ipos, searchQuery, selectedIndustry]);
+
+  // Sort IPOs
+  const sortedIPOs = useMemo(() => {
+    return [...filteredIPOs].sort((a, b) => {
+      let aValue: any = a[sortField];
+      let bValue: any = b[sortField];
+
+      if (aValue === null || aValue === undefined) aValue = sortDirection === 'asc' ? Infinity : -Infinity;
+      if (bValue === null || bValue === undefined) bValue = sortDirection === 'asc' ? Infinity : -Infinity;
+
+      if (sortField === 'company_name') {
+        return sortDirection === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+    });
+  }, [filteredIPOs, sortField, sortDirection]);
+
+  // Display limited IPOs
+  const displayedIPOs = sortedIPOs.slice(0, displayCount);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -24,25 +68,6 @@ export function IPOListingTable({ ipos }: IPOListingTableProps) {
       setSortDirection('desc');
     }
   };
-
-  const sortedIPOs = [...ipos].sort((a, b) => {
-    let aValue: any = a[sortField];
-    let bValue: any = b[sortField];
-
-    // Handle null values
-    if (aValue === null || aValue === undefined) aValue = sortDirection === 'asc' ? Infinity : -Infinity;
-    if (bValue === null || bValue === undefined) bValue = sortDirection === 'asc' ? Infinity : -Infinity;
-
-    // String comparison for company name
-    if (sortField === 'company_name') {
-      return sortDirection === 'asc' 
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-
-    // Numeric comparison
-    return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-  });
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ArrowUpDown className="h-4 w-4 opacity-30" />;
@@ -60,15 +85,61 @@ export function IPOListingTable({ ipos }: IPOListingTableProps) {
     return 'border-l-4 border-l-gray-300 text-foreground';
   };
 
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedIndustry('all');
+    setDisplayCount(10);
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>IPO Listings</CardTitle>
+        <CardTitle>IPO Listings ({sortedIPOs.length})</CardTitle>
         <CardDescription>
           Detailed listing with performance metrics (click column headers to sort)
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {/* Search and Filter Bar */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by company name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          
+          <select
+            value={selectedIndustry}
+            onChange={(e) => setSelectedIndustry(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="all">All Industries</option>
+            {industries.map(industry => (
+              <option key={industry} value={industry}>{industry}</option>
+            ))}
+          </select>
+
+          {(searchQuery || selectedIndustry !== 'all') && (
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              <X className="h-4 w-4 mr-2" />
+              Clear
+            </Button>
+          )}
+        </div>
+
+        {/* Results Count */}
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>Showing {displayedIPOs.length} of {sortedIPOs.length} IPOs</span>
+          {filteredIPOs.length !== ipos.length && (
+            <span className="text-primary">Filtered from {ipos.length} total</span>
+          )}
+        </div>
+
+        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -133,14 +204,14 @@ export function IPOListingTable({ ipos }: IPOListingTableProps) {
               </tr>
             </thead>
             <tbody>
-              {sortedIPOs.map((ipo) => (
+              {displayedIPOs.map((ipo) => (
                 <tr 
                   key={ipo.id} 
                   className={`border-b border-border hover:bg-muted/50 transition-colors ${getRowColor(ipo)}`}
                 >
                   <td className="py-3 px-4">
                     <div>
-                      <div className="font-medium text-foreground">{ipo.company_name}</div>
+                      <div className="font-medium">{ipo.company_name}</div>
                       {ipo.sector && (
                         <div className="text-xs text-muted-foreground">{ipo.sector}</div>
                       )}
@@ -221,12 +292,43 @@ export function IPOListingTable({ ipos }: IPOListingTableProps) {
             </tbody>
           </table>
 
-          {sortedIPOs.length === 0 && (
+          {displayedIPOs.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              <p>No IPO data available</p>
+              <p>No IPOs found matching your filters</p>
             </div>
           )}
         </div>
+
+        {/* Load More Buttons */}
+        {displayCount < sortedIPOs.length && (
+          <div className="flex justify-center gap-3 pt-4">
+            {displayCount < 50 && (
+              <Button 
+                variant="outline" 
+                onClick={() => setDisplayCount(50)}
+              >
+                Show 50 IPOs
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              onClick={() => setDisplayCount(sortedIPOs.length)}
+            >
+              Show All ({sortedIPOs.length})
+            </Button>
+          </div>
+        )}
+
+        {displayCount >= sortedIPOs.length && sortedIPOs.length > 10 && (
+          <div className="flex justify-center pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setDisplayCount(10)}
+            >
+              Show Less
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
