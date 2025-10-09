@@ -1,5 +1,5 @@
-Company Name,LTP (Rs),Market Cap (Cr),Listing Date,Issue Size,Issue Price,Listing Open (Rs),Listing Close (Rs),Listing Gain %,Current Gain %,Sector
-Senores Pharmaceuticals Ltd.,673,3099.6,2024-12-30,582.1,391,600,557,53.50,72.10,Pharmaceuticals
-Transrail Lighting Ltd.,787.7,10675.3,2024-12-27,838.9,432,590,653.6,36.60,82.30,Manufacturing
-Sanathan Textiles Ltd.,543.4,9869.7,2024-12-27,550.0,321,422,308.4,31.60,42.70,Textiles
-Mamata Machinery Ltd.,421.4,1037,2024-12-27,179.4,243,600,630,140.90,73.40,Manufacturing
+Company Name,LTP (Rs),Market Cap (Cr),Listing Date,Issue Size,Issue Price,Listing Open (Rs),Listing Close (Rs),Listing Gain %,Current Gain %,Main Industry,Sector
+Senores Pharmaceuticals Ltd.,673,3099.6,2024-12-30,582.1,391,600,557,53.50,72.10,Healthcare,Pharmaceuticals
+Transrail Lighting Ltd.,787.7,10675.3,2024-12-27,838.9,432,590,653.6,36.60,82.30,Industrials,Manufacturing
+Sanathan Textiles Ltd.,543.4,9869.7,2024-12-27,550.0,321,422,308.4,31.60,42.70,Consumer Goods,Textiles
+Mamata Machinery Ltd.,421.4,1037,2024-12-27,179.4,243,600,630,140.90,73.40,Industrials,Manufacturing

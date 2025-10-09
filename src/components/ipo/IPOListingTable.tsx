@@ -85,6 +85,9 @@ export function IPOListingTable({ ipos }: IPOListingTableProps) {
                 <th className="text-left py-3 px-4 font-semibold text-sm text-muted-foreground">
                   Type
                 </th>
+                <th className="text-left py-3 px-4 font-semibold text-sm text-muted-foreground">
+                  Main Industry
+                </th>
                 <th 
                   className="text-left py-3 px-4 font-semibold text-sm text-muted-foreground cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('listing_date')}
@@ -151,6 +154,15 @@ export function IPOListingTable({ ipos }: IPOListingTableProps) {
                     }`}>
                       {ipo.ipo_type === 'mainboard' ? 'Mainboard' : 'SME'}
                     </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    {ipo.main_industry ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                        {ipo.main_industry}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">-</span>
+                    )}
                   </td>
                   <td className="py-3 px-4 text-muted-foreground text-sm">
                     {new Date(ipo.listing_date).toLocaleDateString('en-IN', { 

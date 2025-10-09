@@ -18,7 +18,7 @@ export function useIPOData(filters: IPOFilters) {
       setLoading(true);
       setError(null);
 
-      let query = supabase
+      let query = (supabase as any)
         .from('ipo_listings')
         .select('*')
         .order('listing_date', { ascending: false });
@@ -67,7 +67,7 @@ export function useIPOYears() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('ipo_listings')
         .select('year')
         .order('year', { ascending: false });
@@ -75,7 +75,7 @@ export function useIPOYears() {
       if (error) throw error;
 
       // Get unique years
-      const uniqueYears = [...new Set(data?.map(item => item.year) || [])];
+      const uniqueYears = [...new Set(data?.map((item: any) => item.year) || [])] as number[];
       setYears(uniqueYears);
     } catch (err) {
       console.error('Error fetching years:', err);
@@ -100,7 +100,7 @@ export function useIPOSectors() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('ipo_listings')
         .select('sector')
         .not('sector', 'is', null)
@@ -119,4 +119,38 @@ export function useIPOSectors() {
   };
 
   return { sectors, loading };
+}
+
+// Hook to fetch available main industries
+export function useIPOMainIndustries() {
+  const [industries, setIndustries] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchIndustries();
+  }, []);
+
+  const fetchIndustries = async () => {
+    try {
+      setLoading(true);
+
+      const { data, error } = await (supabase as any)
+        .from('ipo_listings')
+        .select('main_industry')
+        .not('main_industry', 'is', null)
+        .order('main_industry');
+
+      if (error) throw error;
+
+      // Get unique industries
+      const uniqueIndustries = [...new Set(data?.map(item => item.main_industry) || [])].filter(Boolean) as string[];
+      setIndustries(uniqueIndustries);
+    } catch (err) {
+      console.error('Error fetching industries:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { industries, loading };
 }

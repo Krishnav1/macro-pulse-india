@@ -17,7 +17,7 @@ export function SectorAnalysis({ ipos }: SectorAnalysisProps) {
     const sectors: Record<string, SectorPerformance> = {};
 
     ipos.forEach(ipo => {
-      const sector = ipo.sector || 'Others';
+      const sector = ipo.main_industry || ipo.sector || 'Others';
       
       if (!sectors[sector]) {
         sectors[sector] = {
@@ -38,7 +38,7 @@ export function SectorAnalysis({ ipos }: SectorAnalysisProps) {
 
     // Calculate averages and find best/worst performers
     Object.keys(sectors).forEach(sector => {
-      const sectorIPOs = ipos.filter(ipo => (ipo.sector || 'Others') === sector);
+      const sectorIPOs = ipos.filter(ipo => (ipo.main_industry || ipo.sector || 'Others') === sector);
       
       const listingGains = sectorIPOs
         .filter(ipo => ipo.listing_gain_percent !== null)
@@ -90,8 +90,8 @@ export function SectorAnalysis({ ipos }: SectorAnalysisProps) {
         {/* Sector Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>Sector Distribution</CardTitle>
-            <CardDescription>Number of IPOs by sector</CardDescription>
+            <CardTitle>Industry Distribution</CardTitle>
+            <CardDescription>Number of IPOs by main industry</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -119,8 +119,8 @@ export function SectorAnalysis({ ipos }: SectorAnalysisProps) {
         {/* Performance Comparison */}
         <Card>
           <CardHeader>
-            <CardTitle>Sector Performance</CardTitle>
-            <CardDescription>Average gains by sector</CardDescription>
+            <CardTitle>Industry Performance</CardTitle>
+            <CardDescription>Average gains by main industry</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -154,15 +154,15 @@ export function SectorAnalysis({ ipos }: SectorAnalysisProps) {
       {/* Sector Details Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Sector-wise Performance Details</CardTitle>
-          <CardDescription>Comprehensive sector analysis with top performers</CardDescription>
+          <CardTitle>Industry-wise Performance Details</CardTitle>
+          <CardDescription>Comprehensive industry analysis with top performers</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 font-semibold text-sm text-muted-foreground">Sector</th>
+                  <th className="text-left py-3 px-4 font-semibold text-sm text-muted-foreground">Main Industry</th>
                   <th className="text-center py-3 px-4 font-semibold text-sm text-muted-foreground">IPO Count</th>
                   <th className="text-right py-3 px-4 font-semibold text-sm text-muted-foreground">Total Issue Size</th>
                   <th className="text-right py-3 px-4 font-semibold text-sm text-muted-foreground">Avg Listing Gain</th>

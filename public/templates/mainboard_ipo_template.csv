@@ -1,5 +1,5 @@
-Company Name,LTP (Rs),Market Cap (Cr),Listing Date,Issue Size,Issue Price,Listing Open (Rs),Listing Close (Rs),Listing Gain %,Current Gain %,Sector
-Jaintech Aerospace,1092.5,5060,2024-12-31,200.0,392,1400,1370.3,80.00,39.20,Technology
-Cargaro India Ltd.,411.8,2340.9,2024-12-27,1250.0,643,716,826,17.80,24.10,Logistics
-Ventive Hospitality Ltd.,733.4,17126.8,2024-12-30,1600.0,643,716,704.4,11.30,14.10,Hospitality
-Mamata Machinery Ltd.,530.7,1098.3,2024-12-27,500.3,243,826,827.1,17.80,24.90,Manufacturing
+Company Name,LTP (Rs),Market Cap (Cr),Listing Date,Issue Size,Issue Price,Listing Open (Rs),Listing Close (Rs),Listing Gain %,Current Gain %,Main Industry,Sector
+Jaintech Aerospace,1092.5,5060,2024-12-31,200.0,392,1400,1370.3,80.00,39.20,Technology,Aerospace & Defense
+Cargaro India Ltd.,411.8,2340.9,2024-12-27,1250.0,643,716,826,17.80,24.10,Transportation,Logistics
+Ventive Hospitality Ltd.,733.4,17126.8,2024-12-30,1600.0,643,716,704.4,11.30,14.10,Consumer Services,Hospitality
+Mamata Machinery Ltd.,530.7,1098.3,2024-12-27,500.3,243,826,827.1,17.80,24.90,Industrials,Manufacturing

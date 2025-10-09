@@ -98,7 +98,7 @@ export function MainboardIPOUpload() {
       // Delete existing data if checkbox is selected
       if (deleteExisting && detectedYears.length > 0) {
         for (const year of detectedYears) {
-          const { error: deleteError } = await supabase
+          const { error: deleteError } = await (supabase as any)
             .from('ipo_listings')
             .delete()
             .eq('ipo_type', 'mainboard')
@@ -115,7 +115,7 @@ export function MainboardIPOUpload() {
       let insertedCount = 0;
       for (let i = 0; i < transformedData.length; i += 100) {
         const batch = transformedData.slice(i, i + 100);
-        const { error: insertError } = await supabase
+        const { error: insertError } = await (supabase as any)
           .from('ipo_listings')
           .upsert(batch, { 
             onConflict: 'company_name,listing_date,ipo_type',
@@ -127,7 +127,7 @@ export function MainboardIPOUpload() {
       }
 
       // Log upload
-      await supabase.from('ipo_uploads').insert({
+      await (supabase as any).from('ipo_uploads').insert({
         ipo_type: 'mainboard',
         year: detectedYears[0] || new Date().getFullYear(),
         records_count: insertedCount

@@ -62,6 +62,7 @@ export function transformIPOData(
       ipo_type: ipoType,
       year,
       company_name: row['Company Name']?.toString().trim() || '',
+      main_industry: row['Main Industry']?.toString().trim() || null,
       sector: row['Sector']?.toString().trim() || null,
       issue_size: cleanNumericValue(row['Issue Size']),
       issue_price: cleanNumericValue(row['Issue Price']),

@@ -5,6 +5,7 @@ export interface IPOListing {
   ipo_type: 'mainboard' | 'sme';
   year: number;
   company_name: string;
+  main_industry: string | null;
   sector: string | null;
   issue_size: number | null;
   issue_price: number | null;
@@ -79,5 +80,6 @@ export interface IPOUploadData {
   'Listing Close (Rs)': number | string;
   'Listing Gain %': number | string;
   'Current Gain %': number | string;
+  'Main Industry'?: string;
   'Sector'?: string;
 }
