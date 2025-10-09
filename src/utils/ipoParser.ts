@@ -18,24 +18,49 @@ export function cleanNumericValue(value: string | number): number {
 }
 
 /**
- * Parse date from various formats (YYYY-MM-DD, DD-MM-YYYY, etc.)
+ * Parse date from various formats (YYYY-MM-DD, DD-MM-YYYY, MM/DD/YYYY, Excel serial number)
+ * Note: Excel dates like 8/12/2025 are interpreted as MM/DD/YYYY (August 12, 2025)
  */
-export function parseDate(dateStr: string): string {
+export function parseDate(dateStr: string | number): string {
   if (!dateStr) return '';
   
-  // Try parsing as YYYY-MM-DD first
-  const isoMatch = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
-  if (isoMatch) {
-    return dateStr;
+  // Convert to string if it's a number (Excel serial date)
+  const dateString = dateStr.toString().trim();
+  
+  // If it's an Excel serial number (pure digits in valid range 1–60000)
+  const isExcelSerial = /^\d+$/.test(dateString);
+  const numericValue = parseInt(dateString, 10);
+  if (isExcelSerial && numericValue >= 1 && numericValue <= 60000) {
+    const excelEpoch = new Date(1899, 11, 30);
+    const date = new Date(excelEpoch.getTime() + numericValue * 86400000);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
   
-  // Try DD-MM-YYYY or DD/MM/YYYY
-  const ddmmMatch = dateStr.match(/(\d{2})[-/](\d{2})[-/](\d{4})/);
+  // Try parsing as YYYY-MM-DD first
+  const isoMatch = dateString.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+  
+  // Try MM/DD/YYYY (Excel default format: 8/12/2025 = August 12, 2025)
+  const mmddyyyyMatch = dateString.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (mmddyyyyMatch) {
+    const month = mmddyyyyMatch[1].padStart(2, '0');
+    const day = mmddyyyyMatch[2].padStart(2, '0');
+    const year = mmddyyyyMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+  
+  // Try DD-MM-YYYY
+  const ddmmMatch = dateString.match(/(\d{2})-(\d{2})-(\d{4})/);
   if (ddmmMatch) {
     return `${ddmmMatch[3]}-${ddmmMatch[2]}-${ddmmMatch[1]}`;
   }
   
-  return dateStr;
+  return dateString;
 }
 
 /**

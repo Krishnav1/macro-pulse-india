@@ -36,10 +36,12 @@ export function IPOAdmin() {
           <div>
             <h4 className="font-semibold mb-2">Data Format Requirements:</h4>
             <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
-              <li>Date format: YYYY-MM-DD (e.g., 2024-12-31)</li>
-              <li>Numeric values: Can include ₹, Rs, Cr, % symbols (will be cleaned automatically)</li>
-              <li>Required fields: Company Name, Listing Date, Issue Price</li>
-              <li>File types: Excel (.xlsx, .xls) or CSV (.csv)</li>
+              <li><strong>Date format:</strong> MM/DD/YYYY (e.g., 8/12/2025 = August 12, 2025) or YYYY-MM-DD</li>
+              <li><strong>Excel dates:</strong> Automatically converts Excel serial numbers to proper dates</li>
+              <li><strong>Numeric values:</strong> Can include ₹, Rs, Cr, % symbols (cleaned automatically)</li>
+              <li><strong>Required fields:</strong> Company Name, Listing Date, Issue Price</li>
+              <li><strong>Optional fields:</strong> Main Industry, Sector (helps with analysis)</li>
+              <li><strong>File types:</strong> Excel (.xlsx, .xls) or CSV (.csv)</li>
             </ul>
           </div>
 
