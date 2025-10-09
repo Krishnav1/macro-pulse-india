@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, LineChart, Users, Activity, PieChart, TrendingUp } from 'lucide-react';
+import { BarChart3, LineChart, Users, Activity, PieChart, TrendingUp, Rocket } from 'lucide-react';
 import MutualFundDataAdmin from './MutualFundDataAdmin';
 import { QuarterlyAUMAdmin } from './QuarterlyAUMAdmin';
 import { InvestorBehaviorAdmin } from './InvestorBehaviorAdmin';
 import { EquityMarketsAdmin } from './EquityMarketsAdmin';
 import { FIIDIIActivityAdmin } from './FIIDIIActivityAdmin';
+import { IPOAdmin } from './ipo/IPOAdmin';
 
 export function FinancialMarketsAdmin() {
   return (
@@ -28,10 +29,14 @@ export function FinancialMarketsAdmin() {
 
       {/* Data Upload Tabs */}
       <Tabs defaultValue="equity-markets" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="equity-markets" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">Equity Markets</span>
+          </TabsTrigger>
+          <TabsTrigger value="ipo-markets" className="flex items-center gap-2">
+            <Rocket className="h-4 w-4" />
+            <span className="hidden sm:inline">IPO Markets</span>
           </TabsTrigger>
           <TabsTrigger value="fii-dii" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
@@ -53,6 +58,10 @@ export function FinancialMarketsAdmin() {
 
         <TabsContent value="equity-markets">
           <EquityMarketsAdmin />
+        </TabsContent>
+
+        <TabsContent value="ipo-markets">
+          <IPOAdmin />
         </TabsContent>
 
         <TabsContent value="fii-dii">
