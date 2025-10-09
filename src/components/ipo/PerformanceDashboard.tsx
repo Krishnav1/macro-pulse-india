@@ -153,7 +153,7 @@ export function PerformanceDashboard({ stats }: PerformanceDashboardProps) {
             <div className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
             <p className="text-sm text-foreground">
               <strong className="text-foreground">{stats.closeProfitCount}</strong> out of <strong className="text-foreground">{stats.closeProfitCount + stats.closeLossCount}</strong> IPOs closed in profit on listing day 
-              (<strong className="text-foreground">{stats.closeProfitCount > 0 ? ((stats.closeProfitCount / (stats.closeProfitCount + stats.closeLossCount)) * 100).toFixed(1) : 0}%</strong> success rate)
+              (<strong className="text-foreground">{(stats.closeProfitCount + stats.closeLossCount) > 0 ? ((stats.closeProfitCount / (stats.closeProfitCount + stats.closeLossCount)) * 100).toFixed(1) : 0}%</strong> success rate)
             </p>
           </div>
           <div className="flex items-start gap-3">

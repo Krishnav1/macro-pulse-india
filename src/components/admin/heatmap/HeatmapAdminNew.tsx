@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '../../ui/alert';
 import { Upload, Download, FileSpreadsheet, AlertCircle, CheckCircle2, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
-import { CityAumUpload } from './CityAumUpload';
+import { CityAumUploadNew } from './CityAumUploadNew';
 import { StateAumUpload } from './StateAumUpload';
 
 interface ParsedRow {
@@ -502,7 +502,7 @@ export const HeatmapAdminNew: React.FC = () => {
 
       {/* City AUM Upload Section */}
       <div className="mt-6">
-        <CityAumUpload />
+        <CityAumUploadNew />
       </div>
 
       {/* State AUM Upload Section */}

@@ -147,58 +147,21 @@ export function IPOListingsWithFilters({ ipos }: IPOListingsWithFiltersProps) {
                 <th 
                   className="text-left py-3 px-4 font-semibold text-sm text-muted-foreground cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('company_name')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSort('company_name');
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-sort={sortField === 'company_name'
+                    ? (sortDirection === 'asc' ? 'ascending' : 'descending')
+                    : 'none'}
                 >
                   <div className="flex items-center gap-2">
                     Company
                     <SortIcon field="company_name" />
-                  </div>
-                </th>
-                <th className="text-left py-3 px-4 font-semibold text-sm text-muted-foreground">
-                  Type
-                </th>
-                <th className="text-left py-3 px-4 font-semibold text-sm text-muted-foreground">
-                  Main Industry
-                </th>
-                <th 
-                  className="text-left py-3 px-4 font-semibold text-sm text-muted-foreground cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('listing_date')}
-                >
-                  <div className="flex items-center gap-2">
-                    Listing Date
-                    <SortIcon field="listing_date" />
-                  </div>
-                </th>
-                <th className="text-right py-3 px-4 font-semibold text-sm text-muted-foreground">
-                  Issue Price
-                </th>
-                <th className="text-right py-3 px-4 font-semibold text-sm text-muted-foreground">
-                  LTP
-                </th>
-                <th 
-                  className="text-right py-3 px-4 font-semibold text-sm text-muted-foreground cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('listing_gain_percent')}
-                >
-                  <div className="flex items-center justify-end gap-2">
-                    Listing Gain
-                    <SortIcon field="listing_gain_percent" />
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-3 px-4 font-semibold text-sm text-muted-foreground cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('current_gain_percent')}
-                >
-                  <div className="flex items-center justify-end gap-2">
-                    Current Gain
-                    <SortIcon field="current_gain_percent" />
-                  </div>
-                </th>
-                <th 
-                  className="text-right py-3 px-4 font-semibold text-sm text-muted-foreground cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('market_cap')}
-                >
-                  <div className="flex items-center justify-end gap-2">
-                    Market Cap
-                    <SortIcon field="market_cap" />
                   </div>
                 </th>
               </tr>

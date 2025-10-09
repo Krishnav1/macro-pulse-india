@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { IndiaHeatmapMapbox } from '@/components/heatmap/IndiaHeatmapMapbox';
-import { CityAumMap } from '@/components/heatmap/CityAumMap';
+import { CityAumSection } from '@/components/heatmap/CityAumSection';
 import { StateAumMap } from '@/components/heatmap/StateAumMap';
 import { HeatmapControls } from '@/components/heatmap/HeatmapControls';
 import { StateDetailsDrawer } from '@/components/heatmap/StateDetailsDrawer';
@@ -9,7 +9,6 @@ import { HeatmapLegend } from '@/components/heatmap/HeatmapLegend';
 import { useHeatmapIndicators } from '@/hooks/useHeatmapIndicators';
 import { useHeatmapYears } from '@/hooks/useHeatmapYears';
 import { useHeatmapValues } from '@/hooks/useHeatmapValues';
-import { useCityAumQuarters, useCityAumData } from '@/hooks/useCityAumData';
 import { useStateAumMonths, useStateAumComposition } from '@/hooks/useStateAumData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -23,7 +22,6 @@ export default function IndiaHeatMapPage() {
   const [viewMode, setViewMode] = useState<'state' | 'city' | 'state-aum'>('state');
   const [selectedIndicatorId, setSelectedIndicatorId] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>('');
-  const [selectedQuarter, setSelectedQuarter] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [stateAumViewMode, setStateAumViewMode] = useState<'overall' | 'liquid' | 'debt' | 'equity' | 'etfs'>('overall');
   const [selectedState, setSelectedState] = useState<string | null>(null);
@@ -37,10 +35,6 @@ export default function IndiaHeatMapPage() {
     selectedIndicatorId,
     selectedYear
   );
-
-  // Data hooks for city AUM view
-  const { quarters, loading: quartersLoading } = useCityAumQuarters();
-  const { data: cityAumData, loading: cityAumLoading } = useCityAumData(selectedQuarter);
 
   // Data hooks for state AUM view
   const { months, loading: monthsLoading } = useStateAumMonths();
@@ -348,79 +342,7 @@ export default function IndiaHeatMapPage() {
 
           {/* City AUM View */}
           <TabsContent value="city" className="mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Quarter Selector Sidebar */}
-              <div className="lg:col-span-1">
-                <Card className="shadow-lg border-border bg-card">
-                  <CardHeader className="border-b border-border">
-                    <CardTitle className="text-foreground text-lg font-semibold">Select Quarter</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">Quarter End Date</label>
-                      <select
-                        value={selectedQuarter}
-                        onChange={(e) => setSelectedQuarter(e.target.value)}
-                        className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground"
-                        disabled={quartersLoading}
-                      >
-                        <option value="">Select Quarter</option>
-                        {quarters.map((quarter) => (
-                          <option key={quarter} value={quarter}>
-                            {quarter}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {selectedQuarter && cityAumData.length > 0 && (
-                      <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                        <div className="text-sm font-medium text-foreground mb-2">Summary</div>
-                        <div className="text-xs text-muted-foreground space-y-1">
-                          <div>Total Cities: {cityAumData.length}</div>
-                          <div>Mapped: {cityAumData.filter(c => c.latitude && c.longitude).length}</div>
-                          <div>Top City: {cityAumData[0]?.city_name} ({cityAumData[0]?.aum_percentage.toFixed(2)}%)</div>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* City Map Area */}
-              <div className="lg:col-span-3">
-                <Card className="h-[600px] flex flex-col shadow-lg border-border bg-card">
-                  <CardContent className="p-0 flex-1 relative">
-                    {cityAumLoading && (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                          <span className="text-lg font-medium text-foreground">Loading city data...</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {!cityAumLoading && !selectedQuarter && (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                          <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-foreground mb-2">
-                            Select a Quarter
-                          </h3>
-                          <p className="text-muted-foreground">
-                            Choose a quarter from the sidebar to view city-wise AUM distribution
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {!cityAumLoading && selectedQuarter && (
-                      <CityAumMap data={cityAumData} quarterEndDate={selectedQuarter} />
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+            <CityAumSection />
           </TabsContent>
 
           {/* State AUM View */}
