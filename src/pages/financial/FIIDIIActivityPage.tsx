@@ -309,14 +309,23 @@ export default function FIIDIIActivityPage() {
             <p className="text-sm text-muted-foreground">
               💰 Cash Market: Delivery-based equity and debt transactions | Values in ₹ Crore
             </p>
-            <SegmentBreakdown financialYear={selectedFY} />
+            <SegmentBreakdown 
+              financialYear={selectedFY} 
+              quarter={selectedQuarter}
+              month={selectedMonth}
+            />
           </TabsContent>
 
           <TabsContent value="fo" className="space-y-6">
             <p className="text-sm text-muted-foreground">
               📈 F&O Market: Index and stock derivatives (Futures & Options) | Values in ₹ Crore
             </p>
-            <SegmentAnalysisTabs financialYear={selectedFY} view={view} />
+            <SegmentAnalysisTabs 
+              financialYear={selectedFY} 
+              quarter={selectedQuarter}
+              month={selectedMonth}
+              view={view} 
+            />
           </TabsContent>
 
           <TabsContent value="comparison" className="space-y-6">

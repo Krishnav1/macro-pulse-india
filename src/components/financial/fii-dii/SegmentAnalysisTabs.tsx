@@ -7,20 +7,28 @@ import { Info } from 'lucide-react';
 
 interface SegmentAnalysisTabsProps {
   financialYear: string;
+  quarter?: string;
+  month?: string;
   view: 'yearly' | 'monthly' | 'weekly' | 'daily';
 }
 
 const COLORS = ['#3B82F6', '#F97316', '#10B981', '#8B5CF6'];
 
-export function SegmentAnalysisTabs({ financialYear, view }: SegmentAnalysisTabsProps) {
+// Safe value function to prevent toFixed errors
+const safeValue = (value: any, fallback = 0): number => {
+  const num = Number(value);
+  return isNaN(num) || !isFinite(num) ? fallback : num;
+};
+
+export function SegmentAnalysisTabs({ financialYear, quarter, month, view }: SegmentAnalysisTabsProps) {
   const [activeTab, setActiveTab] = useState('cash-market');
 
-  const { data: fiiCashData = [], loading: fiiCashLoading } = useFIICashData({ financialYear });
-  const { data: diiCashData = [], loading: diiCashLoading } = useDIICashData({ financialYear });
-  const { data: fiiIndicesData = [], loading: fiiIndicesLoading } = useFIIFOIndicesData({ financialYear });
-  const { data: fiiStocksData = [], loading: fiiStocksLoading } = useFIIFOStocksData({ financialYear });
-  const { data: diiIndicesData = [], loading: diiIndicesLoading } = useDIIFOIndicesData({ financialYear });
-  const { data: diiStocksData = [], loading: diiStocksLoading } = useDIIFOStocksData({ financialYear });
+  const { data: fiiCashData = [], loading: fiiCashLoading } = useFIICashData({ financialYear, quarter, month });
+  const { data: diiCashData = [], loading: diiCashLoading } = useDIICashData({ financialYear, quarter, month });
+  const { data: fiiIndicesData = [], loading: fiiIndicesLoading } = useFIIFOIndicesData({ financialYear, quarter, month });
+  const { data: fiiStocksData = [], loading: fiiStocksLoading } = useFIIFOStocksData({ financialYear, quarter, month });
+  const { data: diiIndicesData = [], loading: diiIndicesLoading } = useDIIFOIndicesData({ financialYear, quarter, month });
+  const { data: diiStocksData = [], loading: diiStocksLoading } = useDIIFOStocksData({ financialYear, quarter, month });
 
   const isLoading = fiiCashLoading || diiCashLoading || fiiIndicesLoading || fiiStocksLoading || diiIndicesLoading || diiStocksLoading;
   const hasData = fiiCashData.length > 0 && diiCashData.length > 0;
@@ -46,8 +54,8 @@ export function SegmentAnalysisTabs({ financialYear, view }: SegmentAnalysisTabs
     );
   }
 
-  // Cash Market Analysis - with safe numeric conversion
-  const cashAnalysis = fiiCashData.slice(-30).map((fiiItem, idx) => {
+  // Cash Market Analysis - with safe numeric conversion and full dates
+  const cashAnalysis = fiiCashData.map((fiiItem, idx) => {
     const diiItem = diiCashData[idx];
     const date = new Date(fiiItem.date);
     const label = view === 'monthly' ? date.getDate().toString() : 
@@ -56,15 +64,16 @@ export function SegmentAnalysisTabs({ financialYear, view }: SegmentAnalysisTabs
     
     return {
       period: label,
-      fiiEquity: Number(fiiItem.equity_net) || 0,
-      fiiDebt: Number(fiiItem.debt_net) || 0,
-      diiEquity: Number(diiItem?.equity_net) || 0,
-      diiDebt: Number(diiItem?.debt_net) || 0,
+      fullDate: fiiItem.date,
+      fiiEquity: safeValue(fiiItem.equity_net),
+      fiiDebt: safeValue(fiiItem.debt_net),
+      diiEquity: safeValue(diiItem?.equity_net),
+      diiDebt: safeValue(diiItem?.debt_net),
     };
   });
 
-  // F&O Market Analysis - with safe numeric conversion
-  const foAnalysis = fiiIndicesData.slice(-30).map((fiiIndItem, idx) => {
+  // F&O Market Analysis - with safe numeric conversion and full dates
+  const foAnalysis = fiiIndicesData.map((fiiIndItem, idx) => {
     const fiiStockItem = fiiStocksData[idx];
     const diiIndItem = diiIndicesData[idx];
     const diiStockItem = diiStocksData[idx];
@@ -75,21 +84,23 @@ export function SegmentAnalysisTabs({ financialYear, view }: SegmentAnalysisTabs
     
     return {
       period: label,
-      fiiIndices: (Number(fiiIndItem.futures_net_indices) || 0) + (Number(fiiIndItem.options_net_indices) || 0),
-      fiiStocks: fiiStockItem ? ((Number(fiiStockItem.futures_net) || 0) + (Number(fiiStockItem.options_net) || 0)) : 0,
-      diiIndices: diiIndItem ? ((Number(diiIndItem.futures_net_indices) || 0) + (Number(diiIndItem.options_net_indices) || 0)) : 0,
-      diiStocks: diiStockItem ? ((Number(diiStockItem.futures_net) || 0) + (Number(diiStockItem.options_net) || 0)) : 0,
+      fullDate: fiiIndItem.date,
+      fiiIndices: safeValue(fiiIndItem.futures_net_indices) + safeValue(fiiIndItem.options_net_indices),
+      fiiStocks: safeValue(fiiStockItem?.futures_net) + safeValue(fiiStockItem?.options_net),
+      diiIndices: safeValue(diiIndItem?.futures_net_indices) + safeValue(diiIndItem?.options_net_indices),
+      diiStocks: safeValue(diiStockItem?.futures_net) + safeValue(diiStockItem?.options_net),
     };
   });
 
   // Market Comparison (Cash vs F&O)
   const marketComparison = cashAnalysis.map((cashItem, idx) => {
-    const foItem = foAnalysis[idx];
-    const cashTotal = cashItem.fiiEquity + cashItem.fiiDebt + cashItem.diiEquity + cashItem.diiDebt;
-    const foTotal = foItem.fiiIndices + foItem.fiiStocks + foItem.diiIndices + foItem.diiStocks;
+    const foItem = foAnalysis[idx] || { fiiIndices: 0, fiiStocks: 0, diiIndices: 0, diiStocks: 0 };
+    const cashTotal = safeValue(cashItem.fiiEquity) + safeValue(cashItem.fiiDebt) + safeValue(cashItem.diiEquity) + safeValue(cashItem.diiDebt);
+    const foTotal = safeValue(foItem.fiiIndices) + safeValue(foItem.fiiStocks) + safeValue(foItem.diiIndices) + safeValue(foItem.diiStocks);
     
     return {
       period: cashItem.period,
+      fullDate: cashItem.fullDate,
       cash: cashTotal,
       fo: foTotal,
       total: cashTotal + foTotal,
@@ -101,10 +112,10 @@ export function SegmentAnalysisTabs({ financialYear, view }: SegmentAnalysisTabs
   const latestFO = foAnalysis.length > 0 ? foAnalysis[foAnalysis.length - 1] : null;
   
   const segmentDistribution = latestCash && latestFO ? [
-    { name: 'FII Equity', value: Math.abs(Number(latestCash.fiiEquity) || 0), color: COLORS[0] },
-    { name: 'FII Debt', value: Math.abs(Number(latestCash.fiiDebt) || 0), color: COLORS[1] },
-    { name: 'FII F&O', value: Math.abs((Number(latestFO.fiiIndices) || 0) + (Number(latestFO.fiiStocks) || 0)), color: COLORS[2] },
-    { name: 'DII Total', value: Math.abs((Number(latestCash.diiEquity) || 0) + (Number(latestCash.diiDebt) || 0) + (Number(latestFO.diiIndices) || 0) + (Number(latestFO.diiStocks) || 0)), color: COLORS[3] },
+    { name: 'FII Equity', value: Math.abs(safeValue(latestCash.fiiEquity)), color: COLORS[0] },
+    { name: 'FII Debt', value: Math.abs(safeValue(latestCash.fiiDebt)), color: COLORS[1] },
+    { name: 'FII F&O', value: Math.abs(safeValue(latestFO.fiiIndices) + safeValue(latestFO.fiiStocks)), color: COLORS[2] },
+    { name: 'DII Total', value: Math.abs(safeValue(latestCash.diiEquity) + safeValue(latestCash.diiDebt) + safeValue(latestFO.diiIndices) + safeValue(latestFO.diiStocks)), color: COLORS[3] },
   ].filter(item => item.value > 0) : [];
 
   return (
