@@ -23,6 +23,7 @@ const ForexReservesInsights = lazy(() => import('./pages/indicators/forex_reserv
 const RepoRatePage = lazy(() => import('./pages/indicators/repo_rate'));
 const RepoRateInsights = lazy(() => import('./pages/indicators/repo_rate/insights'));
 const ExchangeRatePage = lazy(() => import('./pages/indicators/exchange-rate'));
+const GSecYieldPage = lazy(() => import('./pages/indicators/gsec-yield'));
 const IndiaHeatMap = lazy(() => import('./pages/india-heat-map'));
 const FinancialMarketsPage = lazy(() => import('./pages/financial_markets/FinancialMarketsPage'));
 const SectoralHeatmapPage = lazy(() => import('./pages/financial_markets/equity/SectoralHeatmapPage'));
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/indicators/repo-rate" element={<RepoRatePage />} />
               <Route path="/indicators/repo-rate/insights" element={<RepoRateInsights />} />
               <Route path="/indicators/exchange-rate" element={<ExchangeRatePage />} />
+              <Route path="/indicators/gsec-yield" element={<GSecYieldPage />} />
               <Route path="/indicator/iip" element={<IIPPage />} />
               <Route path="/indicator/:id" element={<IndicatorRouter />} />
               <Route path="/events" element={<Events />} />
