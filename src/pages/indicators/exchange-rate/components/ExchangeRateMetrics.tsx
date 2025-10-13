@@ -25,7 +25,8 @@ export const ExchangeRateMetrics = ({ currency = 'USD' }: ExchangeRateMetricsPro
     }
 
     // Group by currency
-    const byCurrency: { [key: string]: any[] } = {};
+    type ExchangeRateItem = NonNullable<typeof exchangeData>[number];
+    const byCurrency: Record<string, ExchangeRateItem[]> = {};
     exchangeData.forEach(item => {
       if (!byCurrency[item.currency]) {
         byCurrency[item.currency] = [];
@@ -103,6 +104,14 @@ export const ExchangeRateMetrics = ({ currency = 'USD' }: ExchangeRateMetricsPro
           ) : error ? (
             <div className="text-center p-8 text-muted-foreground">
               {error}
+            </div>
+          ) : !exchangeData || exchangeData.length === 0 ? (
+            <div className="text-center p-8 text-muted-foreground">
+              No exchange rate data available. Please upload data via the admin panel.
+            </div>
+          ) : Object.keys(metrics.currencies).length === 0 ? (
+            <div className="text-center p-8 text-muted-foreground">
+              No currency data found. Please check the database.
             </div>
           ) : (
             <div className="space-y-3">

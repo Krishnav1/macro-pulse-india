@@ -60,7 +60,7 @@ export const dashboardIndicators: IndicatorData[] = [
     source: 'RBI'
   },
   {
-    id: 'gsec_yield_10y',
+    id: 'gsec-yield',
     name: '10Y G-Sec Yield',
     value: '7.10%',
     change: 0.2,

@@ -85,9 +85,9 @@ export const GSecEvents = ({ timeframe }: GSecEventsProps) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {events.map((event, index) => (
+            {events.map((event) => (
               <div
-                key={index}
+                key={event.id}
                 className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
@@ -105,7 +105,11 @@ export const GSecEvents = ({ timeframe }: GSecEventsProps) => {
                 </p>
                 
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{format(new Date(event.date), 'dd MMM yyyy')}</span>
+                  <span>
+                    {event.date
+                      ? format(new Date(event.date), 'dd MMM yyyy')
+                      : 'Date unavailable'}
+                  </span>
                   {event.tag && (
                     <Badge variant="outline" className="text-xs">
                       {event.tag}

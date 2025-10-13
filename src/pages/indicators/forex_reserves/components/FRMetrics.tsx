@@ -106,18 +106,18 @@ export const FRMetrics = ({ unit, selectedFY, timeframe }: FRMetricsProps) => {
 
   // Mock previous week data for change calculation (in real implementation, fetch previous week)
   const mockPreviousData = {
-    [totalField]: displayData[totalField] * 0.995,
-    [fcaField]: displayData[fcaField] * 0.992,
-    [goldField]: displayData[goldField] * 1.002,
-    [sdrField]: displayData[sdrField] * 0.998,
-    [imfField]: displayData[imfField] * 1.001,
+    [totalField]: (displayData[totalField] || 0) * 0.995,
+    [fcaField]: (displayData[fcaField] || 0) * 0.992,
+    [goldField]: (displayData[goldField] || 0) * 1.002,
+    [sdrField]: (displayData[sdrField] || 0) * 0.998,
+    [imfField]: (displayData[imfField] || 0) * 1.001,
   };
 
-  const totalChange = formatChange(displayData[totalField], mockPreviousData[totalField]);
-  const fcaChange = formatChange(displayData[fcaField], mockPreviousData[fcaField]);
-  const goldChange = formatChange(displayData[goldField], mockPreviousData[goldField]);
-  const sdrChange = formatChange(displayData[sdrField], mockPreviousData[sdrField]);
-  const imfChange = formatChange(displayData[imfField], mockPreviousData[imfField]);
+  const totalChange = formatChange(displayData[totalField] || 0, mockPreviousData[totalField] || 0);
+  const fcaChange = formatChange(displayData[fcaField] || 0, mockPreviousData[fcaField] || 0);
+  const goldChange = formatChange(displayData[goldField] || 0, mockPreviousData[goldField] || 0);
+  const sdrChange = formatChange(displayData[sdrField] || 0, mockPreviousData[sdrField] || 0);
+  const imfChange = formatChange(displayData[imfField] || 0, mockPreviousData[imfField] || 0);
 
   return (
     <Card>

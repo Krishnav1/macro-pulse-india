@@ -125,11 +125,27 @@ export const GSecChart = ({ timeframe, setTimeframe }: GSecChartProps) => {
           
           {/* Year Filter */}
           <div className="flex gap-2">
-            <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '1y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('1y')}>1Y</button>
-            <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '3y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('3y')}>3Y</button>
-            <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '5y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('5y')}>5Y</button>
-            <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === '10y' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('10y')}>10Y</button>
-            <button className={`px-3 py-1 text-sm rounded-md border transition-colors ${timeframe === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground border-border hover:bg-accent'}`} onClick={() => setTimeframe('all')}>MAX</button>
+          <div className="flex gap-2">
+            {[
+              { value: '1y',  label: '1Y'  },
+              { value: '3y',  label: '3Y'  },
+              { value: '5y',  label: '5Y'  },
+              { value: '10y', label: '10Y' },
+              { value: 'all', label: 'MAX' }
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+                  timeframe === value
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-background text-foreground border-border hover:bg-accent'
+                }`}
+                onClick={() => setTimeframe(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           </div>
         </div>
         
@@ -182,9 +198,9 @@ export const GSecChart = ({ timeframe, setTimeframe }: GSecChartProps) => {
                 />
                 
                 {/* Event markers */}
-                {eventsData && eventsData.map((event, index) => (
+                {eventsData && eventsData.map((event) => (
                   <ReferenceDot
-                    key={index}
+                    key={`${event.date}-${event.title || event.description || ''}`}
                     x={event.date}
                     y={getEventYPosition(event.date)}
                     r={6}
