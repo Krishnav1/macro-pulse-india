@@ -74,27 +74,36 @@ export const FRChart = ({
     endDate: dateRange.endDate
   });
 
-  // Process events for display
-  const processedEvents = useMemo(() => {
-    if (!eventsData || !showEvents) return [];
+  // Process data for chart display FIRST
+  const chartData = useMemo(() => {
+    if (!forexData?.length) return [];
     
-    return eventsData
-      .filter(event => selectedImpacts.includes(event.impact || 'low'))
-      .map(event => ({
-        ...event,
+    return forexData.map(item => {
+      const processed: any = {
+        ...item,
+        date: item.week_ended,
         displayDate: selectedFY 
-          ? format(new Date(event.date), 'MMM')
+          ? format(new Date(item.week_ended), 'MMM')
           : timeframe === 'all' || timeframe === '10Y' || timeframe === '5Y'
-            ? format(new Date(event.date), 'yyyy')
-            : format(new Date(event.date), 'MMM yy'),
-        color: event.impact === 'high' ? '#dc2626' : 
-               event.impact === 'medium' ? '#ea580c' : '#16a34a'
-      }));
-  }, [eventsData, showEvents, selectedImpacts, selectedFY, timeframe]);
-  
+            ? format(new Date(item.week_ended), 'yyyy')
+            : format(new Date(item.week_ended), 'MMM yy')
+      };
+
+      // Add component values with proper field names
+      const suffix = unit === 'usd' ? 'usd_mn' : 'inr_crore';
+      processed.total_reserves = item[`total_reserves_${suffix}`];
+      processed.foreign_currency_assets = item[`foreign_currency_assets_${suffix}`];
+      processed.gold = item[`gold_${suffix}`];
+      processed.sdrs = item[`sdrs_${suffix}`];
+      processed.reserve_position_imf = item[`reserve_position_imf_${suffix}`];
+
+      return processed;
+    });
+  }, [forexData, selectedFY, timeframe, unit]);
+
   // Get Y position for event markers on the trend line
   const getEventYPosition = (eventDate: string) => {
-    if (!chartData.length) return 0;
+    if (!chartData || chartData.length === 0) return 0;
     
     // In compare mode, use the first selected component for positioning
     // In normal mode, use total_reserves
@@ -158,36 +167,27 @@ export const FRChart = ({
     return 0;
   };
 
-  // Process data for chart display
-  const chartData = useMemo(() => {
-    if (!forexData?.length) return [];
+  // Process events for display
+  const processedEvents = useMemo(() => {
+    if (!eventsData || !showEvents) return [];
     
-    return forexData.map(item => {
-      const processed: any = {
-        ...item,
-        date: item.week_ended,
+    return eventsData
+      .filter(event => selectedImpacts.includes(event.impact || 'low'))
+      .map(event => ({
+        ...event,
         displayDate: selectedFY 
-          ? format(new Date(item.week_ended), 'MMM')
+          ? format(new Date(event.date), 'MMM')
           : timeframe === 'all' || timeframe === '10Y' || timeframe === '5Y'
-            ? format(new Date(item.week_ended), 'yyyy')
-            : format(new Date(item.week_ended), 'MMM yy')
-      };
-
-      // Add component values with proper field names
-      const suffix = unit === 'usd' ? 'usd_mn' : 'inr_crore';
-      processed.total_reserves = item[`total_reserves_${suffix}`];
-      processed.foreign_currency_assets = item[`foreign_currency_assets_${suffix}`];
-      processed.gold = item[`gold_${suffix}`];
-      processed.sdrs = item[`sdrs_${suffix}`];
-      processed.reserve_position_imf = item[`reserve_position_imf_${suffix}`];
-
-      return processed;
-    });
-  }, [forexData, selectedFY, timeframe, unit]);
+            ? format(new Date(event.date), 'yyyy')
+            : format(new Date(event.date), 'MMM yy'),
+        color: event.impact === 'high' ? '#dc2626' : 
+               event.impact === 'medium' ? '#ea580c' : '#16a34a'
+      }));
+  }, [eventsData, showEvents, selectedImpacts, selectedFY, timeframe]);
 
   // Aggregate data based on timeframe and FY
   const aggregatedData = useMemo(() => {
-    if (!chartData.length) return [];
+    if (!chartData || chartData.length === 0) return [];
 
     if (selectedFY) {
       // For year view, show monthly progression using latest data point for each month

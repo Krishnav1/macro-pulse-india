@@ -70,14 +70,14 @@ export const dashboardIndicators: IndicatorData[] = [
     source: 'RBI'
   },
   {
-    id: 'fiscal_deficit',
-    name: 'Central Government Fiscal Deficit',
-    value: '5.63%',
-    change: -0.1,
-    category: 'Fiscal',
-    sparklineData: generateSparklineData(5.63, 0.06),
-    unit: '% of GDP',
-    source: 'CGA'
+    id: 'fii-dii-activity',
+    name: 'FII/DII Activity',
+    value: '₹2,450 Cr',
+    change: 1.2,
+    category: 'Financial Markets',
+    sparklineData: generateSparklineData(2450, 150),
+    unit: 'INR Crore',
+    source: 'NSE'
   },
   {
     id: 'forex_reserves',

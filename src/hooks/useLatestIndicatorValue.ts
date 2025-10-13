@@ -33,6 +33,8 @@ export const useLatestIndicatorValue = (indicatorSlug: string) => {
 
     if (indicatorSlug) {
       fetchLatestValue();
+    } else {
+      setLoading(false);
     }
   }, [indicatorSlug]);
 

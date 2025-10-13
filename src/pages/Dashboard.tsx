@@ -19,13 +19,13 @@ const Dashboard = () => {
                   "Nifty Bank 52,120 (+0.4%)",
                   "Sensex 80,150 (+0.5%)",
                   "Gift Nifty 24,380 (+0.3%)",
-                  `Repo ${repoRate ? repoRate.toFixed(2) : '6.50'}%`,
+                  `Repo ${repoRate != null ? repoRate.toFixed(2) : '6.50'}%`,
                   "Rev Repo 3.35%",
                   "Gold ₹73,500 (-0.2%)",
                   "Silver ₹88,200 (+0.1%)",
                   "USD/INR 83.1 (+0.1%)",
                   "Brent $82.4 (-0.4%)",
-                  `10Y G-Sec ${gsecYield ? gsecYield.toFixed(2) : '7.10'}%`,
+                  `10Y G-Sec ${gsecYield != null ? gsecYield.toFixed(2) : '7.10'}%`,
                 ].map((item, i) => (
                   <span key={i} className="ticker-item text-muted-foreground">
                     {item}

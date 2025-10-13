@@ -26,6 +26,8 @@ const IndicatorGridCard = ({ indicator }: IndicatorGridCardProps) => {
       navigate('/indicators/gsec-yield');
     } else if (indicator.id === 'inr_exchange_rate') {
       navigate('/indicators/exchange-rate');
+    } else if (indicator.id === 'fii-dii-activity') {
+      navigate('/financial-markets/fii-dii-activity');
     } else if (indicator.id === 'market_cap') {
       navigate('/financial-markets/equity-markets');
     } else if (indicator.id === 'total_aum') {
