@@ -18,8 +18,10 @@ export function QuarterlyAUMUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedAUMFile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'parsing' | 'uploading' | 'success' | 'error'>('idle');
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'parsing' | 'checking' | 'uploading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [existingDataCount, setExistingDataCount] = useState<number>(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { toast } = useToast();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,9 +50,63 @@ export function QuarterlyAUMUpload() {
     setErrorMessage('');
   };
 
+  const checkExistingData = async (quarterEndDate: string) => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('quarterly_aum_data')
+        .select('id', { count: 'exact' })
+        .eq('quarter_end_date', quarterEndDate);
+      
+      if (error) throw error;
+      
+      const count = data?.length || 0;
+      setExistingDataCount(count);
+      
+      if (count > 0) {
+        setShowDeleteConfirm(true);
+      }
+    } catch (error) {
+      console.error('Error checking existing data:', error);
+    }
+  };
+
+  const handleDeleteExistingData = async () => {
+    if (!parsedData) return;
+    
+    setIsProcessing(true);
+    setUploadStatus('checking');
+    
+    try {
+      const { error } = await (supabase as any)
+        .from('quarterly_aum_data')
+        .delete()
+        .eq('quarter_end_date', parsedData.quarter_end_date);
+      
+      if (error) throw error;
+      
+      setExistingDataCount(0);
+      setShowDeleteConfirm(false);
+      
+      toast({
+        title: 'Data Deleted',
+        description: `Deleted existing data for ${parsedData.quarter_label}. You can now upload new data.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Delete Error',
+        description: error.message || 'Failed to delete existing data',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+      setUploadStatus('idle');
+    }
+  };
+
   const handleParse = async () => {
     if (!file) return;
 
+    setIsProcessing(true);
     setUploadStatus('parsing');
     setErrorMessage('');
 
@@ -68,11 +124,15 @@ export function QuarterlyAUMUpload() {
       }
       
       setParsedData(parsed);
+      
+      // Check if data exists for this quarter
+      await checkExistingData(parsed.quarter_end_date);
+      
       setUploadStatus('idle');
       
       toast({
         title: 'File Parsed Successfully',
-        description: `Found ${parsed.rows.length} categories for ${parsed.quarter_label}`,
+        description: `Found ${parsed.rows.length} categories for ${parsed.quarter_label}. Total AUM: ₹${parsed.total_aum_crore.toLocaleString('en-IN')} Cr`,
       });
     } catch (error: any) {
       console.error('Error parsing file:', error);
@@ -325,6 +385,42 @@ export function QuarterlyAUMUpload() {
           </Alert>
         )}
 
+        {/* Existing Data Warning */}
+        {showDeleteConfirm && existingDataCount > 0 && (
+          <Alert className="border-orange-500 bg-orange-50">
+            <AlertCircle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <div className="space-y-3">
+                <p className="font-semibold">
+                  Existing data found for {parsedData?.quarter_label}!
+                </p>
+                <p className="text-sm">
+                  There are {existingDataCount} existing records for this quarter. 
+                  You must delete the existing data before uploading new data.
+                </p>
+                <Button 
+                  onClick={handleDeleteExistingData}
+                  disabled={isProcessing}
+                  variant="destructive"
+                  size="sm"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Delete Existing Data
+                    </>
+                  )}
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Preview */}
         {parsedData && uploadStatus !== 'success' && (
           <div className="space-y-4">
@@ -395,13 +491,18 @@ export function QuarterlyAUMUpload() {
 
             <Button 
               onClick={handleUpload} 
-              disabled={isProcessing}
+              disabled={isProcessing || existingDataCount > 0}
               className="w-full"
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Uploading...
+                </>
+              ) : existingDataCount > 0 ? (
+                <>
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Delete Existing Data First
                 </>
               ) : (
                 <>

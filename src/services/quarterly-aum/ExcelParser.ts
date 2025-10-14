@@ -36,13 +36,8 @@ export class QuarterlyAUMParser {
     // Calculate total AUM from Grand TOTAL row
     const grandTotalRow = parsedRows.find(row => row.is_grand_total);
     const totalAUM = grandTotalRow ? grandTotalRow.aum_crore : 
-      parsedRows.reduce((sum, row) => {
-        // Sum only non-subtotal, non-total rows
-        if (!row.is_subtotal && !row.is_grand_total) {
-          return sum + row.aum_crore;
-        }
-        return sum;
-      }, 0);
+      parsedRows.filter(row => !row.is_subtotal && !row.is_grand_total)
+        .reduce((sum, row) => sum + row.aum_crore, 0);
     
     return {
       quarter_end_date: metadata.quarter_end_date,
@@ -50,7 +45,7 @@ export class QuarterlyAUMParser {
       fiscal_year: metadata.fiscal_year,
       data_format_version: formatVersion,
       total_aum_crore: totalAUM,
-      rows: parsedRows // Keep all rows including subtotals
+      rows: parsedRows.filter(row => !row.is_grand_total)
     };
   }
 
@@ -266,6 +261,28 @@ export class QuarterlyAUMParser {
         continue;
       }
       
+      // Detect subtotal and grand total rows
+      const isSubtotal = cleanCategoryName.includes('- TOTAL') || 
+                        cleanCategoryName.includes('Schemes - TOTAL') ||
+                        cleanCategoryName.includes('Scheme - TOTAL');
+      const isGrandTotal = cleanCategoryName === 'Grand TOTAL' || 
+                          cleanCategoryName === 'GRAND TOTAL';
+      
+      // Determine parent category for subtotals
+      let parentCategory: 'Equity' | 'Debt' | 'Hybrid' | 'Other' | undefined;
+      if (isSubtotal) {
+        const lowerName = cleanCategoryName.toLowerCase();
+        if (lowerName.includes('equity')) {
+          parentCategory = 'Equity';
+        } else if (lowerName.includes('debt')) {
+          parentCategory = 'Debt';
+        } else if (lowerName.includes('hybrid')) {
+          parentCategory = 'Hybrid';
+        } else if (lowerName.includes('other')) {
+          parentCategory = 'Other';
+        }
+      }
+      
       // Level 4: i), ii), iii), etc. - actual data rows
       if (aumValue && typeof aumValue === 'number') {
         parsed.push({
@@ -275,7 +292,10 @@ export class QuarterlyAUMParser {
           category_level_1: currentLevel1,
           category_level_2: currentLevel2,
           category_level_3: currentLevel3,
-          category_level_4: cleanCategoryName
+          category_level_4: cleanCategoryName,
+          is_subtotal: isSubtotal,
+          is_grand_total: isGrandTotal,
+          parent_category: parentCategory
         });
       }
     }

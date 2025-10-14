@@ -4,27 +4,65 @@ NOTE: AUM = Assets Under Management AS OF 30-Jun-2025 (Current value on quarter 
 NOTE: AAUM = Average AUM during the quarter (Average of daily AUM values)
 
 Category of the Scheme,AUM (Rs. in Crore),AAUM (Rs. in Crore)
-Equity Scheme - Large Cap Fund,150000,148000
-Equity Scheme - Mid Cap Fund,85000,84000
-Equity Scheme - Small Cap Fund,45000,44500
-Equity Scheme - Multi Cap Fund,120000,119000
-Equity Scheme - Flexi Cap Fund,95000,94000
-Equity Scheme - Sectoral/Thematic,65000,64500
-Equity Scheme - ELSS,55000,54500
-Equity Schemes - TOTAL,615000,608500
-Debt Scheme - Liquid Fund,180000,179000
-Debt Scheme - Ultra Short Duration Fund,75000,74500
-Debt Scheme - Short Duration Fund,60000,59500
-Debt Scheme - Medium Duration Fund,45000,44800
-Debt Scheme - Long Duration Fund,35000,34700
-Debt Scheme - Gilt Fund,25000,24800
-Debt Scheme - TOTAL,420000,417300
-Hybrid Scheme - Aggressive Hybrid Fund,70000,69500
-Hybrid Scheme - Conservative Hybrid Fund,50000,49500
-Hybrid Scheme - Balanced Hybrid Fund,40000,39800
-Hybrid Scheme - TOTAL,160000,158800
-Other Schemes - Index Funds,90000,89500
-Other Schemes - ETF,110000,109000
-Other Schemes - Fund of Funds,30000,29800
-Other Schemes - TOTAL,230000,228300
-Grand TOTAL,1425000,1412900
+Equity Scheme - Multi Cap Fund,204690,188636
+Equity Scheme - Large Cap Fund,397470,377258
+Equity Scheme - Large & Mid Cap Fund,302139,280124
+Equity Scheme - Mid Cap Fund,431700,395124
+Equity Scheme - Small Cap Fund,354551,322797
+Equity Scheme - Dividend Yield Fund,33162,31620
+Equity Scheme - Value Fund/Contra Fund,203756,192671
+Equity Scheme - Focussed Fund,162173,152493
+Equity Scheme - Sectoral/Thematic,509345,479363
+Equity Scheme - ELSS,253585,241364
+Equity Scheme - Flexi Cap Fund,494278,462604
+Equity Scheme - ELSS - CE,4399,4202
+Equity Scheme - Other Equity Schemes - CE,0,0
+Equity Scheme - Growth/Equity Oriented Schemes,0,0
+Equity Scheme - TOTAL,3351248,3128257
+Debt Scheme - Overnight Fund,71481,100430
+Debt Scheme - Liquid Fund,499857,586693
+Debt Scheme - Ultra Short Duration Fund,132827,124477
+Debt Scheme - Low Duration Fund,131415,125218
+Debt Scheme - Money Market Fund,290724,270286
+Debt Scheme - Short Duration Fund,133337,123857
+Debt Scheme - Medium Duration Fund,25336,25737
+Debt Scheme - Medium to Long Duration Fund,11852,11879
+Debt Scheme - Long Duration Fund,20539,20955
+Debt Scheme - Dynamic Bond Fund,36912,36554
+Debt Scheme - Corporate Bond Fund,203199,190571
+Debt Scheme - Credit Risk Fund,20350,20443
+Debt Scheme - Banking and PSU Fund,82279,81184
+Debt Scheme - Gilt Fund,41450,41869
+Debt Scheme - Gilt Fund with 10 year constant duration,4935,5019
+Debt Scheme - Floater Fund,51668,51177
+Debt Scheme - Fixed Term Plan - CE,1042,1478
+Debt Scheme - Capital Protection Oriented Schemes - CE,0,0
+Debt Scheme - Infrastructure Debt Fund - CE,888,860
+Debt Scheme - Other Debt Scheme - CE,5473,5437
+Debt Scheme - Income/Debt Oriented Schemes - CE,44,78
+Debt Scheme - TOTAL,1779637,1837702
+Hybrid Scheme - Conservative Hybrid Fund,29085,28571
+Hybrid Scheme - Balanced/Aggressive Hybrid Fund,233686,229252
+Hybrid Scheme - Dynamic Asset Allocation/Balanced Advantage Fund,306649,295488
+Hybrid Scheme - Multi Asset Allocation Fund,123585,124017
+Hybrid Scheme - Arbitrage Fund,203565,269753
+Hybrid Scheme - Equity Savings Fund,44639,44903
+Hybrid Scheme - TOTAL,992009,991984
+Other Scheme - Retirement Fund,31973,30429
+Other Scheme - Childrens Fund,24175,23064
+Other Scheme - Equity oriented Index Funds (domestic),191092,172450
+Other Scheme - Equity oriented Index Funds (International),5515,5118
+Other Scheme - Income/Debt Oriented Index Funds (Target Maturity Index Funds),102906,91045
+Other Scheme - Income/Debt Oriented Index Funds (Other than Target Maturity Index Funds),5744,5744
+Other Scheme - Other Index Funds,3736,3480
+Other Scheme - Gold ETF,64777,61903
+Other Scheme - Equity oriented ETFs (Domestic ETFs),728573,690312
+Other Scheme - Equity oriented ETFs (International ETFs),14870,13376
+Other Scheme - Income/Debt Oriented oriented ETFs,97731,97886
+Other Scheme - Other Domestic ETFs,0,0
+Other Scheme - Silver ETF,20287,16827
+Other Scheme - Fund of funds investing overseas in Active Funds,20196,18314
+Other Scheme - Fund of funds investing overseas in Passive Funds,8500,7856
+Other Scheme - Other Schemes,0,0
+Other Scheme - TOTAL,1317877,1255803
+Grand TOTAL,7440671,7213747
